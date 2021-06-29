@@ -19,9 +19,11 @@ package server
 
 import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/internal/logger"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/internal/startup"
 )
 
 // Run starts the global adapter server.
 func Run() {
+	startup.Init()
 	logger.LoggerServer.Info("Global Adapter - Implementation in Progress...")
 }
