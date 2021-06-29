@@ -1,0 +1,136 @@
+<!--
+  ~ Copyright (c) WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+  ~
+  ~ WSO2 Inc. licenses this file to you under the Apache License,
+  ~ Version 2.0 (the "License"); you may not use this file except
+  ~ in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~    http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied.  See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <parent>
+        <groupId>org.wso2.am.choreo.connect.global.adapter</groupId>
+        <artifactId>choreo-connect-global-adapter</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>global-adapter</artifactId>
+    <modelVersion>4.0.0</modelVersion>
+    <packaging>pom</packaging>
+    <name>Choreo Connect - Global Adapter</name>
+
+    <profiles>
+        <profile>
+            <id>Windows</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <properties>
+                <!-- TODO: (VirajSalaka) batch file is not introduced yet.-->
+                <script.extension>bat</script.extension>
+            </properties>
+        </profile>
+        <profile>
+            <id>unix</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                </os>
+            </activation>
+            <properties>
+                <script.extension>sh</script.extension>
+            </properties>
+        </profile>
+    </profiles>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>exec-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <version>${exec.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>build-project</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${project.basedir}/scripts/build.${script.extension}</executable>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>${io.fabric8.docker.plugin.version}</version>
+                <configuration>
+                    <images>
+                        <image>
+                            <alias>choreo-connect-global-adapter</alias>
+                            <name>wso2/choreo-connect-global-adapter:${project.version}</name>
+                            <build>
+                                <contextDir>${project.basedir}/src/main/resources</contextDir>
+                                <assembly>
+                                    <descriptor>${project.basedir}/src/main/assembly/assembly.xml</descriptor>
+                                </assembly>
+                                <args>
+                                    <!-- The Args in the dockerfile seems to overridden by plugin-->
+                                    <MG_USER>wso2</MG_USER>
+                                    <MG_USER_ID>802</MG_USER_ID>
+                                    <MG_USER_GROUP>wso2</MG_USER_GROUP>
+                                    <MG_USER_GROUP_ID>802</MG_USER_GROUP_ID>
+                                    <MG_USER_HOME>/home/wso2</MG_USER_HOME>
+                                </args>
+                            </build>
+                        </image>
+                    </images>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>docker-build</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>${download.maven.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>download-grpc-health-probe</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>
+                                https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v${grpc.healthProbe.version}/grpc_health_probe-linux-amd64
+                            </url>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

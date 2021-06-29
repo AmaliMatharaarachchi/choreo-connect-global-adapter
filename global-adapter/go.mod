@@ -1,4 +1,4 @@
-module github.com/wso2-enterprise/choreo-connect-global-adapter
+module github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter
 
 go 1.15
 

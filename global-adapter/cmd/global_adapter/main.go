@@ -21,7 +21,7 @@ package main
 import (
 	"os"
 
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/internal/server"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/server"
 )
 
 func main() {

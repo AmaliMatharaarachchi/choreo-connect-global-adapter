@@ -18,8 +18,12 @@
 package server
 
 import (
+<<<<<<< HEAD:internal/server/server.go
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/internal/startup"
+=======
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+>>>>>>> d9c70f6cfc81cde2a9c27307e71b1552c5a72ef3:global-adapter/internal/server/server.go
 )
 
 // Run starts the global adapter server.

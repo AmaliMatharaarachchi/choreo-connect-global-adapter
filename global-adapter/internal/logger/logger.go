@@ -32,7 +32,7 @@ When you add a new logger instance add the related package name as a constant
 
 // package name constants
 const (
-	pkgServer = "github.com/wso2-enterprise/choreo-connnect-global-adapter/internal/server"
+	pkgServer = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/server"
 )
 
 // logger package references
