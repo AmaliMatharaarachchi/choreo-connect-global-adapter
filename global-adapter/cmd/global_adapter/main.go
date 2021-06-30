@@ -21,7 +21,10 @@ package main
 import (
 	"os"
 
+	_ "github.com/denisenkom/go-mssqldb"
+
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/server"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/startup"
 )
 
 func main() {
@@ -33,5 +36,6 @@ func initServer() error {
 }
 
 func startGlobalAdapter(args []string) {
+	startup.Init()
 	server.Run()
 }

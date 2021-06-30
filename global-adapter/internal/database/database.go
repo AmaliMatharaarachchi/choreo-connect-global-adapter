@@ -20,55 +20,75 @@ import (
 	"database/sql"
 	"fmt"
 
-	logger "github.com/sirupsen/logrus"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
 
 // TODO : Following properties should fetch from config file
 var dbName string = "globalAdapter"
 var dbUserName string = "sa"
-var dbPassword string = "Test@1234"
+var dbPassword string = ""
 var dbPort int = 1433
 var dbHost string = "127.0.0.1"
+var maxRetryAttempts int = 10
 
+const (
+	sqlDriver string = "sqlserver"
+)
+
+// DB - export MSSQL client
 var DB *sql.DB
 
+// ConnectToDb - connecting with the database server
 func ConnectToDb() {
 	var err error
 	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s", dbHost, dbUserName, dbPassword, dbPort, dbName)
-	DB, err = sql.Open("sqlserver", connString)
+	DB, err = sql.Open(sqlDriver, connString)
 	if err != nil {
-		logger.Fatal("[DB Error] DB connection error - ", err)
-		// check the error and retry to connect
+		logger.LoggerServer.Fatal("DB connection error - ", err)
+		//TODO:  check the error and retry to connect
 	} else {
-		logger.Info("Established the DB connection ...")
+		logger.LoggerServer.Debug("Established the DB connection ...")
 	}
 }
 
-// create table to persist API records
-/*
-	Table Name : tbl_apis
-	Columns :
-		api_uuid : UUID of the API. this id return from the CP
-		label_hierarchy : Id of the partition hierarchy.String value.
-		api_id : Incremental ID. Partitioning will happen base on this value
-		org_id : organization which owns the API
-	Primary Key : api_uuid,label_hierarchy,api_id
-*/
+// WakeUpConnection - checking whether the databace connection is still alive , if not alive then reconnect to the DB
+func WakeUpConnection() bool {
+	pingError := DB.Ping()
+	retryAttempts := 0
+	var isPing bool = false
 
-// No need this part
-func CreateTable() bool {
-	query := `IF NOT EXISTS (SELECT name FROM sys.tables WHERE name='ga_local_adapter_partition') 
-				CREATE TABLE ga_local_adapter_partition ( 
-					api_uuid VARCHAR(150) NOT NULL, 
-					label_hierarchy VARCHAR(50) NOT NULL, 
-					api_id INT NOT NULL, 
-					org_id VARCHAR(150
-				) PRIMARY KEY (api_uuid,label_hierarchy))`
+	for {
+		if pingError != nil {
+			logger.LoggerServer.Debug("Error while initiating the database ", pingError, ". Retry attempt(s) :", retryAttempts)
 
-	_, error := DB.Exec(query)
-	if error != nil {
-		logger.Fatal("[DB Error] Failed to create table ", error)
-		return false
+			if retryAttempts >= maxRetryAttempts {
+				break
+			} else {
+				ConnectToDb()
+			}
+
+			isPing = false
+			retryAttempts++
+			continue
+
+		} else {
+			isPing = true
+			break
+		}
 	}
-	return true
+
+	return isPing
+}
+
+// IsTableExists return true if find the searched table
+func IsTableExists(tableName string) bool {
+	res, _ := DB.Query(queryTableExists, tableName)
+	if !res.Next() {
+		logger.LoggerServer.Debug("Table not exists : ", tableName)
+	} else {
+		logger.LoggerServer.Debug("Table exists : ", tableName)
+		return true
+	}
+
+	return false
 }

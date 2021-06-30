@@ -16,13 +16,14 @@
 
 package types
 
+// API for
 type API struct {
 	APIID            int      `json:"apiId"`
 	UUID             string   `json:"uuid"`
-	Provider         string   `json:"provider" json:"apiProvider,omitempty"`
-	Name             string   `json:"name" json:"apiName,omitempty"`
-	Version          string   `json:"version" json:"apiVersion,omitempty"`
-	Context          string   `json:"context" json:"apiContext,omitempty"`
+	Provider         string   `json:"provider,omitempty"`
+	Name             string   `json:"name,omitempty"`
+	Version          string   `json:"version,omitempty"`
+	Context          string   `json:"context,omitempty"`
 	Policy           string   `json:"policy,omitempty"`
 	APIType          string   `json:"apiType,omitempty"`
 	IsDefaultVersion bool     `json:"isDefaultVersion,omitempty"`
@@ -30,26 +31,30 @@ type API struct {
 	TenantID         int32    `json:"tenanId,omitempty"`
 	TenantDomain     string   `json:"tenanDomain,omitempty"`
 	TimeStamp        int64    `json:"timeStamp,omitempty"`
-	GwLabel          []string `json:"gwLabel, omitempty"`
-	RevisionId       string   `json:"revuuid,omitempty"`
-	Organization     string   `json:"revuuid,omitempty"`
+	GwLabel          []string `json:"gwLabel,omitempty"`
+	RevisionID       string   `json:"revuuid,omitempty"`
+	Organization     string   `json:"organization,omitempty"`
 }
 
+// Response for keep API response from /apis
 type Response struct {
 	Count      int    `json:"count,omitempty"`
-	List       []API  `json:"list, omitempty"`
-	Pagination string `json:"pagination, omitempty"`
+	List       []API  `json:"list,omitempty"`
+	Pagination string `json:"pagination,omitempty"`
 }
 
+// EvetType for distinguish JMS event types
 type EvetType int
 
+// Specific event types
 const (
-	API_CREATE EvetType = iota
-	API_DELETE
-	DEPLOY_API_IN_GATEWAY
+	APICreate EvetType = iota
+	APIDelete
+	DeployInAPIGateway
 )
 
-type ApiState struct {
+// LaAPIState for
+type LaAPIState struct {
 	LabelHierarchy string
 	Label          string
 	Revision       string
