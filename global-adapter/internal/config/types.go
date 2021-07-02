@@ -1,0 +1,104 @@
+/*
+ *  Copyright (c) 2021, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+package config
+
+import (
+	"time"
+)
+
+// Config represents the adapter configuration.
+// It is created directly from the configuration toml file.
+type Config struct {
+	Server server
+	// Keystore contains the keyFile and Cert File of the global adapter.
+	Keystore keystore
+	// Trusted Certificates.
+	Truststore   truststore
+	DataBase     database
+	ControlPlane controlPlane
+}
+
+// ControlPlane struct contains configurations related to the API Manager
+type controlPlane struct {
+	ServiceURL              string        `toml:"serviceUrl"`
+	Username                string        `toml:"username"`
+	Password                string        `toml:"password"`
+	EnvironmentLabels       []string      `toml:"environmentLabels"`
+	RetryInterval           time.Duration `toml:"retryInterval"`
+	SkipSSLVerification     bool          `toml:"skipSSLVerification"`
+	JmsConnectionParameters jmsConnectionParameters
+}
+
+type jmsConnectionParameters struct {
+	EventListeningEndpoints []string `toml:"eventListeningEndpoints"`
+}
+
+type truststore struct {
+	Location string
+}
+
+type keystore struct {
+	PrivateKeyLocation string `toml:"keyPath"`
+	PublicKeyLocation  string `toml:"certPath"`
+}
+
+// EndpointSecurity contains the SandBox/Production endpoint security
+type EndpointSecurity struct {
+	SandBox    SecurityInfo `json:"SandBox,omitempty"`
+	Production SecurityInfo `json:"Production,omitempty"`
+}
+
+// SecurityInfo contains the parameters of endpoint security
+type SecurityInfo struct {
+	Password         string `json:"password,omitempty"`
+	CustomParameters string `json:"customparameters,omitempty"`
+	SecurityType     string `json:"Type,omitempty"`
+	Enabled          bool   `json:"enabled,omitempty"`
+	Username         string `json:"username,omitempty"`
+}
+
+type server struct {
+	Host          string
+	Port          string
+	PartitionSize int
+	Users         []APICtlUser `toml:"users"`
+}
+
+// APICtlUser represents registered APICtl Users
+type APICtlUser struct {
+	Username string
+	Password string
+}
+
+type database struct {
+	Name            string
+	Username        string
+	Password        string
+	Host            string
+	Port            string
+	ValidationQuery string
+	PoolOptions     dbPool
+}
+
+type dbPool struct {
+	MaxActive          int
+	MaxWait            int
+	TestOnBorrow       bool
+	ValidationInterval int
+	DefaultAutoCommit  bool
+}

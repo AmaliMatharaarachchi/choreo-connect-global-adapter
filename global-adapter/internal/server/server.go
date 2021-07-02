@@ -18,10 +18,67 @@
 package server
 
 import (
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
+	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
+	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
 // Run starts the global adapter server.
-func Run() {
-	logger.LoggerServer.Info("Global Adapter - Implementation in Progress...")
+func Run(conf *config.Config) {
+	logger.LoggerServer.Info("Starting global adapter ....")
+	// Process incoming events.
+	go messaging.ProcessEvents(conf)
+	// Consume API events from channel.
+	go GetAPIDeployAndRemoveEventsFromChannel()
+	// Consume non API events from channel.
+	go GetNonAPIDeployAndRemoveEventsFromChannel()
+	// Fetch APIs from control plane.
+	fetchAPIsOnStartUp(conf)
+	select {}
+}
+
+// Fetch APIs from control plane during the server start up.
+func fetchAPIsOnStartUp(conf *config.Config) {
+	// Populate data from configuration file.
+	serviceURL := conf.ControlPlane.ServiceURL
+	userName := conf.ControlPlane.Username
+	password := conf.ControlPlane.Password
+	environmentLabels := conf.ControlPlane.EnvironmentLabels
+	skipSSL := conf.ControlPlane.SkipSSLVerification
+	retryInterval := conf.ControlPlane.RetryInterval
+	truststoreLocation := conf.Truststore.Location
+
+	// Create a channel for the byte slice (response from the APIs from control plane).
+	c := make(chan sync.SyncAPIResponse)
+
+	// Fetch APIs from control plane and write to the channel c.
+	adapter.GetAPIs(c, nil, serviceURL, userName, password, environmentLabels, skipSSL, truststoreLocation,
+		synchronizer.RuntimeMetaDataEndpoint, false)
+
+	// Get deployment.json from the channel c.
+	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
+		userName, password, skipSSL, truststoreLocation, retryInterval)
+
+	if err != nil {
+		logger.LoggerServer.Errorf("Error occurred while reading artifacts: %v ", err)
+	} else {
+		synchronizer.AddAPIEventsToChannel(deploymentDescriptor, nil)
+	}
+}
+
+// GetAPIDeployAndRemoveEventsFromChannel consume API deploy and remove events from the channel.
+func GetAPIDeployAndRemoveEventsFromChannel() {
+	for d := range synchronizer.APIDeployAndRemoveEventChannel {
+		logger.LoggerServer.Infof("API Event %s ", d)
+	}
+}
+
+// GetNonAPIDeployAndRemoveEventsFromChannel consume non API deploy/remove events from the channel.
+func GetNonAPIDeployAndRemoveEventsFromChannel() {
+	for d := range messaging.NonAPIDeployAndRemoveEventChannel {
+		logger.LoggerServer.Infof("Non api event %s ", d)
+	}
 }

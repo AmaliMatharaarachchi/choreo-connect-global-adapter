@@ -15,29 +15,19 @@
  *
  */
 
-// Package main is the main packages
-package main
+// Package messaging holds the implementation for event listeners functions
+package messaging
 
 import (
-	"os"
-
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/server"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 )
 
-func main() {
-	startGlobalAdapter(os.Args)
-}
-
-func initServer() error {
-	return nil
-}
-
-func startGlobalAdapter(args []string) {
-	conf, errReadConfig := config.ReadConfigs()
-	// Panic if an error occurred while reading the configuration file.
-	if errReadConfig != nil {
-		panic(errReadConfig)
+func handleTokenRevocation() {
+	for delivery := range msg.RevokedTokenChannel {
+		logger.LoggerMsg.Infof("Token Revocation Event %s is received", string(delivery.Body))
+		writeNonAPIEventToChannel(delivery)
+		delivery.Ack(false)
 	}
-	server.Run(conf)
+	logger.LoggerMsg.Infof("handle: deliveries channel closed")
 }

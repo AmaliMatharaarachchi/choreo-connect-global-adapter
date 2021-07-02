@@ -15,6 +15,7 @@
 # limitations under the License.
 # -----------------------------------------------------------------------
 
+export MGW_HOME=${PWD}/resources
 go clean -testcache
 go test -race -coverprofile=./target/coverage.txt -covermode=atomic ./...
 if [ $? -ne 0 ]; then 
