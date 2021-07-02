@@ -57,12 +57,6 @@ type keystore struct {
 	PublicKeyLocation  string `toml:"certPath"`
 }
 
-// EndpointSecurity contains the SandBox/Production endpoint security
-type EndpointSecurity struct {
-	SandBox    SecurityInfo `json:"SandBox,omitempty"`
-	Production SecurityInfo `json:"Production,omitempty"`
-}
-
 // SecurityInfo contains the parameters of endpoint security
 type SecurityInfo struct {
 	Password         string `json:"password,omitempty"`
@@ -76,11 +70,11 @@ type server struct {
 	Host          string
 	Port          string
 	PartitionSize int
-	Users         []APICtlUser `toml:"users"`
+	Users         []User `toml:"users"`
 }
 
-// APICtlUser represents registered APICtl Users
-type APICtlUser struct {
+// User represents registered GA Users.
+type User struct {
 	Username string
 	Password string
 }

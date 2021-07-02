@@ -125,7 +125,7 @@ func getArtifacts(apiEvent *msg.APIEvent, config *config.Config, APIEventArray [
 
 	// Populate data from config.
 	serviceURL := config.ControlPlane.ServiceURL
-	userName := config.ControlPlane.Username
+	username := config.ControlPlane.Username
 	password := config.ControlPlane.Password
 	skipSSL := config.ControlPlane.SkipSSLVerification
 	retryInterval := config.ControlPlane.RetryInterval
@@ -135,11 +135,11 @@ func getArtifacts(apiEvent *msg.APIEvent, config *config.Config, APIEventArray [
 	c := make(chan synchronizer.SyncAPIResponse)
 
 	// Fetch API details from control plane and write API details to the channel c.
-	adapter.GetAPIs(c, &uuid, serviceURL, userName, password, gatewayLabels, skipSSL, truststoreLocation,
+	adapter.GetAPIs(c, &uuid, serviceURL, username, password, gatewayLabels, skipSSL, truststoreLocation,
 		sync.RuntimeMetaDataEndpoint, false)
 	// Get deployment.json file from channel c.
 	deploymentDescriptor, err := sync.GetArtifactDetailsFromChannel(c, serviceURL,
-		userName, password, skipSSL, truststoreLocation, retryInterval)
+		username, password, skipSSL, truststoreLocation, retryInterval)
 
 	if err != nil {
 		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)

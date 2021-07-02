@@ -51,6 +51,6 @@ COPY maven/global-adapter-linux global-adapter
 
 ENV LOG_CONFIG_PATH="${MG_USER_HOME}/conf/log_config.toml"
 
-ENV MGW_HOME="${MG_USER_HOME}/conf/ga_config.toml"
+ENV MGW_HOME="${MG_USER_HOME}"
 
 CMD ./global-adapter

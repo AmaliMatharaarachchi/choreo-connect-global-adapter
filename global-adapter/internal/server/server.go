@@ -44,7 +44,7 @@ func Run(conf *config.Config) {
 func fetchAPIsOnStartUp(conf *config.Config) {
 	// Populate data from configuration file.
 	serviceURL := conf.ControlPlane.ServiceURL
-	userName := conf.ControlPlane.Username
+	username := conf.ControlPlane.Username
 	password := conf.ControlPlane.Password
 	environmentLabels := conf.ControlPlane.EnvironmentLabels
 	skipSSL := conf.ControlPlane.SkipSSLVerification
@@ -55,15 +55,15 @@ func fetchAPIsOnStartUp(conf *config.Config) {
 	c := make(chan sync.SyncAPIResponse)
 
 	// Fetch APIs from control plane and write to the channel c.
-	adapter.GetAPIs(c, nil, serviceURL, userName, password, environmentLabels, skipSSL, truststoreLocation,
+	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
 		synchronizer.RuntimeMetaDataEndpoint, false)
 
 	// Get deployment.json from the channel c.
 	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
-		userName, password, skipSSL, truststoreLocation, retryInterval)
+		username, password, skipSSL, truststoreLocation, retryInterval)
 
 	if err != nil {
-		logger.LoggerServer.Errorf("Error occurred while reading artifacts: %v ", err)
+		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)
 	} else {
 		synchronizer.AddAPIEventsToChannel(deploymentDescriptor, nil)
 	}

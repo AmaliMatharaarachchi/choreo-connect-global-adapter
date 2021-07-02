@@ -27,7 +27,7 @@ import (
 
 func TestGetArtifactDetailsFromChannel(t *testing.T) {
 	serviceURL := "https://apim:9443/"
-	userName := "admin"
+	username := "admin"
 	password := "admin"
 	skipSSL := true
 	truststoreLocation := "/home/wso2/security/truststore"
@@ -60,7 +60,7 @@ func TestGetArtifactDetailsFromChannel(t *testing.T) {
 	go writeDataToChannel(c, response)
 
 	deploymentDescriptor, _ := GetArtifactDetailsFromChannel(c, serviceURL,
-		userName, password, skipSSL, truststoreLocation, retryInterval)
+		username, password, skipSSL, truststoreLocation, retryInterval)
 
 	for _, deployment := range deploymentDescriptor.Data.Deployments {
 		assert.Equal(t, deployment.APIFile, "60d2cda9e9cab41a3214fa91-60d2cdade9cab41a3214fa92",

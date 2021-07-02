@@ -26,7 +26,7 @@ import (
 // ProcessEvents to pass event consumption.
 func ProcessEvents(config *config.Config) {
 	_ = msg.InitiateJMSConnection(config.ControlPlane.JmsConnectionParameters.EventListeningEndpoints)
-	// Use above return value(error) for health check.
+	// TODO: (Jayanie) use above return value(error) for health check.
 
 	// Handle notification events.
 	go handleNotification(config)

@@ -34,10 +34,6 @@ func initServer() error {
 }
 
 func startGlobalAdapter(args []string) {
-	conf, errReadConfig := config.ReadConfigs()
-	// Panic if an error occurred while reading the configuration file.
-	if errReadConfig != nil {
-		panic(errReadConfig)
-	}
+	conf := config.ReadConfigs()
 	server.Run(conf)
 }

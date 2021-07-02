@@ -27,7 +27,7 @@ import (
 )
 
 func TestAPIRemoveEventsHandling(t *testing.T) {
-	conf, _ := config.ReadConfigs()
+	conf := config.ReadConfigs()
 	apiRemoveEvent := `{"apiId":2,"uuid":"60d2fe0f1702d40469718ba2","name":"HelloWorld","version":"1.0.0","provider":"admin","apiType":"HTTP","gatewayLabels":["Prod"],"associatedApis":[],"context":"/hello/1.0.0","eventId":"8b4bdd1c-fb5a-4c8a-be73-2e1094cd27c2","timeStamp":1625193215839,"type":"REMOVE_API_FROM_GATEWAY","tenantId":0,"tenantDomain":"WSO2"}`
 	eventByteArray := []byte(string(apiRemoveEvent))
 	go handleAPIDeployAndRemoveEvents(eventByteArray, "REMOVE_API_FROM_GATEWAY", conf)

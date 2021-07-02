@@ -26,7 +26,7 @@ import (
 
 func TestReadConfigs(t *testing.T) {
 	// Read configuration file.
-	conf, _ := ReadConfigs()
+	conf:= ReadConfigs()
 	controlPlane := conf.ControlPlane
 
 	assert.Equal(t, controlPlane.ServiceURL, "https://apim:9443/", "Service should be the different")

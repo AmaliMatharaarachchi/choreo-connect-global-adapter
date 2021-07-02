@@ -23,7 +23,7 @@ var defaultConfig = &Config{
 		Host:          "0.0.0.0",
 		Port:          "9843",
 		PartitionSize: 1000,
-		Users: []APICtlUser{
+		Users: []User{
 			{
 				Username: "admin",
 				Password: "admin",
