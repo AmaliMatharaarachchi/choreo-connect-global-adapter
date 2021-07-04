@@ -24,6 +24,7 @@ import (
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	ga_api "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/ga"
 	wso2_cache "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/cache/v3"
 )
@@ -69,39 +70,38 @@ func GetAPICache() wso2_cache.SnapshotCache {
 }
 
 // AddAPIsToCache adds the provided set of APIUUIDs and updates the XDS cache for the provided label.
-func AddAPIsToCache() {
-	arr := make([]*APIInboundEvent, 3)
-	arr[0] = &APIInboundEvent{
-		APIUUID:      "xyz1",
-		RevisionUUID: "xyz1",
-		Label:        "default",
-	}
-	arr[1] = &APIInboundEvent{
-		APIUUID:      "xyz2",
-		RevisionUUID: "xyz2",
-		Label:        "default2",
-	}
-	arr[2] = &APIInboundEvent{
-		APIUUID:      "xyz3",
-		RevisionUUID: "xyz3",
-		Label:        "default",
-	}
+// func AddAPIsToCache() {
+// 	arr := make([]*APIInboundEvent, 3)
+// 	arr[0] = &APIInboundEvent{
+// 		APIUUID:      "xyz1",
+// 		RevisionUUID: "xyz1",
+// 		Label:        "default",
+// 	}
+// 	arr[1] = &APIInboundEvent{
+// 		APIUUID:      "xyz2",
+// 		RevisionUUID: "xyz2",
+// 		Label:        "default2",
+// 	}
+// 	arr[2] = &APIInboundEvent{
+// 		APIUUID:      "xyz3",
+// 		RevisionUUID: "xyz3",
+// 		Label:        "default",
+// 	}
 
-	AddMultipleAPIs(arr)
-	time.Sleep(10 * time.Second)
-	addSingleAPI("default", "apiID1", "1234")
-	time.Sleep(10 * time.Second)
-	addSingleAPI("default", "apiID2", "1234")
-	time.Sleep(5 * time.Second)
-	addSingleAPI("default", "apiID1", "4567")
-	time.Sleep(5 * time.Second)
-	removeAPI("default", "apiID1")
-}
+// 	AddMultipleAPIs(arr)
+// 	time.Sleep(10 * time.Second)
+// 	addSingleAPI("default", "apiID1", "1234")
+// 	time.Sleep(10 * time.Second)
+// 	addSingleAPI("default", "apiID2", "1234")
+// 	time.Sleep(5 * time.Second)
+// 	addSingleAPI("default", "apiID1", "4567")
+// 	time.Sleep(5 * time.Second)
+// 	removeAPI("default", "apiID1")
+// }
 
 // addSingleAPI adds the API entry to XDS cache
 func addSingleAPI(label, apiUUID, revisionUUID string) {
-	//debug
-	fmt.Printf("Deploy API is triggered for %s:%s under revision: %s\n", label, apiUUID, revisionUUID)
+	logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s", label, apiUUID, revisionUUID)
 	var newSnapshot wso2_cache.Snapshot
 	version := rand.Intn(maxRandomInt)
 	api := &ga_api.Api{
@@ -122,19 +122,18 @@ func addSingleAPI(label, apiUUID, revisionUUID string) {
 			nil, nil, nil, nil, nil, apiResources)
 	}
 	apiCache.SetSnapshot(label, newSnapshot)
-	fmt.Printf("API Snaphsot is updated for label %s with the version %d. \n", label, version)
+	logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
 }
 
 // removeAPI removes the API entry from XDS cache
 func removeAPI(label, apiUUID string) {
-	//debug
-	fmt.Printf("Remove API is triggered for %s:%s \n", label, apiUUID)
+	logger.LoggerXds.Infof("Remove API is triggered for %s:%s", label, apiUUID)
 	var newSnapshot wso2_cache.Snapshot
 	version := rand.Intn(maxRandomInt)
 	currentSnapshot, err := apiCache.GetSnapshot(label)
 
 	if err != nil {
-		fmt.Printf("API : %s is not found within snapshot for label %s \n", apiUUID, label)
+		logger.LoggerXds.Infof("API : %s is not found within snapshot for label %s", apiUUID, label)
 		return
 	}
 	resourceMap := currentSnapshot.GetResources(typeURL)
@@ -143,7 +142,7 @@ func removeAPI(label, apiUUID string) {
 	newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
 		nil, nil, nil, nil, nil, apiResources)
 	apiCache.SetSnapshot(label, newSnapshot)
-	fmt.Printf("API Snaphsot is updated for label %s with the version %d. \n", label, version)
+	logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
 }
 
 // ProcessSingleEvent is triggered when there is a single event needs to be processed(Corresponding to JMS Events)
@@ -185,12 +184,12 @@ func AddMultipleAPIs(apiEventArray []*APIInboundEvent) {
 				nil, nil, nil, nil, nil, apiResources)
 			snapshotMap[label] = &newSnapshot
 		}
-		fmt.Printf("Deploy API is triggered for %s:%s under revision: %s\n", label, apiUUID, revisionUUID)
+		logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s in startup", label, apiUUID, revisionUUID)
 	}
 
 	for label, snapshotEntry := range snapshotMap {
 		apiCache.SetSnapshot(label, *snapshotEntry)
-		fmt.Printf("API Snaphsot is updated for label %s with the version %d.\n", label, version)
+		logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
 	}
 }
 

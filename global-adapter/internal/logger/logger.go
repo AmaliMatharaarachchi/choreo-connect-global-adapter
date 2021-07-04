@@ -32,12 +32,16 @@ When you add a new logger instance add the related package name as a constant
 
 // package name constants
 const (
-	pkgServer = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/server"
+	pkgServer       = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/server"
+	pkgXds          = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/xds"
+	pkgXdsCallbacks = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/xds/callbacks"
 )
 
 // logger package references
 var (
-	LoggerServer *logrus.Logger
+	LoggerServer       *logrus.Logger
+	LoggerXds          *logrus.Logger
+	LoggerXdsCallbacks *logrus.Logger
 )
 
 func init() {
@@ -47,5 +51,7 @@ func init() {
 // UpdateLoggers initializes the logger package references
 func UpdateLoggers() {
 	LoggerServer = logging.InitPackageLogger(pkgServer)
+	LoggerXds = logging.InitPackageLogger(pkgXds)
+	LoggerXdsCallbacks = logging.InitPackageLogger(pkgXdsCallbacks)
 	logrus.Info("Updated loggers")
 }

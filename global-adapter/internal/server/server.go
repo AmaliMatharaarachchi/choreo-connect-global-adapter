@@ -25,6 +25,8 @@ import (
 	"os/signal"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds/callbacks"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	ga_service "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/service/ga"
 	wso2_server "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/server/v3"
 	"google.golang.org/grpc"
@@ -41,7 +43,7 @@ func Run() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	enforcerAPIDsSrv := wso2_server.NewServer(ctx, xds.GetAPICache(), &xds.Callbacks{})
+	enforcerAPIDsSrv := wso2_server.NewServer(ctx, xds.GetAPICache(), &callbacks.Callbacks{})
 
 	var grpcOptions []grpc.ServerOption
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
@@ -62,17 +64,18 @@ func Run() {
 	grpcServer := grpc.NewServer(grpcOptions...)
 	ga_service.RegisterApiGADiscoveryServiceServer(grpcServer, enforcerAPIDsSrv)
 
-	go xds.AddAPIsToCache()
+	// TODO: (VirajSalaka) remove
+	// go xds.AddAPIsToCache()
+
 	port := 18002
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		fmt.Println("Error while opening port.")
+		logger.LoggerServer.Fatalf("Error while listening on port: %d", port)
 	}
-	fmt.Println("server started.")
+	logger.LoggerServer.Info("XDS server is starting.")
 	if err = grpcServer.Serve(listener); err != nil {
-		fmt.Println("Error while starting gRPC server.")
+		logger.LoggerServer.Fatal("Error while starting gRPC server.")
 	}
-	fmt.Println("server started.")
 
 OUTER:
 	for {

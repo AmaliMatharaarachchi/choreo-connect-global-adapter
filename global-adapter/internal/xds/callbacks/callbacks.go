@@ -15,13 +15,14 @@
  *
  */
 
-package xds
+// Package callbacks is used to intercept the XDS requests/responses
+package callbacks
 
 import (
 	"context"
-	"fmt"
 
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
 
 // Callbacks is used to debug the xds server related communication.
@@ -33,35 +34,36 @@ func (cb *Callbacks) Report() {}
 
 // OnStreamOpen prints debug logs
 func (cb *Callbacks) OnStreamOpen(_ context.Context, id int64, typ string) error {
-	fmt.Printf("stream %d open for %s\n", id, typ)
+	logger.LoggerXdsCallbacks.Debugf("stream %d open for %s", id, typ)
 	return nil
 }
 
 // OnStreamClosed prints debug logs
 func (cb *Callbacks) OnStreamClosed(id int64) {
-	fmt.Printf("stream %d closed\n", id)
+	logger.LoggerXdsCallbacks.Debugf("stream %d closed", id)
 }
 
 // OnStreamRequest prints debug logs
 func (cb *Callbacks) OnStreamRequest(id int64, request *discovery.DiscoveryRequest) error {
-	fmt.Printf("stream request on stream id: %d, from node: %s, version: %s, for type: %s",
+	logger.LoggerXdsCallbacks.Debugf("stream request on stream id: %d, from node: %s, version: %s, for type: %s",
 		id, request.Node.Id, request.VersionInfo, request.TypeUrl)
 	return nil
 }
 
 // OnStreamResponse prints debug logs
 func (cb *Callbacks) OnStreamResponse(id int64, request *discovery.DiscoveryRequest, response *discovery.DiscoveryResponse) {
-	fmt.Printf("stream response on stream id: %d, to node: %s, version: %s, for type: %v", id,
+	logger.LoggerXdsCallbacks.Debugf("stream response on stream id: %d, to node: %s, version: %s, for type: %v", id,
 		request.Node.Id, response.VersionInfo, response.TypeUrl)
 }
 
 // OnFetchRequest prints debug logs
 func (cb *Callbacks) OnFetchRequest(_ context.Context, req *discovery.DiscoveryRequest) error {
-	fmt.Printf("fetch request from node %s, version: %s, for type %s", req.Node.Id, req.VersionInfo, req.TypeUrl)
+	logger.LoggerXdsCallbacks.Debugf("fetch request from node %s, version: %s, for type %s", req.Node.Id, req.VersionInfo,
+		req.TypeUrl)
 	return nil
 }
 
 // OnFetchResponse prints debug logs
 func (cb *Callbacks) OnFetchResponse(req *discovery.DiscoveryRequest, res *discovery.DiscoveryResponse) {
-	fmt.Printf("fetch response to node: %s, version: %s, for type %s", req.Node.Id, req.VersionInfo, res.TypeUrl)
+	logger.LoggerXdsCallbacks.Debugf("fetch response to node: %s, version: %s, for type %s", req.Node.Id, req.VersionInfo, res.TypeUrl)
 }
