@@ -82,10 +82,11 @@ func Run(conf *config.Config) {
 	// TODO: (VirajSalaka) remove
 	// go xds.AddAPIsToCache()
 
-	port := 18002
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	port := conf.XdsServer.Port
+	// TODO: (VirajSalaka) Bind host to the listener
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
 	if err != nil {
-		logger.LoggerServer.Fatalf("Error while listening on port: %d", port)
+		logger.LoggerServer.Fatalf("Error while listening on port: %s", port)
 	}
 
 	logger.LoggerServer.Info("XDS server is starting.")
