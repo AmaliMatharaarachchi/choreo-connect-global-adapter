@@ -35,6 +35,8 @@ const (
 	pkgServer       = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/server"
 	pkgXds          = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/xds"
 	pkgXdsCallbacks = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/xds/callbacks"
+	pkgSync   = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
+	pkgMsg    = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
 )
 
 // logger package references
@@ -42,6 +44,8 @@ var (
 	LoggerServer       *logrus.Logger
 	LoggerXds          *logrus.Logger
 	LoggerXdsCallbacks *logrus.Logger
+	LoggerSync   *logrus.Logger
+	LoggerMsg    *logrus.Logger
 )
 
 func init() {
@@ -53,5 +57,7 @@ func UpdateLoggers() {
 	LoggerServer = logging.InitPackageLogger(pkgServer)
 	LoggerXds = logging.InitPackageLogger(pkgXds)
 	LoggerXdsCallbacks = logging.InitPackageLogger(pkgXdsCallbacks)
+	LoggerSync = logging.InitPackageLogger(pkgSync)
+	LoggerMsg = logging.InitPackageLogger(pkgMsg)
 	logrus.Info("Updated loggers")
 }

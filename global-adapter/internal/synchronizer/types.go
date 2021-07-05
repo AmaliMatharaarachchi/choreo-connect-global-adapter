@@ -12,31 +12,15 @@
  *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
- *
  */
 
-// Package main is the main packages
-package main
+package synchronizer
 
-import (
-	"fmt"
-	"os"
-
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/server"
-)
-
-func main() {
-	startGlobalAdapter(os.Args)
-}
-
-func initServer() error {
-	conf := config.ReadConfigs()
-	server.Run(conf)
-	return nil
-}
-
-func startGlobalAdapter(args []string) {
-	fmt.Println("Global Adapter - Implementation in Progress... ")
-	initServer()
+// APIEvent is the structure of an API event in GA.
+type APIEvent struct {
+	UUID          string
+	RevisionID    string
+	Context       string
+	Version       string
+	GatewayLabels []string
 }
