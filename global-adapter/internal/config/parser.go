@@ -48,7 +48,7 @@ const (
 // from where the executable is called from.
 //
 // Returns the configuration object mapped from the configuration file during the startup.
-func ReadConfigs() (*Config) {
+func ReadConfigs() *Config {
 	onceConfigRead.Do(func() {
 		globalAdapterConfig = defaultConfig
 		mgwHome = config.GetMgwHome()
@@ -72,6 +72,7 @@ func ReadConfigs() (*Config) {
 		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.Truststore)).Elem())
 		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.DataBase)).Elem())
 		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.ControlPlane)).Elem())
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.RedisServer)).Elem())
 	})
 	return globalAdapterConfig
 }

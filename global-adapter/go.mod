@@ -3,7 +3,12 @@ module github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter
 go 1.15
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/denisenkom/go-mssqldb v0.10.0
 	github.com/envoyproxy/go-control-plane v0.9.8
+	github.com/go-redis/redis v6.15.9+incompatible
+	github.com/gorilla/mux v1.8.0
+	google.golang.org/genproto v0.0.0-20201201144952-b05cb90ed32e
 	github.com/pelletier/go-toml v1.8.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/streadway/amqp v1.0.0

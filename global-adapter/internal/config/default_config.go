@@ -42,7 +42,7 @@ var defaultConfig = &Config{
 		Username:        "db_user",
 		Password:        "$env{ga_db_pwd}",
 		Host:            "mssql-db",
-		Port:            "1433",
+		Port:            1433,
 		ValidationQuery: "select 1",
 		PoolOptions: dbPool{
 			MaxActive:          50,
@@ -50,6 +50,9 @@ var defaultConfig = &Config{
 			TestOnBorrow:       true,
 			ValidationInterval: 30000,
 			DefaultAutoCommit:  true,
+		},
+		OptionalMetadata: databaseOptionalMetadata{
+			MaxRetryAttempts: 10,
 		},
 	},
 	ControlPlane: controlPlane{
@@ -61,6 +64,17 @@ var defaultConfig = &Config{
 		SkipSSLVerification: true,
 		JmsConnectionParameters: jmsConnectionParameters{
 			EventListeningEndpoints: []string{"amqp://admin:$env{cp_admin_pwd}@apim:5672?retries='10'&connectdelay='30'"},
+		},
+	},
+	RedisServer: redisServer{
+		Host:               "choreo-dev-redis-cache.redis.cache.windows.net",
+		Port:               6380,
+		Password:           "$env{redis_host_pwd}",
+		ClientName:         "global-adapter",
+		DatabaseIndex:      2,
+		ConnectionPoolSize: 3,
+		OptionalMetadata: redisOptionalMetadata{
+			MaxRetryAttempts: 10,
 		},
 	},
 	XdsServer: xdsServer{
