@@ -5,6 +5,9 @@ github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q
 github.com/PuerkitoBio/purell v1.1.0/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
+github.com/ShalkiWenushika/product-microgateway/adapter v0.0.0-20210623101553-2708b5ec1fc1/go.mod h1:RchGk5DpScJx9rEqVjK7wwqpaR3rYhWk+aSGM+qfnfQ=
+github.com/ShalkiWenushika/product-microgateway/adapter v0.0.0-20210701051443-83a9aa32f1f1 h1:WeUxFGssCzUsz8mWOBpFrzMSM8AXY47eaR6uQ4O2OcQ=
+github.com/ShalkiWenushika/product-microgateway/adapter v0.0.0-20210701051443-83a9aa32f1f1/go.mod h1:RchGk5DpScJx9rEqVjK7wwqpaR3rYhWk+aSGM+qfnfQ=
 github.com/VirajSalaka/product-microgateway/adapter v0.0.0-20210616092420-815e2dda0d70 h1:kBwc3PCcAM5AqswitI9BPvLA5gEKdXgMr9/Of3ZwXJY=
 github.com/VirajSalaka/product-microgateway/adapter v0.0.0-20210616092420-815e2dda0d70/go.mod h1:MaDYxkdgNAwSuekKaAVPrR37nh2Jel6wDtVN5s52a5E=
 github.com/VirajSalaka/product-microgateway/adapter v0.0.0-20210625122021-d44085906d73 h1:B6ityoWqAFHVDu0fvCJtSC5WfDo2/kcDvQbrS+Rp3p8=
@@ -214,6 +217,7 @@ github.com/spf13/afero v1.3.3/go.mod h1:5KUK8ByomD5Ti5Artl0RtHeI5pTF7MIDuXL3yY52
 github.com/spf13/afero v1.3.4/go.mod h1:Ai8FlHk4v/PARR026UzYexafAt9roJ7LcLMAmO6Z93I=
 github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
+github.com/streadway/amqp v1.0.0 h1:kuuDrUJFZL1QYL9hUNuCxNObNzB0bV/ZG5jV3RWAQgo=
 github.com/streadway/amqp v1.0.0/go.mod h1:AZpEONHx3DKn8O/DFsRAY58/XVQiIPMTMB1SddzLXVw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
@@ -226,6 +230,12 @@ github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
+github.com/wso2/product-microgateway v0.9.0 h1:qyVWWfWC8EQGylY26hHSr4hNHhOyjvL/5O0XaefeY98=
+github.com/wso2/product-microgateway v3.2.1+incompatible h1:h4dzHCOr2zC/0rvcvPMm/u+/wiB/uML7VMhZpj2wGj0=
+github.com/wso2/product-microgateway v4.0.0-m9.0.20210701141803-86d826552383+incompatible h1:6DqV6R7u1NFwWmULkAdUYdiHc3c0HqE1SBqY8CQpjtQ=
+github.com/wso2/product-microgateway/adapter v0.0.0-20210630155700-8a14e93f2abe h1:u8BudguIwdB978x7I1F3aWo5KDlGJohk05kKAJzsCts=
+github.com/wso2/product-microgateway/adapter v0.0.0-20210701023955-9f9f3be1dba9 h1:NDX/53YlY0wFyh8cIzjWWM15T5FAkbm1miMkWJnF45g=
+github.com/wso2/product-microgateway/adapter v0.0.0-20210701023955-9f9f3be1dba9/go.mod h1:CKpc4xx8sfiqREjz0af3N5/w66qLk9nmGixVLniZqZI=
 github.com/wso2/product-microgateway/adapter v0.0.0-20210701141803-86d826552383 h1:5SIuLqX3IpVrE9HvrTh4RD7ly3ncvpl5dEP/TmnyhXE=
 github.com/wso2/product-microgateway/adapter v0.0.0-20210701141803-86d826552383/go.mod h1:RchGk5DpScJx9rEqVjK7wwqpaR3rYhWk+aSGM+qfnfQ=
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=

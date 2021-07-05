@@ -15,29 +15,20 @@
  *
  */
 
-// Package main is the main packages
-package main
+// Package messaging holds the implementation for event listeners functions
+package messaging
 
 import (
-	"os"
-
-	_ "github.com/denisenkom/go-mssqldb"
-
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/server"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/startup"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 )
 
-func main() {
-	startGlobalAdapter(os.Args)
-}
-
-func initServer() error {
-	return nil
-}
-
-func startGlobalAdapter(args []string) {
-	startup.Init()
-	conf := config.ReadConfigs()
-	server.Run(conf)
+// handleThrottleData handles Key template and Blocking condition in throttle data event.
+func handleThrottleData() {
+	for delivery := range msg.ThrottleDataChannel {
+		logger.LoggerMsg.Infof("Throttle Data: %s", string(delivery.Body))
+		writeNonAPIEventToChannel(delivery)
+		delivery.Ack(false)
+	}
+	logger.LoggerMsg.Infof("handle: deliveries channel closed")
 }

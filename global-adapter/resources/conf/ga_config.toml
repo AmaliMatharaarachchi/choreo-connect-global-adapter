@@ -1,0 +1,42 @@
+# The configuration file for mgw
+
+[keystore]
+  certPath = "/home/shalki/WSO2/Choreo/security/mg.pem"
+  keyPath = "/home/shalki/WSO2/Choreo/security/mg.key"
+  
+[truststore]
+  location = "/home/shalki/WSO2/Choreo/security/truststore"
+	
+# Control plane's connection details
+[controlPlane]
+  #serviceUrl = "https://apim:9443/"
+  #username="admin"
+  password="admin"
+  environmentLabels = ["Default", "Prod"]
+  #retryInterval = 5
+  #skipSSLVerification=true
+  # Message broker connection URL of the control plane
+  [controlPlane.jmsConnectionParameters]
+    eventListeningEndpoints = ["amqp://admin:admin@apim:5672?retries='10'&connectdelay='30'"]
+
+[server]
+  host = '0.0.0.0'
+  port = '9843'
+  partitionSize = 1000
+  [[server.users]]
+    username = 'admin'
+    password = '$env{ga_admin_pwd}'
+
+[database]
+  name = 'choreo-mssql'
+  username = 'db_user'
+  password = '$env{ga_db_pwd}'
+  host = 'mssql-db'
+  port = '1433'
+  validationQuery = 'select 1'
+  [database.pooloptions]
+  maxActive = 50
+  maxWait = 60000
+  testOnBorrow = true
+  validationInterval = 30000
+  defaultAutoCommit = true
