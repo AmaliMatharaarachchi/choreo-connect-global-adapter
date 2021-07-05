@@ -31,7 +31,7 @@ type Config struct {
 	Truststore   truststore
 	DataBase     database
 	ControlPlane controlPlane
-	XdsServer xdsServer
+	XdsServer    xdsServer
 }
 
 // ControlPlane struct contains configurations related to the API Manager

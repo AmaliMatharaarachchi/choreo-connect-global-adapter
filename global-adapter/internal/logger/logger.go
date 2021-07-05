@@ -44,8 +44,8 @@ var (
 	LoggerServer       *logrus.Logger
 	LoggerXds          *logrus.Logger
 	LoggerXdsCallbacks *logrus.Logger
-	LoggerSync   *logrus.Logger
-	LoggerMsg    *logrus.Logger
+	LoggerSync         *logrus.Logger
+	LoggerMsg          *logrus.Logger
 )
 
 func init() {
