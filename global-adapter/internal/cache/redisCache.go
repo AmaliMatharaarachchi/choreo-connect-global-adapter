@@ -88,12 +88,13 @@ func GetClient() *redis.Client {
 	return redisClient
 }
 
-// SetCacheKey - update the cache
-func SetCacheKey(key, value *string, client *redis.Client, expiryTime time.Duration) {
-	client.Set(*key, *value, expiryTime)
-}
-
 // RemoveCacheKey - delete specified keys from cache
 func RemoveCacheKey(key *string, client *redis.Client, expiryTime time.Duration) {
 	client.Del(*key)
+}
+
+// SetCacheKeys - Insert new cache key-values, updaye existing values.
+func SetCacheKeys(cacheList []string, client *redis.Client) {
+	client.MSet(cacheList)
+	logger.LoggerServer.Debugf("Cache updated , total key-values : %d", len(cacheList)/2)
 }

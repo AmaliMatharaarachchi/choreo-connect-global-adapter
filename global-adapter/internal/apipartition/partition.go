@@ -58,25 +58,31 @@ var apisChan = make(chan []types.LaAPIState)
 // PopulateAPIData - populating API infomation to Database and redis cache
 func PopulateAPIData(apis []types.API) {
 	var laAPIList []types.LaAPIState
+	var cacheObj []string
+
+	database.WakeUpConnection()
 
 	for ind := range apis {
 		for index := range apis[ind].GwLabel {
 			label := InsertRecord(&apis[ind], apis[ind].GwLabel[index], types.APICreate)
+			cacheKey := getCacheKey(&apis[ind], &apis[ind].GwLabel[index])
+
 			logger.LoggerServer.Debug("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GwLabel[index], " is ", label)
 
 			apiState := types.LaAPIState{LabelHierarchy: apis[ind].GwLabel[index], Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
 			laAPIList = append(laAPIList, apiState)
-			updateRedisCache(&apis[ind], &apis[ind].GwLabel[index], &label, types.APICreate)
+
+			// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
+			cacheObj = append(cacheObj, *cacheKey)
+			cacheObj = append(cacheObj, label)
 		}
 	}
 
-	if len(apis) > 1 {
-		// Todo : batch catch update
-	} else {
-		// TODO : single update
-	}
+	rc := cache.GetClient()
+	go cache.SetCacheKeys(cacheObj, rc)
 
 	listToChan(apisChan, laAPIList)
+	defer database.CloseDbConnection()
 
 }
 
@@ -95,7 +101,7 @@ func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) stri
 	isExists, apiID := isAPIExists(api.UUID, gwLabel)
 	if isExists {
 		logger.LoggerServer.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
-		adapterLabel = getLaLabel(gwLabel, *apiID)
+		adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
 	} else {
 		for {
 			availableID := getAvailableID(&gwLabel)
@@ -108,7 +114,7 @@ func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) stri
 					logger.LoggerServer.Error("Error while writing partition information ", err)
 				}
 			} else {
-				adapterLabel = getLaLabel(gwLabel, availableID)
+				adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
 				logger.LoggerServer.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
 				break
 			}
@@ -167,18 +173,25 @@ func getEmptiedID(hierarchyID *string) int {
 	stmt, _ := database.DB.Query(database.QueryGetEmptiedID, hierarchyID)
 	stmt.Next()
 	stmt.Scan(&emptiedID)
-	logger.LoggerServer.Debug("First emptied ID for hierarchy : ", *hierarchyID, " is : ", emptiedID)
+	logger.LoggerServer.Debug("The next available id from deleted APIs | hierarchy : ", *hierarchyID, " is : ", emptiedID)
 	return emptiedID
 }
 
 // Return next ID
 func getNextIncrementalID(hierarchyID *string) int {
 	var highestID int
-	stmt, _ := database.DB.Query(database.QueryGetNextIncID, hierarchyID)
-	stmt.Next()
-	stmt.Scan(&highestID)
-	nextIncrementalID := highestID + 1
-	logger.LoggerServer.Debug("Next incremental ID for hierarchy : ", *hierarchyID, " is : ", nextIncrementalID)
+	var nextIncrementalID int
+	stmt, error := database.DB.Query(database.QueryGetNextIncID, hierarchyID)
+	if error == nil {
+		stmt.Next()
+		stmt.Scan(&highestID)
+		nextIncrementalID = highestID + 1
+		logger.LoggerServer.Debug("Next incremental ID for hierarchy : ", *hierarchyID, " is : ", nextIncrementalID)
+	} else {
+		nextIncrementalID = 0 // TODO : need to handle the error
+		logger.LoggerServer.Error("Error while getting next incremental ID | hierarcy : ", hierarchyID)
+	}
+
 	return nextIncrementalID
 }
 
@@ -197,7 +210,7 @@ func updateFromEvent(api *types.API, eventType types.EvetType) {
 // When receive an Undeploy event, the API record will delete from the database
 // If gwLabels are empty , don`t delete the reord (since it is an "API Update event")
 func DeleteAPIRecord(api *types.API) bool {
-
+	database.WakeUpConnection()
 	if len(api.GwLabel) > 0 {
 		logger.LoggerServer.Debug("API undeploy event received : ", api.UUID)
 
@@ -220,6 +233,8 @@ func DeleteAPIRecord(api *types.API) bool {
 		logger.LoggerServer.Debug("API update event received : ", api.UUID)
 	}
 
+	defer database.CloseDbConnection()
+
 	return false
 }
 
@@ -228,18 +243,14 @@ func updateRedisCache(api *types.API, labelHierarchy *string, adapterLabel *stri
 
 	rc := cache.GetClient()
 	key := getCacheKey(api, labelHierarchy)
-	value := adapterLabel
 	logger.LoggerServer.Debug("Redis cache updating ")
 
 	switch eventType {
-	case types.APICreate:
-		go cache.SetCacheKey(key, value, rc, 0)
 	case types.APIDelete:
 		go cache.RemoveCacheKey(key, rc, 0)
 	}
 }
 
-// TODO : logs and retries
 func getCacheKey(api *types.API, labelHierarchy *string) *string {
 	/*
 		apiId : Incremental ID
@@ -310,7 +321,7 @@ func fetchAPIInfo(apiUUID, gwLabel *string) *types.API {
 }
 
 // Return a label generated against to the gateway label and incremental API ID
-func getLaLabel(labelHierarchy string, apiID int) string {
+func getLaLabel(labelHierarchy string, apiID int, partitionSize int) string {
 	var partitionID int = 0
 	rem := apiID % partitionSize
 	div := apiID / partitionSize

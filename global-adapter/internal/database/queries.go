@@ -18,7 +18,7 @@ package database
 
 // Declarations all database query
 const (
-	queryTableExists  string = "SELECT name FROM sys.tables WHERE name=@p1"
+	QueryTableExists  string = "SELECT name FROM sys.tables WHERE name=@p1"
 	QueryInsertAPI    string = "INSERT INTO ga_local_adapter_partition(api_uuid, label_hierarchy, api_id) VALUES(@p1, @p2, @p3)"
 	QueryIsAPIExists  string = "SELECT api_id FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
 	QueryDeleteAPI    string = "DELETE FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"

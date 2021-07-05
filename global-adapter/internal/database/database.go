@@ -82,7 +82,7 @@ func WakeUpConnection() bool {
 
 // IsTableExists return true if find the searched table
 func IsTableExists(tableName string) bool {
-	res, _ := DB.Query(queryTableExists, tableName)
+	res, _ := DB.Query(QueryTableExists, tableName)
 	if !res.Next() {
 		logger.LoggerServer.Debug("Table not exists : ", tableName)
 	} else {
@@ -91,4 +91,9 @@ func IsTableExists(tableName string) bool {
 	}
 
 	return false
+}
+
+// CloseDbConnection - closgin the database connection
+func CloseDbConnection() {
+	DB.Close()
 }

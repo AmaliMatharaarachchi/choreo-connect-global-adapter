@@ -24,9 +24,9 @@ import (
 )
 
 // TODO : this should fetch from config file
-var newPartitionSize = 10
+var partitionSize = 10
 
-var apiList []types.API = []types.API{}
+var apiList []types.API
 
 const (
 	partitionSizeTable string = "ga_local_adapter_partition"
@@ -50,14 +50,14 @@ func Init() {
 }
 
 func triggerDeploymentAgent() {
-	var oldPartitionSize int
+	var previousPartitionSize int
 	result, error := database.DB.Query(database.QueryGetPartitionSize)
 	if error != nil {
 		logger.LoggerServer.Error("[DB Error] Error when fetching partition size")
 	} else {
 		if result.Next() {
-			result.Scan(&oldPartitionSize)
-			if newPartitionSize != oldPartitionSize {
+			result.Scan(&previousPartitionSize)
+			if partitionSize != previousPartitionSize {
 				logger.LoggerServer.Debug("Trigger a LA respawn event")
 			} else {
 				logger.LoggerServer.Debug("No config changes related to the partition size ")
