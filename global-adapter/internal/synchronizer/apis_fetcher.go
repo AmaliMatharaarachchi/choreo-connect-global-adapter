@@ -24,9 +24,11 @@ package synchronizer
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
@@ -50,7 +52,6 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 		// Read the API details from the channel.
 		data := <-c
 		if data.Resp != nil {
-			// Implement the health check.
 			// For successfull fetches, data.Resp would return a byte slice with API project(s)
 			logger.LoggerSync.Debugf("API project received...")
 			var deployments sync.DeploymentDescriptor
@@ -59,6 +60,7 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 				logger.LoggerSync.Errorf("Error occured while unmarshalling deplyment data. Error: %v", err.Error())
 				return &deployments, err
 			}
+			health.SetControlPlaneRestAPIStatus(err == nil)
 			return &deployments, nil
 		} else if data.ErrorCode == 404 {
 			// This condition is checked to prevent GA from crashing when Control Plane doesn't have APIs intially
@@ -72,10 +74,13 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 			}
 		} else if data.ErrorCode >= 400 && data.ErrorCode < 500 {
 			logger.LoggerSync.Fatalf("Error occurred when retrieving APIs from control plane: %v", data.Err)
+			isNoAPIArtifacts := data.ErrorCode == 404 && strings.Contains(data.Err.Error(), "No Api artifacts found")
+			health.SetControlPlaneRestAPIStatus(isNoAPIArtifacts)
 		} else {
 			// Keep the iteration still until data is received from the control plane.
 			i--
 			logger.LoggerSync.Errorf("Error occurred while fetching data from control plane: %v", data.Err)
+			health.SetControlPlaneRestAPIStatus(false)
 			sync.RetryFetchingAPIs(c, serviceURL, userName, password, skipSSL, truststoreLocation, retryInterval,
 				data, RuntimeMetaDataEndpoint, false)
 		}

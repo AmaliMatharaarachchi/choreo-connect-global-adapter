@@ -248,8 +248,6 @@ github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhV
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
 github.com/wso2/product-microgateway/adapter v0.0.0-20210702105949-0aaea9eed877 h1:HxiQHm6y/GPz2aGnRp62kumjcy9440HBl7YBk5vMjUI=
 github.com/wso2/product-microgateway/adapter v0.0.0-20210702105949-0aaea9eed877/go.mod h1:MaDYxkdgNAwSuekKaAVPrR37nh2Jel6wDtVN5s52a5E=
-github.com/wso2/product-microgateway/adapter v0.0.0-20210713051609-eb629bd9e62e h1:t9qngrGVn2NjCI2gOBUebhMy68odkF2GpF2gl7lpOe0=
-github.com/wso2/product-microgateway/adapter v0.0.0-20210713051609-eb629bd9e62e/go.mod h1:MaDYxkdgNAwSuekKaAVPrR37nh2Jel6wDtVN5s52a5E=
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=
 github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc/go.mod h1:Jhud4/sHMO4oL310DaZAKk9ZaJ08SJfe+sJh0HrGL1Y=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
