@@ -37,7 +37,7 @@ func initServer() error {
 }
 
 func startGlobalAdapter(args []string) {
-	startup.Init()
 	conf := config.ReadConfigs()
+	startup.Init()
 	server.Run(conf)
 }

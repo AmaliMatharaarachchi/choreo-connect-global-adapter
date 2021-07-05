@@ -20,16 +20,9 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
-
-// TODO : Following properties should fetch from config file
-var dbName string = "globalAdapter"
-var dbUserName string = "sa"
-var dbPassword string = ""
-var dbPort int = 1433
-var dbHost string = "127.0.0.1"
-var maxRetryAttempts int = 10
 
 const (
 	sqlDriver string = "sqlserver"
@@ -40,19 +33,30 @@ var DB *sql.DB
 
 // ConnectToDb - connecting with the database server
 func ConnectToDb() {
+	var retryAttempts = 0
+	conf := config.ReadConfigs()
 	var err error
-	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s", dbHost, dbUserName, dbPassword, dbPort, dbName)
+	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s", conf.DataBase.Host, conf.DataBase.Username, conf.DataBase.Password, conf.DataBase.Port, conf.DataBase.Name)
 	DB, err = sql.Open(sqlDriver, connString)
-	if err != nil {
-		logger.LoggerServer.Fatal("DB connection error - ", err)
-		//TODO:  check the error and retry to connect
-	} else {
-		logger.LoggerServer.Debug("Established the DB connection ...")
+	for {
+		if retryAttempts >= conf.DataBase.OptionalMetadata.MaxRetryAttempts {
+			logger.LoggerServer.Fatalf("DB connection error - %v", err)
+			break
+		} else {
+			if err != nil {
+				logger.LoggerServer.Errorf("DB connection error - %v", err)
+			} else {
+				logger.LoggerServer.Debug("Established the DB connection ...")
+				break
+			}
+		}
+		retryAttempts++
 	}
 }
 
 // WakeUpConnection - checking whether the databace connection is still alive , if not alive then reconnect to the DB
 func WakeUpConnection() bool {
+	conf := config.ReadConfigs()
 	pingError := DB.Ping()
 	retryAttempts := 0
 	var isPing bool = false
@@ -61,7 +65,7 @@ func WakeUpConnection() bool {
 		if pingError != nil {
 			logger.LoggerServer.Debug("Error while initiating the database ", pingError, ". Retry attempt(s) :", retryAttempts)
 
-			if retryAttempts >= maxRetryAttempts {
+			if retryAttempts >= conf.DataBase.OptionalMetadata.MaxRetryAttempts {
 				break
 			} else {
 				ConnectToDb()

@@ -25,15 +25,18 @@ import (
 	"strings"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/cache"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
 )
 
-// TODO : Following properties should fetch from config file
-var partitionSize int = 2
+// TODO : Following 2 lines no need in near future.Since no need to fetch API info from the CP
 var ehURL string = "https://localhost:9443/internal/data/v1/apis/"
 var basicAuth string = "Basic YWRtaW46YWRtaW4="
+
+var configs = config.ReadConfigs()
+var partitionSize = configs.Server.PartitionSize
 
 // CacheAction is use as enum type for Redis cache update event type
 type CacheAction int
@@ -69,24 +72,24 @@ func PopulateAPIData(apis []types.API) {
 
 			logger.LoggerServer.Debug("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GwLabel[index], " is ", label)
 
-			apiState := types.LaAPIState{LabelHierarchy: apis[ind].GwLabel[index], Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
+			apiState := types.LaAPIState{LabelHierarchy: apis[ind].GwLabel[index], Label: *label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
 			laAPIList = append(laAPIList, apiState)
 
 			// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
 			cacheObj = append(cacheObj, *cacheKey)
-			cacheObj = append(cacheObj, label)
+			cacheObj = append(cacheObj, *label)
 		}
 	}
 
 	rc := cache.GetClient()
 	go cache.SetCacheKeys(cacheObj, rc)
 
-	listToChan(apisChan, laAPIList)
+	pushToChan(apisChan, laAPIList)
 	defer database.CloseDbConnection()
 
 }
 
-func listToChan(c chan []types.LaAPIState, laAPIList []types.LaAPIState) {
+func pushToChan(c chan []types.LaAPIState, laAPIList []types.LaAPIState) {
 	logger.LoggerServer.Debug("API List : ", len(laAPIList))
 	apisChan <- laAPIList
 }
@@ -95,13 +98,13 @@ func listToChan(c chan []types.LaAPIState, laAPIList []types.LaAPIState) {
 InsertRecord always return the adapter label for the relevant API
 If the API is not in database, that will save to the database and return the label
 */
-func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) string {
-	var adapterLabel string
+func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) *string {
+	var adapterLabel *string
 	stmt, _ := database.DB.Prepare(database.QueryInsertAPI)
 	isExists, apiID := isAPIExists(api.UUID, gwLabel)
 	if isExists {
 		logger.LoggerServer.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
-		adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
+		*adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
 	} else {
 		for {
 			availableID := getAvailableID(&gwLabel)
@@ -113,8 +116,9 @@ func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) stri
 				} else {
 					logger.LoggerServer.Error("Error while writing partition information ", err)
 				}
+				adapterLabel = nil
 			} else {
-				adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
+				*adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
 				logger.LoggerServer.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
 				break
 			}

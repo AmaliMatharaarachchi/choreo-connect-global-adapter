@@ -32,7 +32,7 @@
   username = 'db_user'
   password = '$env{ga_db_pwd}'
   host = 'mssql-db'
-  port = '1433'
+  port = 1433
   validationQuery = 'select 1'
   [database.pooloptions]
   maxActive = 50
@@ -40,3 +40,12 @@
   testOnBorrow = true
   validationInterval = 30000
   defaultAutoCommit = true
+
+[redisServer]
+  host = 'choreo-dev-redis-cache.redis.cache.windows.net'
+  port = 6380
+  password = '$env{redis_host_pwd}'
+  clientName = 'global-adapter'
+  databaseIndex = 2
+  connectionPoolSize = 3
+  maxRetryCount = 10

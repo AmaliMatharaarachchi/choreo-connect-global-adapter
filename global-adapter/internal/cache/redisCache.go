@@ -23,34 +23,28 @@ import (
 	"strings"
 	"time"
 
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 
 	"github.com/go-redis/redis"
 )
 
-// TODO : Following properties should fetch from config file
-var redisHost string = "choreo-dev-redis-cache.redis.cache.windows.net"
-var redisPort int = 6380
-var redisPassword string = ""
-var redisClientName = "global-adapter"
-var databaseIndex = 2
-var redisConnectionPoolSize = 3
-var maxRetryCount int = 20
-
 var redisClient *redis.Client
 
 // ConnectToRedisServer - for connect redis client with the redis server
 func ConnectToRedisServer() *redis.Client {
-	clientOptions := getRedisClientOptions()
+	conf := config.ReadConfigs()
+	clientOptions := getRedisClientOptions(conf)
 	rdb := redis.NewClient(clientOptions)
 
 	pong, err := rdb.Ping().Result()
+	// TODO : check the connection error and retry
 	if err != nil {
 		if strings.Contains(err.Error(), "timeout") {
 			logger.LoggerServer.Info(err, " .Retring to connect with Redis server")
 			redisClient = nil
 		} else {
-			logger.LoggerServer.Error("Failed to connect with redis server using Host : ", redisHost, " and Port : ", redisPort, " Error : ", err)
+			logger.LoggerServer.Error("Failed to connect with redis server using Host : ", conf.RedisServer.Host, " and Port : ", conf.RedisServer.Port, " Error : ", err)
 			redisClient = nil
 		}
 		redisClient = nil
@@ -62,20 +56,20 @@ func ConnectToRedisServer() *redis.Client {
 	return rdb
 }
 
-func getRedisClientOptions() *redis.Options {
+func getRedisClientOptions(conf *config.Config) *redis.Options {
 	return &redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", redisHost, strconv.Itoa(redisPort)),
-		Password: redisPassword,
-		DB:       databaseIndex,
+		Addr:     fmt.Sprintf("%s:%s", conf.RedisServer.Host, strconv.Itoa(conf.RedisServer.Port)),
+		Password: conf.RedisServer.Password,
+		DB:       conf.RedisServer.DatabaseIndex,
 		TLSConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
 		},
 		OnConnect: func(c *redis.Conn) error {
-			name := redisClientName
+			name := conf.RedisServer.ClientName
 			return c.ClientSetName(name).Err()
 		},
-		PoolSize:   redisConnectionPoolSize,
-		MaxRetries: maxRetryCount,
+		PoolSize:   conf.RedisServer.ConnectionPoolSize,
+		MaxRetries: conf.RedisServer.OptionalMetadata.MaxRetryAttempts,
 	}
 }
 
@@ -95,6 +89,7 @@ func RemoveCacheKey(key *string, client *redis.Client, expiryTime time.Duration)
 
 // SetCacheKeys - Insert new cache key-values, updaye existing values.
 func SetCacheKeys(cacheList []string, client *redis.Client) {
+	// TODO : check the server response and retry
 	client.MSet(cacheList)
 	logger.LoggerServer.Debugf("Cache updated , total key-values : %d", len(cacheList)/2)
 }

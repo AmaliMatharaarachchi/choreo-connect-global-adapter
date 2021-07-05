@@ -31,6 +31,7 @@ type Config struct {
 	Truststore   truststore
 	DataBase     database
 	ControlPlane controlPlane
+	RedisServer  redisServer
 }
 
 // ControlPlane struct contains configurations related to the API Manager
@@ -80,13 +81,14 @@ type User struct {
 }
 
 type database struct {
-	Name            string
-	Username        string
-	Password        string
-	Host            string
-	Port            string
-	ValidationQuery string
-	PoolOptions     dbPool
+	Name             string
+	Username         string
+	Password         string
+	Host             string
+	Port             int
+	ValidationQuery  string
+	PoolOptions      dbPool
+	OptionalMetadata databaseOptionalMetadata
 }
 
 type dbPool struct {
@@ -95,4 +97,22 @@ type dbPool struct {
 	TestOnBorrow       bool
 	ValidationInterval int
 	DefaultAutoCommit  bool
+}
+
+type redisServer struct {
+	Host               string
+	Port               int
+	Password           string
+	ClientName         string
+	DatabaseIndex      int
+	ConnectionPoolSize int
+	OptionalMetadata   redisOptionalMetadata
+}
+
+type databaseOptionalMetadata struct {
+	MaxRetryAttempts int
+}
+
+type redisOptionalMetadata struct {
+	MaxRetryAttempts int
 }
