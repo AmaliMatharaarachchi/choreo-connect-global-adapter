@@ -19,6 +19,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	_ "github.com/denisenkom/go-mssqldb"
@@ -33,11 +34,13 @@ func main() {
 }
 
 func initServer() error {
+	conf := config.ReadConfigs()
+	server.Run(conf)
 	return nil
 }
 
 func startGlobalAdapter(args []string) {
-	conf := config.ReadConfigs()
 	startup.Init()
-	server.Run(conf)
+	fmt.Println("Global Adapter - Implementation in Progress... ")
+	initServer()
 }

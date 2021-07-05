@@ -14,6 +14,11 @@
  *  limitations under the License.
  */
 
+/*
+	Package apipartition contains logic related to the API labelling , persisting to the DB and
+	updating the Redis cache with relavant information.
+*/
+
 package apipartition
 
 import (
@@ -70,7 +75,7 @@ func PopulateAPIData(apis []types.API) {
 			label := InsertRecord(&apis[ind], apis[ind].GwLabel[index], types.APICreate)
 			cacheKey := getCacheKey(&apis[ind], &apis[ind].GwLabel[index])
 
-			logger.LoggerServer.Debug("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GwLabel[index], " is ", label)
+			logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GwLabel[index], " is ", label)
 
 			apiState := types.LaAPIState{LabelHierarchy: apis[ind].GwLabel[index], Label: *label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
 			laAPIList = append(laAPIList, apiState)
@@ -82,7 +87,7 @@ func PopulateAPIData(apis []types.API) {
 	}
 
 	rc := cache.GetClient()
-	go cache.SetCacheKeys(cacheObj, rc)
+	cache.SetCacheKeys(cacheObj, rc)
 
 	pushToChan(apisChan, laAPIList)
 	defer database.CloseDbConnection()
@@ -94,10 +99,8 @@ func pushToChan(c chan []types.LaAPIState, laAPIList []types.LaAPIState) {
 	apisChan <- laAPIList
 }
 
-/*
-InsertRecord always return the adapter label for the relevant API
-If the API is not in database, that will save to the database and return the label
-*/
+// InsertRecord always return the adapter label for the relevant API
+// If the API is not in database, that will save to the database and return the label
 func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) *string {
 	var adapterLabel *string
 	stmt, _ := database.DB.Prepare(database.QueryInsertAPI)
@@ -108,33 +111,33 @@ func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) *str
 	} else {
 		for {
 			availableID := getAvailableID(&gwLabel)
-			_, err := stmt.Exec(api.UUID, &gwLabel, availableID)
-			if err != nil {
-				if strings.Contains(err.Error(), "duplicate key") {
-					logger.LoggerServer.Debug(" ID already exists ", err)
-					continue
-				} else {
-					logger.LoggerServer.Error("Error while writing partition information ", err)
-				}
-				adapterLabel = nil
-			} else {
-				*adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
-				logger.LoggerServer.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
+			if availableID == -1 { // Return -1 due to an error
+				logger.LoggerServer.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
 				break
+			} else {
+				_, err := stmt.Exec(api.UUID, &gwLabel, availableID)
+				if err != nil {
+					if strings.Contains(err.Error(), "duplicate key") {
+						logger.LoggerServer.Debug(" ID already exists ", err)
+						continue
+					} else {
+						logger.LoggerServer.Error("Error while writing partition information ", err)
+					}
+					adapterLabel = nil
+				} else {
+					*adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
+					logger.LoggerServer.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
+					break
+				}
 			}
 		}
 	}
-
 	stmt.Close()
 
 	return adapterLabel
 }
 
-/*
-	Return
-	boolean for API existance
-	int for incremental ID if the API already exists
-*/
+// Return a boolean for API existance , int for incremental ID if the API already exists
 func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
 
 	var apiID int
@@ -154,11 +157,9 @@ func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
 	return false, nil
 }
 
-/*
- Function returns the next available inremental ID. For collect the next available ID , there are 2 helper functions.
- 1. getEmptiedId() -  Return if there any emptied ID. Return smallest first ID.If no emptied IDs available , then returns 0.
- 2. getNextIncrementalId() - If getEmptiedId return 0 , then this function returns next incremental ID.
-*/
+// Function returns the next available inremental ID. For collect the next available ID , there are 2 helper functions.
+// 1. getEmptiedId() -  Return if there any emptied ID. Return smallest first ID.If no emptied IDs available , then returns 0.
+// 2. getNextIncrementalId() - If getEmptiedId return 0 , then this function returns next incremental ID.
 func getAvailableID(hierarchyID *string) int {
 
 	var nextAvailableID int = getEmptiedID(hierarchyID)
@@ -174,14 +175,19 @@ func getAvailableID(hierarchyID *string) int {
 // Observing emptied incremental ID
 func getEmptiedID(hierarchyID *string) int {
 	var emptiedID int
-	stmt, _ := database.DB.Query(database.QueryGetEmptiedID, hierarchyID)
-	stmt.Next()
-	stmt.Scan(&emptiedID)
-	logger.LoggerServer.Debug("The next available id from deleted APIs | hierarchy : ", *hierarchyID, " is : ", emptiedID)
+	stmt, error := database.DB.Query(database.QueryGetEmptiedID, hierarchyID)
+	if error != nil {
+		stmt.Next()
+		stmt.Scan(&emptiedID)
+		logger.LoggerServer.Debug("The next available id from deleted APIs | hierarchy : ", *hierarchyID, " is : ", emptiedID)
+	} else {
+		logger.LoggerServer.Error("Error while getting next available id from deleted APIs | hierarchy : ", *hierarchyID)
+	}
+
 	return emptiedID
 }
 
-// Return next ID
+// Return next ID . If error occur from the query level , then return -1.
 func getNextIncrementalID(hierarchyID *string) int {
 	var highestID int
 	var nextIncrementalID int
@@ -192,7 +198,7 @@ func getNextIncrementalID(hierarchyID *string) int {
 		nextIncrementalID = highestID + 1
 		logger.LoggerServer.Debug("Next incremental ID for hierarchy : ", *hierarchyID, " is : ", nextIncrementalID)
 	} else {
-		nextIncrementalID = 0 // TODO : need to handle the error
+		nextIncrementalID = -1
 		logger.LoggerServer.Error("Error while getting next incremental ID | hierarcy : ", hierarchyID)
 	}
 
@@ -242,7 +248,7 @@ func DeleteAPIRecord(api *types.API) bool {
 	return false
 }
 
-// TODO - Cache batch update
+// Cache update for undeploy APIs
 func updateRedisCache(api *types.API, labelHierarchy *string, adapterLabel *string, eventType types.EvetType) {
 
 	rc := cache.GetClient()
@@ -256,12 +262,10 @@ func updateRedisCache(api *types.API, labelHierarchy *string, adapterLabel *stri
 }
 
 func getCacheKey(api *types.API, labelHierarchy *string) *string {
-	/*
-		apiId : Incremental ID
-		Cache Key pattern : <organization id>_<base path>_<api version>
-		Cache Value : Pertion Label ID ie: devP-1, prodP-3
-		labelHierarchy : gateway label (dev,prod and etc)
-	*/
+	// apiId : Incremental ID
+	// Cache Key pattern : <organization id>_<base path>_<api version>
+	// Cache Value : Pertion Label ID ie: devP-1, prodP-3
+	// labelHierarchy : gateway label (dev,prod and etc)
 
 	var version string
 	var basePath string
@@ -286,10 +290,7 @@ func getCacheKey(api *types.API, labelHierarchy *string) *string {
 	return &cacheKey
 }
 
-/*	TODO :
-	No need to fetch API info from /apis endpoint, since API version and context will
-	fetch from the inital request in future
-*/
+//	TODO : No need to fetch API info from /apis endpoint, since API version and context will fetch from the inital request in future
 func fetchAPIInfo(apiUUID, gwLabel *string) *types.API {
 
 	var apiInfo *types.API

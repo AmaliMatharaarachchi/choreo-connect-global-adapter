@@ -32,6 +32,7 @@ type Config struct {
 	DataBase     database
 	ControlPlane controlPlane
 	RedisServer  redisServer
+	XdsServer    xdsServer
 }
 
 // ControlPlane struct contains configurations related to the API Manager
@@ -115,4 +116,8 @@ type databaseOptionalMetadata struct {
 
 type redisOptionalMetadata struct {
 	MaxRetryAttempts int
+}
+type xdsServer struct {
+	Host string
+	Port string
 }

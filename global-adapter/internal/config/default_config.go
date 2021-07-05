@@ -77,4 +77,8 @@ var defaultConfig = &Config{
 			MaxRetryAttempts: 10,
 		},
 	},
+	XdsServer: xdsServer{
+		Host: "0.0.0.0",
+		Port: "18000",
+	},
 }
