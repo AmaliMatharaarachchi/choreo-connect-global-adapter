@@ -69,6 +69,7 @@ func GetAPICache() wso2_cache.SnapshotCache {
 	return apiCache
 }
 
+// TODO: (VirajSalaka) remove 
 // AddAPIsToCache adds the provided set of APIUUIDs and updates the XDS cache for the provided label.
 // func AddAPIsToCache() {
 // 	arr := make([]*APIInboundEvent, 3)
