@@ -107,7 +107,6 @@ func TestAddMultipleAPIs(t *testing.T) {
 func testResourceContent(t *testing.T, apiUUID, revisionUUID string, resourceMap map[string]types.Resource) {
 	res, resFound := resourceMap[apiUUID]
 	assert.True(t, resFound)
-	// api := &ga_model.Api(res)
 	switch api := res.(type) {
 	case *ga_model.Api:
 		assert.Equal(t, apiUUID, api.ApiUUID, "API UUID mismatch")

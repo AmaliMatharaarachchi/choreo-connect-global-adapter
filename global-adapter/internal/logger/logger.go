@@ -35,8 +35,8 @@ const (
 	pkgServer       = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/server"
 	pkgXds          = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/xds"
 	pkgXdsCallbacks = "github.com/wso2-enterprise/choreo-connnect-global-adapter/global-adapter/internal/xds/callbacks"
-	pkgSync   = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
-	pkgMsg    = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
+	pkgSync         = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
+	pkgMsg          = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
 )
 
 // logger package references
