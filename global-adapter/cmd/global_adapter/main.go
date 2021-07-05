@@ -19,6 +19,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
@@ -30,10 +31,12 @@ func main() {
 }
 
 func initServer() error {
+	conf := config.ReadConfigs()
+	server.Run(conf)
 	return nil
 }
 
 func startGlobalAdapter(args []string) {
-	conf := config.ReadConfigs()
-	server.Run(conf)
+	fmt.Println("Global Adapter - Implementation in Progress... ")
+	initServer()
 }

@@ -63,4 +63,8 @@ var defaultConfig = &Config{
 			EventListeningEndpoints: []string{"amqp://admin:$env{cp_admin_pwd}@apim:5672?retries='10'&connectdelay='30'"},
 		},
 	},
+	XdsServer: xdsServer{
+		Host: "0.0.0.0",
+		Port: "18000",
+	},
 }

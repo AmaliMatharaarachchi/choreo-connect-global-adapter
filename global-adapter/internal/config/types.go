@@ -31,6 +31,7 @@ type Config struct {
 	Truststore   truststore
 	DataBase     database
 	ControlPlane controlPlane
+	XdsServer    xdsServer
 }
 
 // ControlPlane struct contains configurations related to the API Manager
@@ -95,4 +96,9 @@ type dbPool struct {
 	TestOnBorrow       bool
 	ValidationInterval int
 	DefaultAutoCommit  bool
+}
+
+type xdsServer struct {
+	Host string
+	Port string
 }
