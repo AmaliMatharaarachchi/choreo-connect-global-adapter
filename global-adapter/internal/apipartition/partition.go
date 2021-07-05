@@ -33,6 +33,7 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
 )
 
@@ -64,25 +65,34 @@ const (
 var apisChan = make(chan []types.LaAPIState)
 
 // PopulateAPIData - populating API infomation to Database and redis cache
-func PopulateAPIData(apis []types.API) {
+func PopulateAPIData(apis []synchronizer.APIEvent) {
 	var laAPIList []types.LaAPIState
 	var cacheObj []string
 
 	database.WakeUpConnection()
+	defer database.CloseDbConnection()
 
 	for ind := range apis {
-		for index := range apis[ind].GwLabel {
-			label := InsertRecord(&apis[ind], apis[ind].GwLabel[index], types.APICreate)
-			cacheKey := getCacheKey(&apis[ind], &apis[ind].GwLabel[index])
+		for index := range apis[ind].GatewayLabels {
+			label := insertRecord(&apis[ind], apis[ind].GatewayLabels[index], types.APICreate)
 
-			logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GwLabel[index], " is ", label)
+			if label != "" {
+				cacheKey := getCacheKey(&apis[ind], apis[ind].GatewayLabels[index])
 
-			apiState := types.LaAPIState{LabelHierarchy: apis[ind].GwLabel[index], Label: *label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
-			laAPIList = append(laAPIList, apiState)
+				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GatewayLabels[index], " is ", label)
 
-			// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
-			cacheObj = append(cacheObj, *cacheKey)
-			cacheObj = append(cacheObj, *label)
+				apiState := types.LaAPIState{LabelHierarchy: apis[ind].GatewayLabels[index], Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
+				laAPIList = append(laAPIList, apiState)
+
+				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
+				if cacheKey != "" {
+					cacheObj = append(cacheObj, cacheKey)
+					cacheObj = append(cacheObj, label)
+				}
+
+			} else {
+				logger.LoggerServer.Errorf("Error while fetching the API label UUID : %v ", apis[ind].UUID)
+			}
 		}
 	}
 
@@ -90,7 +100,6 @@ func PopulateAPIData(apis []types.API) {
 	cache.SetCacheKeys(cacheObj, rc)
 
 	pushToChan(apisChan, laAPIList)
-	defer database.CloseDbConnection()
 
 }
 
@@ -99,40 +108,44 @@ func pushToChan(c chan []types.LaAPIState, laAPIList []types.LaAPIState) {
 	apisChan <- laAPIList
 }
 
-// InsertRecord always return the adapter label for the relevant API
+// insertRecord always return the adapter label for the relevant API
 // If the API is not in database, that will save to the database and return the label
-func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) *string {
-	var adapterLabel *string
-	stmt, _ := database.DB.Prepare(database.QueryInsertAPI)
-	isExists, apiID := isAPIExists(api.UUID, gwLabel)
-	if isExists {
-		logger.LoggerServer.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
-		*adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
+func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.EventType) string {
+	var adapterLabel string
+	stmt, error := database.DB.Prepare(database.QueryInsertAPI)
+
+	if error != nil {
+		logger.LoggerServer.Errorf("Error while persist the API info for UUID : %v ", &api.UUID)
 	} else {
-		for {
-			availableID := getAvailableID(&gwLabel)
-			if availableID == -1 { // Return -1 due to an error
-				logger.LoggerServer.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
-				break
-			} else {
-				_, err := stmt.Exec(api.UUID, &gwLabel, availableID)
-				if err != nil {
-					if strings.Contains(err.Error(), "duplicate key") {
-						logger.LoggerServer.Debug(" ID already exists ", err)
-						continue
-					} else {
-						logger.LoggerServer.Error("Error while writing partition information ", err)
-					}
-					adapterLabel = nil
-				} else {
-					*adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
-					logger.LoggerServer.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
+		isExists, apiID := isAPIExists(api.UUID, gwLabel)
+		if isExists {
+			logger.LoggerServer.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
+			adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
+		} else {
+			for {
+				availableID := getAvailableID(gwLabel)
+				if availableID == -1 { // Return -1 due to an error
+					logger.LoggerServer.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
 					break
+				} else {
+					_, err := stmt.Exec(api.UUID, &gwLabel, availableID)
+					if err != nil {
+						if strings.Contains(err.Error(), "duplicate key") {
+							logger.LoggerServer.Debug(" ID already exists ", err)
+							continue
+						} else {
+							logger.LoggerServer.Error("Error while writing partition information ", err)
+						}
+					} else {
+						adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
+						logger.LoggerServer.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
+						break
+					}
 				}
 			}
 		}
+		stmt.Close()
 	}
-	stmt.Close()
 
 	return adapterLabel
 }
@@ -141,8 +154,8 @@ func InsertRecord(api *types.API, gwLabel string, eventType types.EvetType) *str
 func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
 
 	var apiID int
-	row, error := database.DB.Query(database.QueryIsAPIExists, uuid, labelHierarchy)
-	if error == nil {
+	row, err := database.DB.Query(database.QueryIsAPIExists, uuid, labelHierarchy)
+	if err == nil {
 		if !row.Next() {
 			logger.LoggerServer.Debug("Record does not exist for labelHierarchy : ", labelHierarchy, " and uuid : ", uuid)
 		} else {
@@ -151,7 +164,7 @@ func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
 			return true, &apiID
 		}
 	} else {
-		logger.LoggerServer.Error("Error when checking whether the API is exists. uuid : ", uuid, " ", error)
+		logger.LoggerServer.Error("Error when checking whether the API is exists. uuid : ", uuid, " ", err)
 	}
 
 	return false, nil
@@ -160,7 +173,7 @@ func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
 // Function returns the next available inremental ID. For collect the next available ID , there are 2 helper functions.
 // 1. getEmptiedId() -  Return if there any emptied ID. Return smallest first ID.If no emptied IDs available , then returns 0.
 // 2. getNextIncrementalId() - If getEmptiedId return 0 , then this function returns next incremental ID.
-func getAvailableID(hierarchyID *string) int {
+func getAvailableID(hierarchyID string) int {
 
 	var nextAvailableID int = getEmptiedID(hierarchyID)
 
@@ -168,27 +181,27 @@ func getAvailableID(hierarchyID *string) int {
 		nextAvailableID = getNextIncrementalID(hierarchyID)
 	}
 
-	logger.LoggerServer.Debug("Next available ID for hierarchy ", *hierarchyID, " is ", nextAvailableID)
+	logger.LoggerServer.Debug("Next available ID for hierarchy ", hierarchyID, " is ", nextAvailableID)
 	return nextAvailableID
 }
 
 // Observing emptied incremental ID
-func getEmptiedID(hierarchyID *string) int {
+func getEmptiedID(hierarchyID string) int {
 	var emptiedID int
 	stmt, error := database.DB.Query(database.QueryGetEmptiedID, hierarchyID)
-	if error != nil {
+	if error == nil {
 		stmt.Next()
 		stmt.Scan(&emptiedID)
-		logger.LoggerServer.Debug("The next available id from deleted APIs | hierarchy : ", *hierarchyID, " is : ", emptiedID)
+		logger.LoggerServer.Debug("The next available id from deleted APIs | hierarchy : ", hierarchyID, " is : ", emptiedID)
 	} else {
-		logger.LoggerServer.Error("Error while getting next available id from deleted APIs | hierarchy : ", *hierarchyID)
+		logger.LoggerServer.Error("Error while getting next available id from deleted APIs | hierarchy : ", hierarchyID)
 	}
 
 	return emptiedID
 }
 
 // Return next ID . If error occur from the query level , then return -1.
-func getNextIncrementalID(hierarchyID *string) int {
+func getNextIncrementalID(hierarchyID string) int {
 	var highestID int
 	var nextIncrementalID int
 	stmt, error := database.DB.Query(database.QueryGetNextIncID, hierarchyID)
@@ -196,7 +209,7 @@ func getNextIncrementalID(hierarchyID *string) int {
 		stmt.Next()
 		stmt.Scan(&highestID)
 		nextIncrementalID = highestID + 1
-		logger.LoggerServer.Debug("Next incremental ID for hierarchy : ", *hierarchyID, " is : ", nextIncrementalID)
+		logger.LoggerServer.Debug("Next incremental ID for hierarchy : ", hierarchyID, " is : ", nextIncrementalID)
 	} else {
 		nextIncrementalID = -1
 		logger.LoggerServer.Error("Error while getting next incremental ID | hierarcy : ", hierarchyID)
@@ -207,34 +220,35 @@ func getNextIncrementalID(hierarchyID *string) int {
 
 // for update the DB for JMS event
 // TODO : if event is for undeploy or remove task , then API should delete from the DB
-func updateFromEvent(api *types.API, eventType types.EvetType) {
+func updateFromEvent(api *synchronizer.APIEvent, eventType types.EventType) {
 	switch eventType {
 	case types.APIDelete:
 		DeleteAPIRecord(api)
 	case types.APICreate:
-		PopulateAPIData([]types.API{*api})
+		PopulateAPIData([]synchronizer.APIEvent{*api})
 	}
 }
 
 // DeleteAPIRecord Funtion accept API uuid as the argument
 // When receive an Undeploy event, the API record will delete from the database
 // If gwLabels are empty , don`t delete the reord (since it is an "API Update event")
-func DeleteAPIRecord(api *types.API) bool {
-	database.WakeUpConnection()
-	if len(api.GwLabel) > 0 {
+func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
+	if len(api.GatewayLabels) > 0 {
 		logger.LoggerServer.Debug("API undeploy event received : ", api.UUID)
 
 		if database.WakeUpConnection() {
+			defer database.CloseDbConnection()
+
 			stmt, _ := database.DB.Prepare(database.QueryDeleteAPI)
 
-			for index := range api.GwLabel {
-				_, error := stmt.Exec(api.UUID, api.GwLabel[index])
+			for index := range api.GatewayLabels {
+				_, error := stmt.Exec(api.UUID, api.GatewayLabels[index])
 				if error != nil {
 					logger.LoggerServer.Error("Error while deleting the API UUID : ", api.UUID, " ", error)
 					// break
 				} else {
-					logger.LoggerServer.Debug("API deleted from the database : ", api.UUID)
-					updateRedisCache(api, &api.GwLabel[index], nil, types.APIDelete)
+					logger.LoggerServer.Info("API deleted from the database : ", api.UUID)
+					updateRedisCache(api, api.GatewayLabels[index], nil, types.APIDelete)
 					return true
 				}
 			}
@@ -243,25 +257,26 @@ func DeleteAPIRecord(api *types.API) bool {
 		logger.LoggerServer.Debug("API update event received : ", api.UUID)
 	}
 
-	defer database.CloseDbConnection()
-
 	return false
 }
 
 // Cache update for undeploy APIs
-func updateRedisCache(api *types.API, labelHierarchy *string, adapterLabel *string, eventType types.EvetType) {
+func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapterLabel *string, eventType types.EventType) {
 
 	rc := cache.GetClient()
 	key := getCacheKey(api, labelHierarchy)
-	logger.LoggerServer.Debug("Redis cache updating ")
+	if key != "" {
+		logger.LoggerServer.Debug("Redis cache updating ")
 
-	switch eventType {
-	case types.APIDelete:
-		go cache.RemoveCacheKey(key, rc, 0)
+		switch eventType {
+		case types.APIDelete:
+			go cache.RemoveCacheKey(key, rc)
+		}
 	}
+
 }
 
-func getCacheKey(api *types.API, labelHierarchy *string) *string {
+func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	// apiId : Incremental ID
 	// Cache Key pattern : <organization id>_<base path>_<api version>
 	// Cache Value : Pertion Label ID ie: devP-1, prodP-3
@@ -270,9 +285,10 @@ func getCacheKey(api *types.API, labelHierarchy *string) *string {
 	var version string
 	var basePath string
 	var organization string
+	var cacheKey string
 
 	if strings.TrimSpace(api.Context) == "" || strings.TrimSpace(api.Version) == "" {
-		api := fetchAPIInfo(&api.UUID, labelHierarchy) // deprecated
+		api := fetchAPIInfo(api.UUID, labelHierarchy) // deprecated
 		if api != nil {
 			version = api.Version
 			basePath = api.Context
@@ -284,14 +300,16 @@ func getCacheKey(api *types.API, labelHierarchy *string) *string {
 		organization = strings.Split(api.Context, "/")[1]
 	}
 
-	cacheKey := fmt.Sprintf(clientName+"#%s#%s_%s_%s", *labelHierarchy, organization, basePath, version)
-	logger.LoggerServer.Debug(" Generated cache key : ", cacheKey)
+	if organization != "" && version != "" && basePath != "" {
+		cacheKey = fmt.Sprintf(clientName+"#%s#%s_%s_%s", labelHierarchy, organization, basePath, version)
+	}
 
-	return &cacheKey
+	logger.LoggerServer.Debug(" Generated cache key : ", cacheKey)
+	return cacheKey
 }
 
 //	TODO : No need to fetch API info from /apis endpoint, since API version and context will fetch from the inital request in future
-func fetchAPIInfo(apiUUID, gwLabel *string) *types.API {
+func fetchAPIInfo(apiUUID, gwLabel string) *types.API {
 
 	var apiInfo *types.API
 
@@ -300,8 +318,8 @@ func fetchAPIInfo(apiUUID, gwLabel *string) *types.API {
 	}
 	req, _ := http.NewRequest("GET", ehURL, nil)
 	queryParam := req.URL.Query()
-	queryParam.Add(uuid, *apiUUID)
-	queryParam.Add(gatewayLabel, *gwLabel)
+	queryParam.Add(uuid, apiUUID)
+	queryParam.Add(gatewayLabel, gwLabel)
 	req.URL.RawQuery = queryParam.Encode()
 	client := &http.Client{
 		Transport: tr,

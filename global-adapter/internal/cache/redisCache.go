@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -83,8 +82,8 @@ func GetClient() *redis.Client {
 }
 
 // RemoveCacheKey - delete specified keys from cache
-func RemoveCacheKey(key *string, client *redis.Client, expiryTime time.Duration) {
-	client.Del(*key)
+func RemoveCacheKey(key string, client *redis.Client) {
+	client.Del(key)
 }
 
 // SetCacheKeys - Insert new cache key-values, updaye existing values.

@@ -43,12 +43,12 @@ type Response struct {
 	Pagination string `json:"pagination,omitempty"`
 }
 
-// EvetType for distinguish JMS event types
-type EvetType int
+// EventType for distinguish JMS event types
+type EventType int
 
 // Specific event types
 const (
-	APICreate EvetType = iota
+	APICreate EventType = iota
 	APIDelete
 	DeployInAPIGateway
 )
@@ -58,5 +58,5 @@ type LaAPIState struct {
 	LabelHierarchy string
 	Label          string
 	Revision       string
-	EventType      EvetType
+	EventType      EventType
 }

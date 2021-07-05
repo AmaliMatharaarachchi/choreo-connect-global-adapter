@@ -32,7 +32,8 @@ const (
 var DB *sql.DB
 
 // ConnectToDb - connecting with the database server
-func ConnectToDb() {
+func ConnectToDb() bool {
+	var isConnected bool
 	var retryAttempts = 0
 	conf := config.ReadConfigs()
 	var err error
@@ -47,38 +48,29 @@ func ConnectToDb() {
 				logger.LoggerServer.Errorf("DB connection error - %v", err)
 			} else {
 				logger.LoggerServer.Debug("Established the DB connection ...")
+				isConnected = true
 				break
 			}
 		}
 		retryAttempts++
 	}
+
+	return isConnected
 }
 
 // WakeUpConnection - checking whether the databace connection is still alive , if not alive then reconnect to the DB
 func WakeUpConnection() bool {
-	conf := config.ReadConfigs()
 	pingError := DB.Ping()
-	retryAttempts := 0
 	var isPing bool = false
 
-	for {
-		if pingError != nil {
-			logger.LoggerServer.Debug("Error while initiating the database ", pingError, ". Retry attempt(s) :", retryAttempts)
-
-			if retryAttempts >= conf.DataBase.OptionalMetadata.MaxRetryAttempts {
-				break
-			} else {
-				ConnectToDb()
-			}
-
-			isPing = false
-			retryAttempts++
-			continue
-
-		} else {
+	if pingError != nil {
+		if ConnectToDb() && DB.Ping() != nil {
 			isPing = true
-			break
+		} else {
+			logger.LoggerServer.Debug("Error while initiating the database ", pingError)
 		}
+	} else {
+		isPing = true
 	}
 
 	return isPing
