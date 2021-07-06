@@ -13,7 +13,7 @@
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
 *
-*/
+ */
 
 package server
 
@@ -24,17 +24,18 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds/callbacks"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
-	ga_service "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/service/ga"
-	wso2_server "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/server/v3"
-	"google.golang.org/grpc"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds/callbacks"
 	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
+	ga_service "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/service/ga"
+	wso2_server "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/server/v3"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
+	"google.golang.org/grpc"
 )
 
 // TODO: (VirajSalaka) check this is streams per connections or total number of concurrent streams.
@@ -52,7 +53,7 @@ func Run(conf *config.Config) {
 	// Process incoming events.
 	go messaging.ProcessEvents(conf)
 	// Consume API events from channel.
-	go GetAPIDeployAndRemoveEventsFromChannel()
+	go apipartition.ProcessEventsInDatabase()
 	// Consume non API events from channel.
 	go GetNonAPIDeployAndRemoveEventsFromChannel()
 	// Fetch APIs from control plane.
@@ -131,13 +132,6 @@ func fetchAPIsOnStartUp(conf *config.Config) {
 		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)
 	} else {
 		synchronizer.AddAPIEventsToChannel(deploymentDescriptor, nil)
-	}
-}
-
-// GetAPIDeployAndRemoveEventsFromChannel consume API deploy and remove events from the channel.
-func GetAPIDeployAndRemoveEventsFromChannel() {
-	for d := range synchronizer.APIDeployAndRemoveEventChannel {
-		logger.LoggerServer.Infof("API Event %s ", d)
 	}
 }
 

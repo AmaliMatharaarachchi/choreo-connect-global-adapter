@@ -109,6 +109,7 @@ func handleAPIDeployAndRemoveEvents(data []byte, eventType string, config *confi
 		removeEvent.Context = apiEvent.Context
 		removeEvent.Version = apiEvent.Version
 		removeEvent.GatewayLabels = apiEvent.GatewayLabels
+		removeEvent.IsRemoveEvent = true
 		if removeEvent.GatewayLabels != nil {
 			APIEventArray = append(APIEventArray, removeEvent)
 			sync.APIDeployAndRemoveEventChannel <- APIEventArray
