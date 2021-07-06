@@ -260,7 +260,6 @@ func updateFromEvents(apis []synchronizer.APIEvent) {
 		return
 	}
 	if len(apis) == 0 {
-		// TODO: (VirajSalaka) print error message?
 		return
 	}
 	isRemoveEvent := apis[0].IsRemoveEvent
@@ -284,13 +283,25 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 			stmt, _ := database.DB.Prepare(database.QueryDeleteAPI)
 
 			for index := range api.GatewayLabels {
-				_, error := stmt.Exec(api.UUID, api.GatewayLabels[index])
+				gatewayLabel := api.GatewayLabels[index]
+
+				// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+				if gatewayLabel == productionSandboxLabel {
+					gatewayLabel = defaultGatewayLabel
+				}
+				_, error := stmt.Exec(api.UUID, gatewayLabel)
 				if error != nil {
 					logger.LoggerServer.Error("Error while deleting the API UUID : ", api.UUID, " ", error)
 					// break
 				} else {
 					logger.LoggerServer.Info("API deleted from the database : ", api.UUID)
-					updateRedisCache(api, api.GatewayLabels[index], nil, types.APIDelete)
+					updateRedisCache(api, gatewayLabel, nil, types.APIDelete)
+					pushToXdsCache([]*types.LaAPIEvent{{
+						APIUUID:       api.UUID,
+						IsRemoveEvent: true,
+						// TODO: (Shanaka) update with proper label
+						Label: "default",
+					}})
 					return true
 				}
 			}
