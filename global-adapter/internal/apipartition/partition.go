@@ -54,12 +54,13 @@ const (
 )
 
 const (
-	gwType        string = "type"
-	gatewayLabel  string = "gatewayLabel"
-	envoy         string = "Envoy"
-	authorization string = "Authorization"
-	uuid          string = "uuid"
-	clientName    string = "global-adapter"
+	gwType                 string = "type"
+	gatewayLabel           string = "gatewayLabel"
+	envoy                  string = "Envoy"
+	authorization          string = "Authorization"
+	uuid                   string = "uuid"
+	clientName             string = "global-adapter"
+	productionSandboxLabel string = "Production and Sandbox"
 )
 
 var apisChan = make(chan []types.LaAPIState)
@@ -74,14 +75,21 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 
 	for ind := range apis {
 		for index := range apis[ind].GatewayLabels {
-			label := insertRecord(&apis[ind], apis[ind].GatewayLabels[index], types.APICreate)
+			gatewayLabel := apis[ind].GatewayLabels[index]
+
+			// (Shanaka) when gateway label is "Production and Sandbox" , then gateway label set as "default"
+			if gatewayLabel == productionSandboxLabel {
+				gatewayLabel = "default"
+			}
+
+			label := insertRecord(&apis[ind], gatewayLabel, types.APICreate)
 
 			if label != "" {
-				cacheKey := getCacheKey(&apis[ind], apis[ind].GatewayLabels[index])
+				cacheKey := getCacheKey(&apis[ind], gatewayLabel)
 
-				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GatewayLabels[index], " is ", label)
+				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
-				apiState := types.LaAPIState{LabelHierarchy: apis[ind].GatewayLabels[index], Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
+				apiState := types.LaAPIState{LabelHierarchy: gatewayLabel, Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
 				laAPIList = append(laAPIList, apiState)
 
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
@@ -96,8 +104,10 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 		}
 	}
 
-	rc := cache.GetClient()
-	cache.SetCacheKeys(cacheObj, rc)
+	if len(cacheObj) > 2 {
+		rc := cache.GetClient()
+		cache.SetCacheKeys(cacheObj, rc)
+	}
 
 	pushToChan(apisChan, laAPIList)
 

@@ -83,12 +83,20 @@ func GetClient() *redis.Client {
 
 // RemoveCacheKey - delete specified keys from cache
 func RemoveCacheKey(key string, client *redis.Client) {
-	client.Del(key)
+	res := client.Del(key)
+	if res.Err() != nil {
+		logger.LoggerServer.Error("Error while deleting the cache object ", res.Err())
+	} else {
+		logger.LoggerServer.Debug("Cache object removed for key : ", key)
+	}
 }
 
 // SetCacheKeys - Insert new cache key-values, updaye existing values.
 func SetCacheKeys(cacheList []string, client *redis.Client) {
-	// TODO : check the server response and retry
-	client.MSet(cacheList)
-	logger.LoggerServer.Debugf("Cache updated , total key-values : %d", len(cacheList)/2)
+	res := client.MSet(cacheList)
+	if res.Err() != nil {
+		logger.LoggerServer.Error("Error while adding the cache object(s) ", res.Err())
+	} else {
+		logger.LoggerServer.Debugf("Cache updated , total key-values : %d", len(cacheList)/2)
+	}
 }
