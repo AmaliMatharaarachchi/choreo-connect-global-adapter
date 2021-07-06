@@ -34,6 +34,8 @@ import (
 	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 	ga_service "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/service/ga"
 	wso2_server "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/server/v3"
+	"github.com/wso2/product-microgateway/adapter/pkg/health"
+	healthservice "github.com/wso2/product-microgateway/adapter/pkg/health/api/wso2/health/service"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 	"google.golang.org/grpc"
 )
@@ -87,10 +89,17 @@ func Run(conf *config.Config) {
 		logger.LoggerServer.Fatalf("Error while listening on port: %s", port)
 	}
 
-	logger.LoggerServer.Info("XDS server is starting.")
-	if err = grpcServer.Serve(listener); err != nil {
-		logger.LoggerServer.Fatal("Error while starting gRPC server.")
-	}
+	// register health service
+	healthservice.RegisterHealthServer(grpcServer, &health.Server{})
+
+	go func() {
+		// wait current goroutine forever for until control plane starts
+		health.WaitForControlPlane()
+		logger.LoggerServer.Info("XDS server is starting.")
+		if err = grpcServer.Serve(listener); err != nil {
+			logger.LoggerServer.Fatal("Error while starting gRPC server.")
+		}
+	}()
 
 OUTER:
 	for {

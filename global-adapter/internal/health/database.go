@@ -17,11 +17,6 @@
 
 package health
 
-import (
-	"database/sql"
-	"time"
-)
-
 var (
 	databaseConnectionStatusChan  = make(chan bool)
 	databaseConnectionEstablished = false
@@ -43,28 +38,4 @@ func WaitForDatabaseConnection() {
 		dbConnected = <-databaseConnectionStatusChan
 	}
 	databaseConnectionEstablished = true
-}
-
-// DatabaseConnectRetry retries to connect to the database if there is a connection error
-func DatabaseConnectRetry(connString string) (*sql.DB, error) {
-	// TODO: (Jayanie) maxAttempt and retryInterval Should be configurable?
-	var (
-		maxAttempt    int = 5
-		retryInterval time.Duration
-		attempt       int
-		DB            *sql.DB
-		err           error
-	)
-	for attempt = 1; attempt <= maxAttempt; attempt++ {
-		DB, err = sql.Open("sqlserver", connString)
-		if err == nil {
-			return DB, nil
-		} 
-		pingError := DB.Ping()
-		if pingError == nil {
-			return DB, nil
-		}
-		time.Sleep(retryInterval * time.Second)
-	}
-	return nil, err
 }
