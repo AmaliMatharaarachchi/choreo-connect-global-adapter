@@ -45,10 +45,10 @@ func Init() {
 			logger.LoggerServer.Fatal("Table not exists : ", partitionSizeTable)
 		}
 
-		if database.IsTableExists(apisTable) {
-			return
-		} else {
+		if !database.IsTableExists(apisTable) {
 			logger.LoggerServer.Fatal("Table not exists : ", apisTable)
+		} else {
+			return
 		}
 	} else {
 		logger.LoggerServer.Fatal("Error while initiating the database ")

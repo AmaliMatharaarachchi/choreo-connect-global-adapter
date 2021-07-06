@@ -64,8 +64,9 @@ func WakeUpConnection() bool {
 	var isPing bool = false
 
 	if pingError != nil {
+		isConnected := ConnectToDb()
 		pingErr := DB.Ping()
-		if ConnectToDb() && pingErr == nil {
+		if isConnected && pingErr == nil {
 			isPing = true
 		} else {
 			logger.LoggerServer.Debug("Error while initiating the database ", pingErr)

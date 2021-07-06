@@ -77,7 +77,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 		for index := range apis[ind].GatewayLabels {
 			gatewayLabel := apis[ind].GatewayLabels[index]
 
-			// (Shanaka) when gateway label is "Production and Sandbox" , then gateway label set as "default"
+			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
 			if gatewayLabel == productionSandboxLabel {
 				gatewayLabel = "default"
 			}
