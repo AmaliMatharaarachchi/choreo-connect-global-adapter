@@ -25,6 +25,7 @@ import (
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	internal_types "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
 	ga_api "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/ga"
 	wso2_cache "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/cache/v3"
 )
@@ -38,13 +39,13 @@ const (
 	typeURL      string = "type.googleapis.com/wso2.discovery.ga.Api"
 )
 
-// APIInboundEvent is the event accepted by the module to push it to the cache
-type APIInboundEvent struct {
-	APIUUID       string
-	RevisionUUID  string
-	Label         string
-	IsRemoveEvent bool
-}
+// // APIInboundEvent is the event accepted by the module to push it to the cache
+// type APIInboundEvent struct {
+// 	APIUUID       string
+// 	RevisionUUID  string
+// 	Label         string
+// 	IsRemoveEvent bool
+// }
 
 // IDHash uses ID field as the node hash.
 type IDHash struct{}
@@ -69,7 +70,7 @@ func GetAPICache() wso2_cache.SnapshotCache {
 	return apiCache
 }
 
-// TODO: (VirajSalaka) remove 
+// TODO: (VirajSalaka) remove
 // AddAPIsToCache adds the provided set of APIUUIDs and updates the XDS cache for the provided label.
 // func AddAPIsToCache() {
 // 	arr := make([]*APIInboundEvent, 3)
@@ -147,7 +148,7 @@ func removeAPI(label, apiUUID string) {
 }
 
 // ProcessSingleEvent is triggered when there is a single event needs to be processed(Corresponding to JMS Events)
-func ProcessSingleEvent(event *APIInboundEvent) {
+func ProcessSingleEvent(event *internal_types.LaAPIEvent) {
 	if event.IsRemoveEvent {
 		removeAPI(event.Label, event.APIUUID)
 	} else {
@@ -156,7 +157,7 @@ func ProcessSingleEvent(event *APIInboundEvent) {
 }
 
 // AddMultipleAPIs adds the multiple APIs entry to XDS cache (used for statup)
-func AddMultipleAPIs(apiEventArray []*APIInboundEvent) {
+func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 
 	snapshotMap := make(map[string]*wso2_cache.Snapshot)
 	version := rand.Intn(maxRandomInt)

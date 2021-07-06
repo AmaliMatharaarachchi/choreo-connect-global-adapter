@@ -22,6 +22,7 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/stretchr/testify/assert"
+	internal_types "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
 	ga_model "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/ga"
 )
@@ -31,7 +32,7 @@ const (
 )
 
 func TestAddMultipleAPIs(t *testing.T) {
-	initialArray := make([]*xds.APIInboundEvent, 3)
+	initialArray := make([]*internal_types.LaAPIEvent, 3)
 	label1 := "label1"
 	label2 := "label2"
 	api1 := "api1"
@@ -42,17 +43,17 @@ func TestAddMultipleAPIs(t *testing.T) {
 	revision2 := "2"
 
 	// Test initial Addition
-	initialArray[0] = &xds.APIInboundEvent{
+	initialArray[0] = &internal_types.LaAPIEvent{
 		APIUUID:      api1,
 		RevisionUUID: revision1,
 		Label:        label1,
 	}
-	initialArray[1] = &xds.APIInboundEvent{
+	initialArray[1] = &internal_types.LaAPIEvent{
 		APIUUID:      api2,
 		RevisionUUID: revision1,
 		Label:        label2,
 	}
-	initialArray[2] = &xds.APIInboundEvent{
+	initialArray[2] = &internal_types.LaAPIEvent{
 		APIUUID:      api3,
 		RevisionUUID: revision1,
 		Label:        label1,
@@ -72,32 +73,32 @@ func TestAddMultipleAPIs(t *testing.T) {
 	testResourceContent(t, api3, revision1, snapshot1.GetResources(typeURL))
 
 	// Tests the addition of a new API
-	apiEvent4 := &xds.APIInboundEvent{
+	apiEvent4 := internal_types.LaAPIEvent{
 		APIUUID:      api4,
 		RevisionUUID: revision1,
 		Label:        label1,
 	}
-	xds.ProcessSingleEvent(apiEvent4)
+	xds.ProcessSingleEvent(&apiEvent4)
 	snapshot1, _ = xds.GetAPICache().GetSnapshot(label1)
 	assert.Len(t, snapshot1.GetResources(typeURL), 3)
 	testResourceContent(t, api4, revision1, snapshot1.GetResources(typeURL))
 
-	apiEvent5 := &xds.APIInboundEvent{
+	apiEvent5 := internal_types.LaAPIEvent{
 		APIUUID:      api1,
 		RevisionUUID: revision2,
 		Label:        label1,
 	}
-	xds.ProcessSingleEvent(apiEvent5)
+	xds.ProcessSingleEvent(&apiEvent5)
 	snapshot1, _ = xds.GetAPICache().GetSnapshot(label1)
 	assert.Len(t, snapshot1.GetResources(typeURL), 3)
 	testResourceContent(t, api1, revision2, snapshot1.GetResources(typeURL))
 
-	apiEvent6 := &xds.APIInboundEvent{
+	apiEvent6 := internal_types.LaAPIEvent{
 		APIUUID:       api1,
 		Label:         label1,
 		IsRemoveEvent: true,
 	}
-	xds.ProcessSingleEvent(apiEvent6)
+	xds.ProcessSingleEvent(&apiEvent6)
 	snapshot1, _ = xds.GetAPICache().GetSnapshot(label1)
 	assert.Len(t, snapshot1.GetResources(typeURL), 2)
 	_, resourceFound := snapshot1.GetResources(typeURL)[api1]
