@@ -42,7 +42,7 @@
   defaultAutoCommit = true
 
 [redisServer]
-  host = 'choreo-dev-redis-cache.redis.cache.windows.net'
+  host = 'redis-host-url'
   port = 6380
   password = '$env{redis_host_pwd}'
   clientName = 'global-adapter'
