@@ -95,6 +95,8 @@ func Run(conf *config.Config) {
 
 	go func() {
 		health.WaitForControlPlane()
+		// TODO: (Jayanie) Finalize where to include WaitForDatabaseConnection() and 
+		// WaitForRedisCacheConnection() methods
 		healthGA.WaitForDatabaseConnection()
 		healthGA.WaitForRedisCacheConnection()
 		logger.LoggerServer.Info("XDS server is starting.")
