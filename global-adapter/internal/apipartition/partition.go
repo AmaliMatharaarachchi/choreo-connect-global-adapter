@@ -61,6 +61,7 @@ const (
 	uuid                   string = "uuid"
 	clientName             string = "global-adapter"
 	productionSandboxLabel string = "Production and Sandbox"
+	defaultGatewayLabel    string = "default"
 )
 
 var apisChan = make(chan []types.LaAPIState)
@@ -79,7 +80,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 
 			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
 			if gatewayLabel == productionSandboxLabel {
-				gatewayLabel = "default"
+				gatewayLabel = defaultGatewayLabel
 			}
 
 			label := insertRecord(&apis[ind], gatewayLabel, types.APICreate)
@@ -106,10 +107,11 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 
 	if len(cacheObj) > 2 {
 		rc := cache.GetClient()
-		cache.SetCacheKeys(cacheObj, rc)
+		cachingError := cache.SetCacheKeys(cacheObj, rc)
+		if cachingError == nil {
+			pushToChan(apisChan, laAPIList)
+		}
 	}
-
-	pushToChan(apisChan, laAPIList)
 
 }
 
