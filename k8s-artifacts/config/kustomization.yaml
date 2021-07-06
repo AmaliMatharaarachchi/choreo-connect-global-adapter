@@ -1,0 +1,14 @@
+configMapGenerator:
+  - name: cc-global-adapter-conf
+    behavior: create
+    files:
+    - global-adapter/ga_config.toml
+    - global-adapter/log_config.toml
+  - name: global-adapter-keystore-vol
+    behavior: create
+    files:
+    - global-adapter/mg.pem
+  - name: global-adapter-truststore-vol
+    behavior: create
+    files:
+    - global-adapter/mg.pem
