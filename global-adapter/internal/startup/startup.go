@@ -17,7 +17,6 @@
 package startup
 
 import (
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
@@ -47,7 +46,7 @@ func Init() {
 		}
 
 		if database.IsTableExists(apisTable) {
-			apipartition.PopulateAPIData(apiList)
+			return
 		} else {
 			logger.LoggerServer.Fatal("Table not exists : ", apisTable)
 		}
