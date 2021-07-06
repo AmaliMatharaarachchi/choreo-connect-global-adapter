@@ -17,7 +17,6 @@
 package startup
 
 import (
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
@@ -29,20 +28,27 @@ var partitionSize = 10
 var apiList []synchronizer.APIEvent
 
 const (
-	partitionSizeTable string = "ga_local_adapter_partition"
+	apisTable          string = "ga_local_adapter_partition"
+	partitionSizeTable string = "la_partition_size"
 )
 
 // Init for initialize all startup functions
 func Init() {
 	database.ConnectToDb()
+	defer database.CloseDbConnection()
 	isDbConnectionAlive := database.WakeUpConnection()
 
 	if isDbConnectionAlive {
-		triggerDeploymentAgent()
 		if database.IsTableExists(partitionSizeTable) {
-			apipartition.PopulateAPIData(apiList)
+			triggerDeploymentAgent()
 		} else {
 			logger.LoggerServer.Fatal("Table not exists : ", partitionSizeTable)
+		}
+
+		if !database.IsTableExists(apisTable) {
+			logger.LoggerServer.Fatal("Table not exists : ", apisTable)
+		} else {
+			return
 		}
 	} else {
 		logger.LoggerServer.Fatal("Error while initiating the database ")

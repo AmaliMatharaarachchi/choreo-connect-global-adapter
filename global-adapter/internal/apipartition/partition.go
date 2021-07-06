@@ -54,12 +54,14 @@ const (
 )
 
 const (
-	gwType        string = "type"
-	gatewayLabel  string = "gatewayLabel"
-	envoy         string = "Envoy"
-	authorization string = "Authorization"
-	uuid          string = "uuid"
-	clientName    string = "global-adapter"
+	gwType                 string = "type"
+	gatewayLabel           string = "gatewayLabel"
+	envoy                  string = "Envoy"
+	authorization          string = "Authorization"
+	uuid                   string = "uuid"
+	clientName             string = "global-adapter"
+	productionSandboxLabel string = "Production and Sandbox"
+	defaultGatewayLabel    string = "default"
 )
 
 var apisChan = make(chan []types.LaAPIState)
@@ -74,14 +76,21 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 
 	for ind := range apis {
 		for index := range apis[ind].GatewayLabels {
-			label := insertRecord(&apis[ind], apis[ind].GatewayLabels[index], types.APICreate)
+			gatewayLabel := apis[ind].GatewayLabels[index]
+
+			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+			if gatewayLabel == productionSandboxLabel {
+				gatewayLabel = defaultGatewayLabel
+			}
+
+			label := insertRecord(&apis[ind], gatewayLabel, types.APICreate)
 
 			if label != "" {
-				cacheKey := getCacheKey(&apis[ind], apis[ind].GatewayLabels[index])
+				cacheKey := getCacheKey(&apis[ind], gatewayLabel)
 
-				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GatewayLabels[index], " is ", label)
+				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
-				apiState := types.LaAPIState{LabelHierarchy: apis[ind].GatewayLabels[index], Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
+				apiState := types.LaAPIState{LabelHierarchy: gatewayLabel, Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
 				laAPIList = append(laAPIList, apiState)
 
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
@@ -96,16 +105,19 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 		}
 	}
 
-	rc := cache.GetClient()
-	cache.SetCacheKeys(cacheObj, rc)
-
-	pushToChan(apisChan, laAPIList)
+	if len(cacheObj) > 2 {
+		rc := cache.GetClient()
+		cachingError := cache.SetCacheKeys(cacheObj, rc)
+		if cachingError == nil {
+			pushToChan(apisChan, laAPIList)
+		}
+	}
 
 }
 
 func pushToChan(c chan []types.LaAPIState, laAPIList []types.LaAPIState) {
 	logger.LoggerServer.Debug("API List : ", len(laAPIList))
-	apisChan <- laAPIList
+	// apisChan <- laAPIList
 }
 
 // insertRecord always return the adapter label for the relevant API
@@ -218,15 +230,33 @@ func getNextIncrementalID(hierarchyID string) int {
 	return nextIncrementalID
 }
 
+// ProcessEventsInDatabase function can process one event or many API events. If the array length is greater than one, it
+// would be the startup scenario. Hence all the APIs would be deployed. Otherwise the events type will be taken into consideration
+// and will be processed as delete record or insert record based on the event type. The outcome would be another event, which
+// represents the partitionID for a given API.
+func ProcessEventsInDatabase() {
+	for d := range synchronizer.APIDeployAndRemoveEventChannel {
+		updateFromEvents(d)
+	}
+}
+
 // for update the DB for JMS event
 // TODO : if event is for undeploy or remove task , then API should delete from the DB
-func updateFromEvent(api *synchronizer.APIEvent, eventType types.EventType) {
-	switch eventType {
-	case types.APIDelete:
-		DeleteAPIRecord(api)
-	case types.APICreate:
-		PopulateAPIData([]synchronizer.APIEvent{*api})
+func updateFromEvents(apis []synchronizer.APIEvent) {
+	if len(apis) > 1 {
+		PopulateAPIData(apis)
+		return
 	}
+	if len(apis) == 0 {
+		// TODO: (VirajSalaka) print error message?
+		return
+	}
+	isRemoveEvent := apis[0].IsRemoveEvent
+	if isRemoveEvent {
+		DeleteAPIRecord(&apis[0])
+		return
+	}
+	PopulateAPIData(apis)
 }
 
 // DeleteAPIRecord Funtion accept API uuid as the argument

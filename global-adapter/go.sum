@@ -234,7 +234,6 @@ github.com/stretchr/testify v1.6.1 h1:hDPOHmpOpP40lSULcqw7IrRb/u7w6RpDC9399XyoNd
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/tidwall/pretty v1.0.0/go.mod h1:XNkn88O1ChpSDQmQeStsy+sBenx6DDtFZJxhVysOjyk=
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
-github.com/wso2-enterprise/choreo-connect-global-adapter v0.0.0-20210629151859-d9c70f6cfc81 h1:Ps7lPIWpsvAlirgT/O4q5Hy6TcM0Y+vJ3gPI1N9oMzU=
 github.com/wso2/product-microgateway/adapter v0.0.0-20210702105949-0aaea9eed877 h1:HxiQHm6y/GPz2aGnRp62kumjcy9440HBl7YBk5vMjUI=
 github.com/wso2/product-microgateway/adapter v0.0.0-20210702105949-0aaea9eed877/go.mod h1:MaDYxkdgNAwSuekKaAVPrR37nh2Jel6wDtVN5s52a5E=
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=

@@ -64,10 +64,12 @@ func WakeUpConnection() bool {
 	var isPing bool = false
 
 	if pingError != nil {
-		if ConnectToDb() && DB.Ping() != nil {
+		isConnected := ConnectToDb()
+		pingErr := DB.Ping()
+		if isConnected && pingErr == nil {
 			isPing = true
 		} else {
-			logger.LoggerServer.Debug("Error while initiating the database ", pingError)
+			logger.LoggerServer.Debug("Error while initiating the database ", pingErr)
 		}
 	} else {
 		isPing = true
