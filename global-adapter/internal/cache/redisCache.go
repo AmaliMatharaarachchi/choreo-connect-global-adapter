@@ -75,9 +75,6 @@ func getRedisClientOptions(conf *config.Config) *redis.Options {
 
 // GetClient - returns the connected client reference if it alive , else reconnect and return the reference
 func GetClient() *redis.Client {
-	// go func() {
-	// 	health.WaitForRedisCacheConnection()
-	// }()
 	if redisClient == nil {
 		logger.LoggerServer.Debug("Reconnecting redis client to server")
 		return ConnectToRedisServer()

@@ -23,6 +23,7 @@ import (
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
+// TODO: (Jayanie) Uncomment this test case after changing the common pkg ControlPlaneStarted variable
 // func TestGetArtifactDetailsFromChannel(t *testing.T) {
 // 	serviceURL := "https://apim:9443/"
 // 	username := "admin"
@@ -30,7 +31,7 @@ import (
 // 	skipSSL := true
 // 	truststoreLocation := "/home/wso2/security/truststore"
 // 	retryInterval := time.Duration(5)
-
+// 	health.ControlPlaneStarted = true
 // 	data := sync.DeploymentDescriptor{
 // 		Type:    "deployments",
 // 		Version: "v4.0.0",
