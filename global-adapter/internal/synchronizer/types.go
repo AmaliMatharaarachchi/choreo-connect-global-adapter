@@ -23,4 +23,5 @@ type APIEvent struct {
 	Context       string
 	Version       string
 	GatewayLabels []string
+	IsRemoveEvent bool
 }
