@@ -55,12 +55,14 @@ const (
 )
 
 const (
-	gwType        string = "type"
-	gatewayLabel  string = "gatewayLabel"
-	envoy         string = "Envoy"
-	authorization string = "Authorization"
-	uuid          string = "uuid"
-	clientName    string = "global-adapter"
+	gwType                 string = "type"
+	gatewayLabel           string = "gatewayLabel"
+	envoy                  string = "Envoy"
+	authorization          string = "Authorization"
+	uuid                   string = "uuid"
+	clientName             string = "global-adapter"
+	productionSandboxLabel string = "Production and Sandbox"
+	defaultGatewayLabel    string = "default"
 )
 
 // PopulateAPIData - populating API infomation to Database and redis cache
@@ -73,15 +75,22 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 
 	for ind := range apis {
 		for index := range apis[ind].GatewayLabels {
-			label := insertRecord(&apis[ind], apis[ind].GatewayLabels[index], types.APICreate)
+			gatewayLabel := apis[ind].GatewayLabels[index]
+
+			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+			if gatewayLabel == productionSandboxLabel {
+				gatewayLabel = defaultGatewayLabel
+			}
+
+			label := insertRecord(&apis[ind], gatewayLabel, types.APICreate)
 
 			if label != "" {
-				cacheKey := getCacheKey(&apis[ind], apis[ind].GatewayLabels[index])
+				cacheKey := getCacheKey(&apis[ind], gatewayLabel)
 
-				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GatewayLabels[index], " is ", label)
+				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
 				apiState := types.LaAPIEvent{
-					LabelHierarchy: apis[ind].GatewayLabels[index],
+					LabelHierarchy: gatewayLabel,
 					Label:          label,
 					RevisionUUID:   apis[ind].RevisionID,
 					APIUUID:        apis[ind].UUID,
@@ -100,9 +109,15 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 		}
 	}
 
-	rc := cache.GetClient()
-	cache.SetCacheKeys(cacheObj, rc)
-	pushToXdsCache(laAPIList)
+	if len(cacheObj) > 2 {
+		rc := cache.GetClient()
+		cachingError := cache.SetCacheKeys(cacheObj, rc)
+		if cachingError != nil {
+			return
+		}
+		pushToXdsCache(laAPIList)
+	}
+
 }
 
 func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
