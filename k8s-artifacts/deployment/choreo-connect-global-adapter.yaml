@@ -24,11 +24,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: choreo-connect-global-adapter
+      choreo.component: choreo-connect-global-adapter
   template:
     metadata:
       labels:
-        app: choreo-connect-global-adapter
+        choreo.component: choreo-connect-global-adapter
     spec:
       containers:
       - name: choreo-connect-global-adapter
