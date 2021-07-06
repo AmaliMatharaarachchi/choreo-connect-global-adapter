@@ -39,14 +39,6 @@ const (
 	typeURL      string = "type.googleapis.com/wso2.discovery.ga.Api"
 )
 
-// // APIInboundEvent is the event accepted by the module to push it to the cache
-// type APIInboundEvent struct {
-// 	APIUUID       string
-// 	RevisionUUID  string
-// 	Label         string
-// 	IsRemoveEvent bool
-// }
-
 // IDHash uses ID field as the node hash.
 type IDHash struct{}
 
@@ -69,37 +61,6 @@ func init() {
 func GetAPICache() wso2_cache.SnapshotCache {
 	return apiCache
 }
-
-// TODO: (VirajSalaka) remove
-// AddAPIsToCache adds the provided set of APIUUIDs and updates the XDS cache for the provided label.
-// func AddAPIsToCache() {
-// 	arr := make([]*APIInboundEvent, 3)
-// 	arr[0] = &APIInboundEvent{
-// 		APIUUID:      "xyz1",
-// 		RevisionUUID: "xyz1",
-// 		Label:        "default",
-// 	}
-// 	arr[1] = &APIInboundEvent{
-// 		APIUUID:      "xyz2",
-// 		RevisionUUID: "xyz2",
-// 		Label:        "default2",
-// 	}
-// 	arr[2] = &APIInboundEvent{
-// 		APIUUID:      "xyz3",
-// 		RevisionUUID: "xyz3",
-// 		Label:        "default",
-// 	}
-
-// 	AddMultipleAPIs(arr)
-// 	time.Sleep(10 * time.Second)
-// 	addSingleAPI("default", "apiID1", "1234")
-// 	time.Sleep(10 * time.Second)
-// 	addSingleAPI("default", "apiID2", "1234")
-// 	time.Sleep(5 * time.Second)
-// 	addSingleAPI("default", "apiID1", "4567")
-// 	time.Sleep(5 * time.Second)
-// 	removeAPI("default", "apiID1")
-// }
 
 // addSingleAPI adds the API entry to XDS cache
 func addSingleAPI(label, apiUUID, revisionUUID string) {
