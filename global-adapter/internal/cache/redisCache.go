@@ -37,15 +37,8 @@ func ConnectToRedisServer() *redis.Client {
 	rdb := redis.NewClient(clientOptions)
 	var isConnected bool = false
 	pong, err := rdb.Ping().Result()
-	// TODO : check the connection error and retry
+	// Check the connection error and Retry
 	if err != nil {
-		// if strings.Contains(err.Error(), "timeout") {
-		// 	logger.LoggerServer.Info(err, " .Retring to connect with Redis server")
-		// } else {
-		// 	logger.LoggerServer.Error("Failed to connect with redis server using Host : ", conf.RedisServer.Host, " and Port : ", conf.RedisServer.Port, " Error : ", err)
-		// 	redisClient = nil
-		// }
-		// redisClient = nil
 		redisClient, isConnected = health.RedisCacheConnectRetry(clientOptions)
 	} else {
 		logger.LoggerServer.Info("Connected to the redis cluster ", pong)
