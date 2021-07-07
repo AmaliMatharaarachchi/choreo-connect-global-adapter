@@ -24,7 +24,6 @@ package synchronizer
 
 import (
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -74,7 +73,8 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 			}
 		} else if data.ErrorCode >= 400 && data.ErrorCode < 500 {
 			logger.LoggerSync.Fatalf("Error occurred when retrieving APIs from control plane: %v", data.Err)
-			isNoAPIArtifacts := data.ErrorCode == 404 && strings.Contains(data.Err.Error(), "No Api artifacts found")
+			// When No API Artifacts found isNoAPIArtifacts is set to true
+			isNoAPIArtifacts := data.ErrorCode == 404
 			health.SetControlPlaneRestAPIStatus(isNoAPIArtifacts)
 		} else {
 			// Keep the iteration still until data is received from the control plane.
