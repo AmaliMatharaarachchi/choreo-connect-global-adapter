@@ -32,7 +32,7 @@ var (
 
 // SetRedisCacheConnectionStatus sets the given status to the internal channel redisCacheConnectionStatusChan
 func SetRedisCacheConnectionStatus(status bool) {
-	// check for Redis cache Connection Established, to non block call
+	// Check for Redis cache Connection Established, to non block call
 	// if called again (somehow) after startup, for extra safe check this value
 	if !redisCacheConnectionEstablished {
 		redisCacheConnectionStatusChan <- status
@@ -44,7 +44,7 @@ func WaitForRedisCacheConnection() {
 	redisConnected := false
 	for !redisConnected {
 		redisConnected = <-redisCacheConnectionStatusChan
-		logger.LoggerHealth.Debugf("Connection to Redis cache %v", redisConnected)
+		logger.LoggerHealth.Debugf("Connection status to the Redis cache returned: %v", redisConnected)
 	}
 	redisCacheConnectionEstablished = true
 }
@@ -63,13 +63,12 @@ func RedisCacheConnectRetry(clientOptions *redis.Options) (*redis.Client, bool) 
 		if err == nil {
 			return rdb, true
 		}
-		if err != nil {
-			if strings.Contains(err.Error(), "timeout") {
-				time.Sleep(retryInterval * time.Second)
-			} else {
-				return nil, false
-			}
+		if strings.Contains(err.Error(), "timeout") {
+			time.Sleep(retryInterval * time.Second)
+		} else {
+			return nil, false
 		}
+
 	}
 	return nil, false
 }

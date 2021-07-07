@@ -26,7 +26,7 @@ var (
 
 // SetDatabaseConnectionStatus sets the given status to the internal channel databaseConnectionStatusChan
 func SetDatabaseConnectionStatus(status bool) {
-	// check for Database Connection Established, to non block call
+	// Check for Database Connection Established, to non block call
 	// if called again (somehow) after startup, for extra safe check this value
 	if !databaseConnectionEstablished {
 		databaseConnectionStatusChan <- status
@@ -38,7 +38,7 @@ func WaitForDatabaseConnection() {
 	dbConnected := false
 	for !dbConnected {
 		dbConnected = <-databaseConnectionStatusChan
-		logger.LoggerHealth.Debugf("Connection to database %v", dbConnected)
+		logger.LoggerHealth.Debugf("Connection status to the database returned: %v", dbConnected)
 	}
 	databaseConnectionEstablished = true
 }
