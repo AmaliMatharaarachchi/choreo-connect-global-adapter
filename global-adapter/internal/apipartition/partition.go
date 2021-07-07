@@ -39,7 +39,7 @@ import (
 
 // TODO : Following 2 lines no need in near future.Since no need to fetch API info from the CP
 var ehURL string = "https://localhost:9443/internal/data/v1/apis/"
-var basicAuth string = "Basic YWRtaW46YWRtaW4="
+var basicAuth string = "Basic Y2hvcmVvX2Rldl9hcGltX2FkbWluOlRTYTlmM1VyNDIxRjZLVgo="
 
 var configs = config.ReadConfigs()
 var partitionSize = configs.Server.PartitionSize
@@ -59,6 +59,7 @@ const (
 	envoy                  string = "Envoy"
 	authorization          string = "Authorization"
 	uuid                   string = "uuid"
+	apiID                  string = "apiId"
 	clientName             string = "global-adapter"
 	productionSandboxLabel string = "Production and Sandbox"
 	defaultGatewayLabel    string = "default"
@@ -105,7 +106,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 		}
 	}
 
-	if len(cacheObj) > 2 {
+	if len(cacheObj) >= 2 {
 		rc := cache.GetClient()
 		cachingError := cache.SetCacheKeys(cacheObj, rc)
 		if cachingError == nil {
@@ -318,12 +319,12 @@ func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	var cacheKey string
 
 	if strings.TrimSpace(api.Context) == "" || strings.TrimSpace(api.Version) == "" {
-		api := fetchAPIInfo(api.UUID, labelHierarchy) // deprecated
-		if api != nil {
-			version = api.Version
-			basePath = api.Context
-			organization = api.Organization
-		}
+		// api := fetchAPIInfo(api.UUID, labelHierarchy) // deprecated
+		// if api != nil {
+		// 	version = api.Version
+		// 	basePath = api.Context
+		// 	organization = api.Organization
+		// }
 	} else {
 		version = api.Version
 		basePath = "/" + strings.SplitN(api.Context, "/", 3)[2]
@@ -343,12 +344,16 @@ func fetchAPIInfo(apiUUID, gwLabel string) *types.API {
 
 	var apiInfo *types.API
 
+	if gwLabel == defaultGatewayLabel {
+		gwLabel = productionSandboxLabel
+	}
+
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	req, _ := http.NewRequest("GET", ehURL, nil)
 	queryParam := req.URL.Query()
-	queryParam.Add(uuid, apiUUID)
+	queryParam.Add(apiID, apiUUID)
 	queryParam.Add(gatewayLabel, gwLabel)
 	req.URL.RawQuery = queryParam.Encode()
 	client := &http.Client{
