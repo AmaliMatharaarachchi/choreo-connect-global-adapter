@@ -60,15 +60,15 @@ func RedisCacheConnectRetry(clientOptions *redis.Options) (*redis.Client, bool) 
 	for attempt = 1; attempt <= maxAttempt; attempt++ {
 		rdb := redis.NewClient(clientOptions)
 		_, err := rdb.Ping().Result()
-		if err == nil {
+		if err != nil {
+			if strings.Contains(err.Error(), "timeout") {
+				time.Sleep(retryInterval * time.Second)
+			} else {
+				return nil, false
+			}
+		} else {
 			return rdb, true
 		}
-		if strings.Contains(err.Error(), "timeout") {
-			time.Sleep(retryInterval * time.Second)
-		} else {
-			return nil, false
-		}
-
 	}
 	return nil, false
 }
