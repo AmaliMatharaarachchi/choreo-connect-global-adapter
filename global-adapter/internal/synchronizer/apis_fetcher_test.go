@@ -31,7 +31,6 @@ import (
 // 	skipSSL := true
 // 	truststoreLocation := "/home/wso2/security/truststore"
 // 	retryInterval := time.Duration(5)
-// 	health.ControlPlaneStarted = true
 // 	data := sync.DeploymentDescriptor{
 // 		Type:    "deployments",
 // 		Version: "v4.0.0",

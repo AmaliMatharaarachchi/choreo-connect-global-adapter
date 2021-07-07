@@ -99,10 +99,13 @@ func Run(conf *config.Config) {
 		// WaitForRedisCacheConnection() methods
 		healthGA.WaitForDatabaseConnection()
 		healthGA.WaitForRedisCacheConnection()
+		healthGA.WaitForGrpcServer()
 		logger.LoggerServer.Info("XDS server is starting.")
 		if err = grpcServer.Serve(listener); err != nil {
+			healthGA.SetGrpcServerStatus(false)
 			logger.LoggerServer.Fatal("Error while starting gRPC server.")
 		}
+		healthGA.SetGrpcServerStatus(true)
 	}()
 
 OUTER:

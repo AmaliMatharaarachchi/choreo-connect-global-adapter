@@ -53,13 +53,13 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 		if data.Resp != nil {
 			// For successfull fetches, data.Resp would return a byte slice with API project(s)
 			logger.LoggerSync.Debugf("API project received...")
+			health.SetControlPlaneRestAPIStatus(true)
 			var deployments sync.DeploymentDescriptor
 			err := json.Unmarshal([]byte(string(data.Resp)), &deployments)
 			if err != nil {
 				logger.LoggerSync.Errorf("Error occured while unmarshalling deplyment data. Error: %v", err.Error())
 				return &deployments, err
 			}
-			health.SetControlPlaneRestAPIStatus(err == nil)
 			return &deployments, nil
 		} else if data.ErrorCode == 404 {
 			// This condition is checked to prevent GA from crashing when Control Plane doesn't have APIs intially
@@ -73,14 +73,10 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 			}
 		} else if data.ErrorCode >= 400 && data.ErrorCode < 500 {
 			logger.LoggerSync.Fatalf("Error occurred when retrieving APIs from control plane: %v", data.Err)
-			// When No API Artifacts found isNoAPIArtifacts is set to true
-			isNoAPIArtifacts := data.ErrorCode == 404
-			health.SetControlPlaneRestAPIStatus(isNoAPIArtifacts)
 		} else {
 			// Keep the iteration still until data is received from the control plane.
 			i--
 			logger.LoggerSync.Errorf("Error occurred while fetching data from control plane: %v", data.Err)
-			health.SetControlPlaneRestAPIStatus(false)
 			sync.RetryFetchingAPIs(c, serviceURL, userName, password, skipSSL, truststoreLocation, retryInterval,
 				data, RuntimeMetaDataEndpoint, false)
 		}
