@@ -20,6 +20,7 @@ package xds
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -32,6 +33,9 @@ import (
 
 var (
 	apiCache wso2_cache.SnapshotCache
+	// The labels with partition IDs are stored here. <LabelHirerarchy>-P:<partition_ID>
+	// TODO: (VirajSalaka) change the implementation of the snapshot library to provide the same information.
+	introducedLabels map[string]bool
 )
 
 const (
@@ -55,6 +59,7 @@ var _ wso2_cache.NodeHash = IDHash{}
 func init() {
 	apiCache = wso2_cache.NewSnapshotCache(false, IDHash{}, nil)
 	rand.Seed(time.Now().UnixNano())
+	introducedLabels = make(map[string]bool, 1)
 }
 
 // GetAPICache returns API Cache
@@ -62,7 +67,7 @@ func GetAPICache() wso2_cache.SnapshotCache {
 	return apiCache
 }
 
-// addSingleAPI adds the API entry to XDS cache
+// addSingleAPI adds the API entry to XDS cache. Label should contain the paritionID along with label hierarchy.
 func addSingleAPI(label, apiUUID, revisionUUID string) {
 	logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s", label, apiUUID, revisionUUID)
 	var newSnapshot wso2_cache.Snapshot
@@ -85,33 +90,48 @@ func addSingleAPI(label, apiUUID, revisionUUID string) {
 			nil, nil, nil, nil, nil, apiResources)
 	}
 	apiCache.SetSnapshot(label, newSnapshot)
+	introducedLabels[label] = true
 	logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
 }
 
 // removeAPI removes the API entry from XDS cache
-func removeAPI(label, apiUUID string) {
-	logger.LoggerXds.Infof("Remove API is triggered for %s:%s", label, apiUUID)
+func removeAPI(labelHierarchy, apiUUID string) {
+	logger.LoggerXds.Infof("Remove API is triggered for %s", apiUUID)
 	var newSnapshot wso2_cache.Snapshot
 	version := rand.Intn(maxRandomInt)
-	currentSnapshot, err := apiCache.GetSnapshot(label)
+	for label := range introducedLabels {
+		// If the label does not starts with label hierarchy, that means the API is not required to be removed from
+		// that specific environment.
+		if !strings.HasPrefix(label, labelHierarchy) {
+			continue
+		}
+		currentSnapshot, err := apiCache.GetSnapshot(label)
+		if err != nil {
+			// non reachable code as the implementation iterates over available labels
+			continue
+		}
 
-	if err != nil {
-		logger.LoggerXds.Infof("API : %s is not found within snapshot for label %s", apiUUID, label)
-		return
+		resourceMap := currentSnapshot.GetResources(typeURL)
+		_, apiFound := resourceMap[apiUUID]
+		// If the API is found, then the xds cache is updated and returned.
+		if apiFound {
+			logger.LoggerXds.Debugf("API : %s is found within snapshot for label %s", apiUUID, label)
+			delete(resourceMap, apiUUID)
+			apiResources := convertResourceMapToArray(resourceMap)
+			newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
+				nil, nil, nil, nil, nil, apiResources)
+			apiCache.SetSnapshot(label, newSnapshot)
+			logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
+			return
+		}
 	}
-	resourceMap := currentSnapshot.GetResources(typeURL)
-	delete(resourceMap, apiUUID)
-	apiResources := convertResourceMapToArray(resourceMap)
-	newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
-		nil, nil, nil, nil, nil, apiResources)
-	apiCache.SetSnapshot(label, newSnapshot)
-	logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
+	logger.LoggerXds.Errorf("API : %s is not found within snapshot for label hierarchy %s", apiUUID, labelHierarchy)
 }
 
 // ProcessSingleEvent is triggered when there is a single event needs to be processed(Corresponding to JMS Events)
 func ProcessSingleEvent(event *internal_types.LaAPIEvent) {
 	if event.IsRemoveEvent {
-		removeAPI(event.Label, event.APIUUID)
+		removeAPI(event.LabelHierarchy, event.APIUUID)
 	} else {
 		addSingleAPI(event.Label, event.APIUUID, event.RevisionUUID)
 	}
@@ -152,6 +172,7 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 
 	for label, snapshotEntry := range snapshotMap {
 		apiCache.SetSnapshot(label, *snapshotEntry)
+		introducedLabels[label] = true
 		logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
 	}
 }

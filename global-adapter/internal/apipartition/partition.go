@@ -300,7 +300,7 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 						APIUUID:       api.UUID,
 						IsRemoveEvent: true,
 						// TODO: (Shanaka) update with proper label
-						Label: "default",
+						LabelHierarchy: gatewayLabel,
 					}})
 					return true
 				}
