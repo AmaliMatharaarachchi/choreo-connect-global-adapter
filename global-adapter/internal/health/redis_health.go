@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
 
@@ -41,10 +42,12 @@ func SetRedisCacheConnectionStatus(status bool) {
 
 // WaitForRedisCacheConnection until connected to redis cache
 func WaitForRedisCacheConnection() {
+	conf := config.ReadConfigs()
 	redisConnected := false
 	for !redisConnected {
 		redisConnected = <-redisCacheConnectionStatusChan
-		logger.LoggerHealth.Debugf("Connection status to the Redis cache returned: %v", redisConnected)
+		logger.LoggerHealth.Debugf("Connection status to the Redis cache at %v:%v returned: %v",
+			conf.RedisServer.Host, conf.RedisServer.Port, redisConnected)
 	}
 	redisCacheConnectionEstablished = true
 }

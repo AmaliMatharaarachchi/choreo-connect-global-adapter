@@ -17,7 +17,10 @@
 
 package health
 
-import "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+import (
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+)
 
 var (
 	databaseConnectionStatusChan  = make(chan bool)
@@ -35,10 +38,12 @@ func SetDatabaseConnectionStatus(status bool) {
 
 // WaitForDatabaseConnection waits until connected to database
 func WaitForDatabaseConnection() {
+	conf := config.ReadConfigs()
 	dbConnected := false
 	for !dbConnected {
 		dbConnected = <-databaseConnectionStatusChan
-		logger.LoggerHealth.Debugf("Connection status to the database returned: %v", dbConnected)
+		logger.LoggerHealth.Debugf("Connection status to the database %v at %v:%v returned: %v",
+			conf.DataBase.Name, conf.DataBase.Host, conf.DataBase.Port, dbConnected)
 	}
 	databaseConnectionEstablished = true
 }
