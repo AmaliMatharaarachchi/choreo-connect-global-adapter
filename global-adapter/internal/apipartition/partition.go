@@ -327,13 +327,14 @@ func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 		}
 	} else {
 		version = api.Version
+		// [1]
 		// TODO (Shanaka) Following 3 lines of code segment should move to the " MOVE HERE "
 		splitVersion := strings.Split(api.Context, version)
 		basePath = strings.TrimSuffix("/"+strings.SplitN(splitVersion[0], "/", 3)[2], "/")
 		organization = strings.Split(splitVersion[0], "/")[1]
 	}
 
-	// MOVE HERE
+	// MOVE HERE <-- Read [1]
 
 	if organization != "" && version != "" && basePath != "" {
 		cacheKey = fmt.Sprintf(clientName+"#%s#%s_%s_%s", labelHierarchy, organization, basePath, version)
