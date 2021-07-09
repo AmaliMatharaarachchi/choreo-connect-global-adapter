@@ -19,21 +19,18 @@ package startup
 import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 )
 
 // TODO : this should fetch from config file
 var partitionSize = 10
-
-var apiList []synchronizer.APIEvent
 
 const (
 	apisTable          string = "ga_local_adapter_partition"
 	partitionSizeTable string = "la_partition_size"
 )
 
-// Init for initialize all startup functions
-func Init() {
+// Initialize for initialize all startup functions
+func Initialize() {
 	database.ConnectToDb()
 	defer database.CloseDbConnection()
 	isDbConnectionAlive := database.WakeUpConnection()
