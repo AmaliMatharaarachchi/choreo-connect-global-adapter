@@ -53,10 +53,11 @@ const (
 	DeployInAPIGateway
 )
 
-// LaAPIState for
-type LaAPIState struct {
+// LaAPIEvent is used for xds cache updates
+type LaAPIEvent struct {
 	LabelHierarchy string
 	Label          string
-	Revision       string
-	EventType      EventType
+	APIUUID        string
+	RevisionUUID   string
+	IsRemoveEvent  bool
 }

@@ -80,9 +80,6 @@ func Run(conf *config.Config) {
 	grpcServer := grpc.NewServer(grpcOptions...)
 	ga_service.RegisterApiGADiscoveryServiceServer(grpcServer, enforcerAPIDsSrv)
 
-	// TODO: (VirajSalaka) remove
-	// go xds.AddAPIsToCache()
-
 	port := conf.XdsServer.Port
 	// TODO: (VirajSalaka) Bind host to the listener
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
