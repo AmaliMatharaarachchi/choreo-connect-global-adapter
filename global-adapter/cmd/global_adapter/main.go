@@ -35,12 +35,12 @@ func main() {
 
 func initServer() error {
 	conf := config.ReadConfigs()
+	startup.Initialize()
 	server.Run(conf)
 	return nil
 }
 
 func startGlobalAdapter(args []string) {
-	startup.Init()
 	fmt.Println("Global Adapter - Implementation in Progress... ")
 	initServer()
 }
