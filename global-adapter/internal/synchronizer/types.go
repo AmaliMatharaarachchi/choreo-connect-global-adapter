@@ -24,3 +24,9 @@ type APIEvent struct {
 	Version       string
 	GatewayLabels []string
 }
+
+// CpError Control Plane error structure for runtime-artifact
+type CpError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}

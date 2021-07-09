@@ -49,7 +49,6 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 	for i := 0; i < 1; i++ {
 		// Read the API details from the channel.
 		data := <-c
-		logger.LoggerSync.Debugf("Receiving data for environments")
 		if data.Resp != nil {
 			// Implement the health check.
 			// For successfull fetches, data.Resp would return a byte slice with API project(s)
@@ -61,6 +60,18 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 				return &deployments, err
 			}
 			return &deployments, nil
+		} else if data.ErrorCode == 404 {
+			var error CpError
+			unErr := json.Unmarshal([]byte(data.Err.Error()), &error)
+			logger.LoggerSync.Debugf("Receiving data for environments")
+			if unErr == nil && error.Code == 900910 {
+				i--
+				logger.LoggerSync.Debugf("No APIs received from control plane hence retrying: %v", error.Message)
+				sync.RetryFetchingAPIs(c, serviceURL, userName, password, skipSSL, truststoreLocation, retryInterval,
+					data, RuntimeMetaDataEndpoint, false)
+			} else {
+				logger.LoggerSync.Fatalf("Error occurred when retrieving APIs from control plane: %v", data.Err)
+			}
 		} else if data.ErrorCode >= 400 && data.ErrorCode < 500 {
 			logger.LoggerSync.Fatalf("Error occurred when retrieving APIs from control plane: %v", data.Err)
 		} else {
