@@ -61,6 +61,8 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 			}
 			return &deployments, nil
 		} else if data.ErrorCode == 404 {
+			// This condition is checked to prevent GA from crashing when Control Plane doesn't have APIs intially
+			// With a 404 http error code the response contains a API Manager error code 900910 hence checking for it
 			var error CpError
 			unErr := json.Unmarshal([]byte(data.Err.Error()), &error)
 			if unErr == nil && error.Code == 900910 {
