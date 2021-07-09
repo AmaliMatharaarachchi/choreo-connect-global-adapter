@@ -1,11 +1,11 @@
 # The configuration file for mgw
 
 [keystore]
-  certPath = "/home/shalki/WSO2/Choreo/security/mg.pem"
-  keyPath = "/home/shalki/WSO2/Choreo/security/mg.key"
+  certPath = "/home/wso2/security/mg.pem"
+  keyPath = "/home/wso2/security/mg.key"
   
 [truststore]
-  location = "/home/shalki/WSO2/Choreo/security/truststore"
+  location = "/home/wso2/security/truststore"
 	
 # Control plane's connection details
 [controlPlane]
@@ -42,7 +42,7 @@
   defaultAutoCommit = true
 
 [redisServer]
-  host = 'choreo-dev-redis-cache.redis.cache.windows.net'
+  host = 'redis-host-url'
   port = 6380
   password = '$env{redis_host_pwd}'
   clientName = 'global-adapter'

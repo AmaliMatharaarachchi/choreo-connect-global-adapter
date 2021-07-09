@@ -35,6 +35,7 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
 )
 
 // TODO : Following 2 lines no need in near future.Since no need to fetch API info from the CP
@@ -54,19 +55,20 @@ const (
 )
 
 const (
-	gwType        string = "type"
-	gatewayLabel  string = "gatewayLabel"
-	envoy         string = "Envoy"
-	authorization string = "Authorization"
-	uuid          string = "uuid"
-	clientName    string = "global-adapter"
+	gwType                 string = "type"
+	gatewayLabel           string = "gatewayLabel"
+	envoy                  string = "Envoy"
+	authorization          string = "Authorization"
+	uuid                   string = "uuid"
+	apiID                  string = "apiId"
+	clientName             string = "global-adapter"
+	productionSandboxLabel string = "Production and Sandbox"
+	defaultGatewayLabel    string = "default"
 )
-
-var apisChan = make(chan []types.LaAPIState)
 
 // PopulateAPIData - populating API infomation to Database and redis cache
 func PopulateAPIData(apis []synchronizer.APIEvent) {
-	var laAPIList []types.LaAPIState
+	var laAPIList []*types.LaAPIEvent
 	var cacheObj []string
 
 	database.WakeUpConnection()
@@ -74,15 +76,27 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 
 	for ind := range apis {
 		for index := range apis[ind].GatewayLabels {
-			label := insertRecord(&apis[ind], apis[ind].GatewayLabels[index], types.APICreate)
+			gatewayLabel := apis[ind].GatewayLabels[index]
+
+			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+			if gatewayLabel == productionSandboxLabel {
+				gatewayLabel = defaultGatewayLabel
+			}
+
+			label := insertRecord(&apis[ind], gatewayLabel, types.APICreate)
 
 			if label != "" {
-				cacheKey := getCacheKey(&apis[ind], apis[ind].GatewayLabels[index])
+				cacheKey := getCacheKey(&apis[ind], gatewayLabel)
 
-				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", apis[ind].GatewayLabels[index], " is ", label)
+				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
-				apiState := types.LaAPIState{LabelHierarchy: apis[ind].GatewayLabels[index], Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
-				laAPIList = append(laAPIList, apiState)
+				apiState := types.LaAPIEvent{
+					LabelHierarchy: gatewayLabel,
+					Label:          label,
+					RevisionUUID:   apis[ind].RevisionID,
+					APIUUID:        apis[ind].UUID,
+				}
+				laAPIList = append(laAPIList, &apiState)
 
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
 				if cacheKey != "" {
@@ -96,16 +110,27 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 		}
 	}
 
-	rc := cache.GetClient()
-	cache.SetCacheKeys(cacheObj, rc)
-
-	pushToChan(apisChan, laAPIList)
+	if len(cacheObj) >= 2 {
+		rc := cache.GetClient()
+		cachingError := cache.SetCacheKeys(cacheObj, rc)
+		if cachingError != nil {
+			return
+		}
+		pushToXdsCache(laAPIList)
+	}
 
 }
 
-func pushToChan(c chan []types.LaAPIState, laAPIList []types.LaAPIState) {
+func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 	logger.LoggerServer.Debug("API List : ", len(laAPIList))
-	apisChan <- laAPIList
+	if len(laAPIList) == 0 {
+		return
+	}
+	if len(laAPIList) > 1 {
+		xds.AddMultipleAPIs(laAPIList)
+		return
+	}
+	xds.ProcessSingleEvent(laAPIList[0])
 }
 
 // insertRecord always return the adapter label for the relevant API
@@ -218,15 +243,32 @@ func getNextIncrementalID(hierarchyID string) int {
 	return nextIncrementalID
 }
 
+// ProcessEventsInDatabase function can process one event or many API events. If the array length is greater than one, it
+// would be the startup scenario. Hence all the APIs would be deployed. Otherwise the events type will be taken into consideration
+// and will be processed as delete record or insert record based on the event type. The outcome would be another event, which
+// represents the partitionID for a given API.
+func ProcessEventsInDatabase() {
+	for d := range synchronizer.APIDeployAndRemoveEventChannel {
+		updateFromEvents(d)
+	}
+}
+
 // for update the DB for JMS event
 // TODO : if event is for undeploy or remove task , then API should delete from the DB
-func updateFromEvent(api *synchronizer.APIEvent, eventType types.EventType) {
-	switch eventType {
-	case types.APIDelete:
-		DeleteAPIRecord(api)
-	case types.APICreate:
-		PopulateAPIData([]synchronizer.APIEvent{*api})
+func updateFromEvents(apis []synchronizer.APIEvent) {
+	if len(apis) > 1 {
+		PopulateAPIData(apis)
+		return
 	}
+	if len(apis) == 0 {
+		return
+	}
+	isRemoveEvent := apis[0].IsRemoveEvent
+	if isRemoveEvent {
+		DeleteAPIRecord(&apis[0])
+		return
+	}
+	PopulateAPIData(apis)
 }
 
 // DeleteAPIRecord Funtion accept API uuid as the argument
@@ -242,13 +284,25 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 			stmt, _ := database.DB.Prepare(database.QueryDeleteAPI)
 
 			for index := range api.GatewayLabels {
-				_, error := stmt.Exec(api.UUID, api.GatewayLabels[index])
+				gatewayLabel := api.GatewayLabels[index]
+
+				// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+				if gatewayLabel == productionSandboxLabel {
+					gatewayLabel = defaultGatewayLabel
+				}
+				_, error := stmt.Exec(api.UUID, gatewayLabel)
 				if error != nil {
 					logger.LoggerServer.Error("Error while deleting the API UUID : ", api.UUID, " ", error)
 					// break
 				} else {
 					logger.LoggerServer.Info("API deleted from the database : ", api.UUID)
-					updateRedisCache(api, api.GatewayLabels[index], nil, types.APIDelete)
+					updateRedisCache(api, gatewayLabel, nil, types.APIDelete)
+					pushToXdsCache([]*types.LaAPIEvent{{
+						APIUUID:       api.UUID,
+						IsRemoveEvent: true,
+						// TODO: (Shanaka) update with proper label
+						LabelHierarchy: gatewayLabel,
+					}})
 					return true
 				}
 			}
@@ -288,17 +342,22 @@ func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	var cacheKey string
 
 	if strings.TrimSpace(api.Context) == "" || strings.TrimSpace(api.Version) == "" {
-		api := fetchAPIInfo(api.UUID, labelHierarchy) // deprecated
+		// api := fetchAPIInfo(api.UUID, labelHierarchy) // deprecated
 		if api != nil {
 			version = api.Version
-			basePath = api.Context
-			organization = api.Organization
+			// basePath = api.Context
+			// organization = api.Organization
 		}
 	} else {
 		version = api.Version
-		basePath = "/" + strings.SplitN(api.Context, "/", 3)[2]
-		organization = strings.Split(api.Context, "/")[1]
+		// [1]
+		// TODO (Shanaka) Following 3 lines of code segment should move to the " MOVE HERE "
+		splitVersion := strings.Split(api.Context, version)
+		basePath = strings.TrimSuffix("/"+strings.SplitN(splitVersion[0], "/", 3)[2], "/")
+		organization = strings.Split(splitVersion[0], "/")[1]
 	}
+
+	// MOVE HERE <-- Read [1]
 
 	if organization != "" && version != "" && basePath != "" {
 		cacheKey = fmt.Sprintf(clientName+"#%s#%s_%s_%s", labelHierarchy, organization, basePath, version)
@@ -313,12 +372,16 @@ func fetchAPIInfo(apiUUID, gwLabel string) *types.API {
 
 	var apiInfo *types.API
 
+	if gwLabel == defaultGatewayLabel {
+		gwLabel = productionSandboxLabel
+	}
+
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	req, _ := http.NewRequest("GET", ehURL, nil)
 	queryParam := req.URL.Query()
-	queryParam.Add(uuid, apiUUID)
+	queryParam.Add(apiID, apiUUID)
 	queryParam.Add(gatewayLabel, gwLabel)
 	req.URL.RawQuery = queryParam.Encode()
 	client := &http.Client{

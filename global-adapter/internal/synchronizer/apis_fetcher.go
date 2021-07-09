@@ -117,7 +117,7 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, inco
 		// Add API Event to array.
 		APIEventArray = append(APIEventArray, apiEvent)
 	}
-	logger.LoggerSync.Debugf("Write API Events %s to the APIDeployAndRemoveEventChannel ", APIEventArray)
+	logger.LoggerSync.Debugf("Write API Events %v to the APIDeployAndRemoveEventChannel ", APIEventArray)
 	APIDeployAndRemoveEventChannel <- APIEventArray
 	return
 }
