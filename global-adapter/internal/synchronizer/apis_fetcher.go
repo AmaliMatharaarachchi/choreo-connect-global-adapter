@@ -63,12 +63,8 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 		} else if data.ErrorCode == 404 {
 			var error CpError
 			unErr := json.Unmarshal([]byte(data.Err.Error()), &error)
-			logger.LoggerSync.Debugf("Receiving data for environments")
 			if unErr == nil && error.Code == 900910 {
-				i--
-				logger.LoggerSync.Debugf("No APIs received from control plane hence retrying: %v", error.Message)
-				sync.RetryFetchingAPIs(c, serviceURL, userName, password, skipSSL, truststoreLocation, retryInterval,
-					data, RuntimeMetaDataEndpoint, false)
+				logger.LoggerSync.Info("No APIs received from control plane starting global adapter with empty object")
 			} else {
 				logger.LoggerSync.Fatalf("Error occurred when retrieving APIs from control plane: %v", data.Err)
 			}
