@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
 
@@ -54,7 +55,7 @@ func ConnectToDb() bool {
 		}
 		retryAttempts++
 	}
-
+	health.SetDatabaseConnectionStatus(isConnected)
 	return isConnected
 }
 
@@ -74,7 +75,7 @@ func WakeUpConnection() bool {
 	} else {
 		isPing = true
 	}
-
+	health.SetDatabaseConnectionStatus(isPing)
 	return isPing
 }
 

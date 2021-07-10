@@ -26,6 +26,7 @@ import (
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	healthGA "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
@@ -93,8 +94,9 @@ func Run(conf *config.Config) {
 	healthservice.RegisterHealthServer(grpcServer, &health.Server{})
 
 	go func() {
-		// wait current goroutine forever for until control plane starts
 		health.WaitForControlPlane()
+		healthGA.WaitForDatabaseConnection()
+		healthGA.WaitForRedisCacheConnection()
 		logger.LoggerServer.Info("XDS server is starting.")
 		if err = grpcServer.Serve(listener); err != nil {
 			logger.LoggerServer.Fatal("Error while starting gRPC server.")

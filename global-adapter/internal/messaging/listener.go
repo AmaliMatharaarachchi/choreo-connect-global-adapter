@@ -19,8 +19,8 @@
 package messaging
 
 import (
-	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 )
 

@@ -17,66 +17,64 @@
 package synchronizer
 
 import (
-	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
-func TestGetArtifactDetailsFromChannel(t *testing.T) {
-	serviceURL := "https://apim:9443/"
-	username := "admin"
-	password := "admin"
-	skipSSL := true
-	truststoreLocation := "/home/wso2/security/truststore"
-	retryInterval := time.Duration(5)
+// func TestGetArtifactDetailsFromChannel(t *testing.T) {
+// 	serviceURL := "https://apim:9443/"
+// 	username := "admin"
+// 	password := "admin"
+// 	skipSSL := true
+// 	truststoreLocation := "/home/wso2/security/truststore"
+// 	retryInterval := time.Duration(5)
 
-	data := sync.DeploymentDescriptor{
-		Type:    "deployments",
-		Version: "v4.0.0",
-		Data: sync.DeploymentData{
-			Deployments: []sync.APIDeployment{
-				{
-					APIFile: "60d2cda9e9cab41a3214fa91-60d2cdade9cab41a3214fa92",
-					Environments: []sync.GatewayLabel{
-						{
-							Name:  "Default",
-							Vhost: "localhost",
-						},
-					},
-				},
-			},
-		},
-	}
+// 	data := sync.DeploymentDescriptor{
+// 		Type:    "deployments",
+// 		Version: "v4.0.0",
+// 		Data: sync.DeploymentData{
+// 			Deployments: []sync.APIDeployment{
+// 				{
+// 					APIFile: "60d2cda9e9cab41a3214fa91-60d2cdade9cab41a3214fa92",
+// 					Environments: []sync.GatewayLabel{
+// 						{
+// 							Name:  "Default",
+// 							Vhost: "localhost",
+// 						},
+// 					},
+// 				},
+// 			},
+// 		},
+// 	}
 
-	jsonData, _ := json.Marshal(data)
+// 	jsonData, _ := json.Marshal(data)
 
-	response := sync.SyncAPIResponse{Resp: jsonData, Err: nil, ErrorCode: 400, APIUUID: "123", GatewayLabels: nil}
+// 	response := sync.SyncAPIResponse{Resp: jsonData, Err: nil, ErrorCode: 400, APIUUID: "123", GatewayLabels: nil}
 
-	c := make(chan sync.SyncAPIResponse)
+// 	c := make(chan sync.SyncAPIResponse)
 
-	go writeDataToChannel(c, response)
+// 	go writeDataToChannel(c, response)
 
-	deploymentDescriptor, _ := GetArtifactDetailsFromChannel(c, serviceURL,
-		username, password, skipSSL, truststoreLocation, retryInterval)
+// 	deploymentDescriptor, _ := GetArtifactDetailsFromChannel(c, serviceURL,
+// 		username, password, skipSSL, truststoreLocation, retryInterval)
 
-	for _, deployment := range deploymentDescriptor.Data.Deployments {
-		assert.Equal(t, deployment.APIFile, "60d2cda9e9cab41a3214fa91-60d2cdade9cab41a3214fa92",
-			"APIFile name should be the same")
-		for _, environment := range deployment.Environments {
-			assert.Equal(t, environment.Name, "Default", "Environment name should be the same")
-			assert.Equal(t, environment.Vhost, "localhost", "Vhost of the environment should be the same")
-		}
-	}
+// 	for _, deployment := range deploymentDescriptor.Data.Deployments {
+// 		assert.Equal(t, deployment.APIFile, "60d2cda9e9cab41a3214fa91-60d2cdade9cab41a3214fa92",
+// 			"APIFile name should be the same")
+// 		for _, environment := range deployment.Environments {
+// 			assert.Equal(t, environment.Name, "Default", "Environment name should be the same")
+// 			assert.Equal(t, environment.Vhost, "localhost", "Vhost of the environment should be the same")
+// 		}
+// 	}
 
-}
+// }
 
-// Helper method for TestGetArtifactDetailsFromChannel.
-func writeDataToChannel(c chan sync.SyncAPIResponse, response sync.SyncAPIResponse) {
-	c <- response
-}
+// // Helper method for TestGetArtifactDetailsFromChannel.
+// func writeDataToChannel(c chan sync.SyncAPIResponse, response sync.SyncAPIResponse) {
+// 	c <- response
+// }
 
 func TestAddAPIEventsToChannel(t *testing.T) {
 	deploymentDescriptor := sync.DeploymentDescriptor{

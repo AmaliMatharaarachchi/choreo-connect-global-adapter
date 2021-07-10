@@ -20,9 +20,9 @@ import (
 	"crypto/tls"
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 
 	"github.com/go-redis/redis"
@@ -35,23 +35,24 @@ func ConnectToRedisServer() *redis.Client {
 	conf := config.ReadConfigs()
 	clientOptions := getRedisClientOptions(conf)
 	rdb := redis.NewClient(clientOptions)
-
+	var isConnected bool = false
 	pong, err := rdb.Ping().Result()
 	// TODO : check the connection error and retry
 	if err != nil {
-		if strings.Contains(err.Error(), "timeout") {
-			logger.LoggerServer.Info(err, " .Retring to connect with Redis server")
-			redisClient = nil
-		} else {
-			logger.LoggerServer.Error("Failed to connect with redis server using Host : ", conf.RedisServer.Host, " and Port : ", conf.RedisServer.Port, " Error : ", err)
-			redisClient = nil
-		}
-		redisClient = nil
+		// if strings.Contains(err.Error(), "timeout") {
+		// 	logger.LoggerServer.Info(err, " .Retring to connect with Redis server")
+		// } else {
+		// 	logger.LoggerServer.Error("Failed to connect with redis server using Host : ", conf.RedisServer.Host, " and Port : ", conf.RedisServer.Port, " Error : ", err)
+		// 	redisClient = nil
+		// }
+		// redisClient = nil
+		redisClient, isConnected = health.RedisCacheConnectRetry(clientOptions)
 	} else {
 		logger.LoggerServer.Info("Connected to the redis cluster ", pong)
+		isConnected = true
 		redisClient = rdb
 	}
-
+	health.SetRedisCacheConnectionStatus(isConnected)
 	return rdb
 }
 
@@ -74,6 +75,9 @@ func getRedisClientOptions(conf *config.Config) *redis.Options {
 
 // GetClient - returns the connected client reference if it alive , else reconnect and return the reference
 func GetClient() *redis.Client {
+	// go func() {
+	// 	health.WaitForRedisCacheConnection()
+	// }()
 	if redisClient == nil {
 		logger.LoggerServer.Debug("Reconnecting redis client to server")
 		return ConnectToRedisServer()

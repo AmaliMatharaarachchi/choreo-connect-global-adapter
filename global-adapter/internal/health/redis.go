@@ -18,13 +18,11 @@
 package health
 
 import (
-	"crypto/tls"
-	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
 
 var (
@@ -41,58 +39,37 @@ func SetRedisCacheConnectionStatus(status bool) {
 	}
 }
 
-// WaitForRedisCacheConnection sleep the current go routine until connected to redis cache
+// WaitForRedisCacheConnection until connected to redis cache
 func WaitForRedisCacheConnection() {
 	redisConnected := false
-	if !redisConnected {
-		redisConnected = <-databaseConnectionStatusChan
+	for !redisConnected {
+		redisConnected = <-redisCacheConnectionStatusChan
+		logger.LoggerHealth.Debugf("Connection to Redis cache %v", redisConnected)
 	}
 	redisCacheConnectionEstablished = true
 }
 
 // RedisCacheConnectRetry retries to connect to the redis cache if there is a connection error
-func RedisCacheConnectRetry(connString string) (*redis.Client, error) {
-	// TODO: get these values from config.toml
-	var redisHost string = "choreo-dev-redis-cache.redis.cache.windows.net"
-	var redisPort int = 6380
-	var redisPassword string = "kHpoShmMarFcm13E1LuDmDo5+A2rFyAqbG4zmiXPpyk="
-	var redisClientName = "global-adapter"
-	var databaseIndex = 2
-	var redisConnectionPoolSize = 10
+func RedisCacheConnectRetry(clientOptions *redis.Options) (*redis.Client, bool) {
 	// TODO: (Jayanie) maxAttempt and retryInterval Should be configurable?
 	var (
 		maxAttempt    int = 5
 		retryInterval time.Duration
 		attempt       int
-		err           error
 	)
-	clientOptions := &redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", redisHost, strconv.Itoa(redisPort)),
-		Password: redisPassword,
-		DB:       databaseIndex,
-		TLSConfig: &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		},
-		OnConnect: func(c *redis.Conn) error {
-			name := redisClientName
-			return c.ClientSetName(name).Err()
-		},
-		PoolSize: redisConnectionPoolSize,
-	}
-
 	for attempt = 1; attempt <= maxAttempt; attempt++ {
 		rdb := redis.NewClient(clientOptions)
 		_, err := rdb.Ping().Result()
 		if err == nil {
-			return rdb, nil
+			return rdb, true
 		}
 		if err != nil {
 			if strings.Contains(err.Error(), "timeout") {
 				time.Sleep(retryInterval * time.Second)
 			} else {
-				return nil, err
+				return nil, false
 			}
 		}
 	}
-	return nil, err
+	return nil, false
 }
