@@ -98,7 +98,8 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, inco
 		apiEvent.UUID = deployment.APIFile[:24]
 		// Add the revision ID to the api event.
 		apiEvent.RevisionID = deployment.APIFile[25:49]
-
+		// Organization ID is required for the API struct sent over XDS to the local adapter
+		apiEvent.OrganizationID = deployment.OrganizationID
 		// Read the environments.
 		environments := deployment.Environments
 		for _, env := range environments {
@@ -111,11 +112,9 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, inco
 			apiEvent.Context = incomingAPIEvent.Context
 			apiEvent.Version = incomingAPIEvent.Version
 		}
-
 		// Add API Event to array.
 		APIEventArray = append(APIEventArray, apiEvent)
 	}
 	logger.LoggerSync.Debugf("Write API Events %v to the APIDeployAndRemoveEventChannel ", APIEventArray)
 	APIDeployAndRemoveEventChannel <- APIEventArray
-	return
 }

@@ -55,9 +55,10 @@ const (
 
 // LaAPIEvent is used for xds cache updates
 type LaAPIEvent struct {
-	LabelHierarchy string
-	Label          string
-	APIUUID        string
-	RevisionUUID   string
-	IsRemoveEvent  bool
+	LabelHierarchy   string
+	Label            string
+	APIUUID          string
+	RevisionUUID     string
+	OrganizationUUID string
+	IsRemoveEvent    bool
 }
