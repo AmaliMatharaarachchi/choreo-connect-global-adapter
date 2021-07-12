@@ -1,8 +1,8 @@
 # The configuration file for mgw
 
 [keystore]
-  certPath = "/home/wso2/security/mg.pem"
-  keyPath = "/home/wso2/security/mg.key"
+  certPath = "/home/wso2/security/keystore/global-adapter.pem"
+  keyPath = "/home/wso2/security/keystore/global-adapter.key"
   
 [truststore]
   location = "/home/wso2/security/truststore"

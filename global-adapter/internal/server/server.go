@@ -19,6 +19,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -35,7 +36,9 @@ import (
 	ga_service "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/service/ga"
 	wso2_server "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/server/v3"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
+	"github.com/wso2/product-microgateway/adapter/pkg/tlsutils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // TODO: (VirajSalaka) check this is streams per connections or total number of concurrent streams.
@@ -44,7 +47,7 @@ const grpcMaxConcurrentStreams = 1000000
 // Run functions starts the XDS Server.
 func Run(conf *config.Config) {
 	logger.LoggerServer.Info("Starting global adapter ....")
-	sig := make(chan os.Signal)
+	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -64,18 +67,18 @@ func Run(conf *config.Config) {
 	var grpcOptions []grpc.ServerOption
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
 
-	// publicKeyLocation := "/home/wso2/security/mg.pem"
-	// privateKeyLocation := "/home/wso2/security/mg.key"
-	// cert, err := tlsutils.GetServerCertificate(publicKeyLocation, privateKeyLocation)
-	// if err != nil {
-	// 	fmt.Println("Error while loading certs")
-	// } else {
-	// 	grpcOptions = append(grpcOptions, grpc.Creds(
-	// 		credentials.NewTLS(&tls.Config{
-	// 			Certificates: []tls.Certificate{cert},
-	// 		}),
-	// 	))
-	// }
+	publicKeyLocation := conf.Keystore.PublicKeyLocation
+	privateKeyLocation := conf.Keystore.PrivateKeyLocation
+	cert, err := tlsutils.GetServerCertificate(publicKeyLocation, privateKeyLocation)
+	if err != nil {
+		logger.LoggerServer.Fatal("Error while loading private key public key pair.", err)
+	} else {
+		grpcOptions = append(grpcOptions, grpc.Creds(
+			credentials.NewTLS(&tls.Config{
+				Certificates: []tls.Certificate{cert},
+			}),
+		))
+	}
 
 	grpcServer := grpc.NewServer(grpcOptions...)
 	ga_service.RegisterApiGADiscoveryServiceServer(grpcServer, enforcerAPIDsSrv)
