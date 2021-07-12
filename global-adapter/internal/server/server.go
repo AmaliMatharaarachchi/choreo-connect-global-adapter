@@ -70,12 +70,15 @@ func Run(conf *config.Config) {
 	publicKeyLocation := conf.Keystore.PublicKeyLocation
 	privateKeyLocation := conf.Keystore.PrivateKeyLocation
 	cert, err := tlsutils.GetServerCertificate(publicKeyLocation, privateKeyLocation)
+	caCertPool := tlsutils.GetTrustedCertPool(conf.Truststore.Location)
 	if err != nil {
 		logger.LoggerServer.Fatal("Error while loading private key public key pair.", err)
 	} else {
 		grpcOptions = append(grpcOptions, grpc.Creds(
 			credentials.NewTLS(&tls.Config{
 				Certificates: []tls.Certificate{cert},
+				ClientAuth:   tls.RequireAndVerifyClientCert,
+				ClientCAs:    caCertPool,
 			}),
 		))
 	}
