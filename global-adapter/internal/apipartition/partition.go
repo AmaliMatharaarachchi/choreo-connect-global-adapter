@@ -91,10 +91,11 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
 				apiState := types.LaAPIEvent{
-					LabelHierarchy: gatewayLabel,
-					Label:          label,
-					RevisionUUID:   apis[ind].RevisionID,
-					APIUUID:        apis[ind].UUID,
+					LabelHierarchy:   gatewayLabel,
+					Label:            label,
+					RevisionUUID:     apis[ind].RevisionID,
+					APIUUID:          apis[ind].UUID,
+					OrganizationUUID: apis[ind].OrganizationID,
 				}
 				laAPIList = append(laAPIList, &apiState)
 
@@ -298,10 +299,10 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 					logger.LoggerServer.Info("API deleted from the database : ", api.UUID)
 					updateRedisCache(api, gatewayLabel, nil, types.APIDelete)
 					pushToXdsCache([]*types.LaAPIEvent{{
-						APIUUID:       api.UUID,
-						IsRemoveEvent: true,
-						// TODO: (Shanaka) update with proper label
-						LabelHierarchy: gatewayLabel,
+						APIUUID:          api.UUID,
+						IsRemoveEvent:    true,
+						OrganizationUUID: api.OrganizationID,
+						LabelHierarchy:   gatewayLabel,
 					}})
 					return true
 				}

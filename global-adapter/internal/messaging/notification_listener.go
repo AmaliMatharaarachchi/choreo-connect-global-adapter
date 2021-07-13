@@ -97,7 +97,7 @@ func handleAPIDeployAndRemoveEvents(data []byte, eventType string, config *confi
 	// Get runtime artifacts for api deploy events.
 	if apiEvent.Event.Type == deployAPI {
 		// Get runtime artifacts reladed to UUID and GatewayLabels  of the api event.
-		apiEventErr = getArtifacts(&apiEvent, config, APIEventArray)
+		apiEventErr = getArtifactsAndAddToChannel(&apiEvent, config, APIEventArray)
 		if apiEventErr != nil {
 			logger.LoggerMsg.Errorf("Error occurred while getting runtime artifacts %v", apiEventErr)
 			return
@@ -109,17 +109,18 @@ func handleAPIDeployAndRemoveEvents(data []byte, eventType string, config *confi
 		removeEvent.Context = apiEvent.Context
 		removeEvent.Version = apiEvent.Version
 		removeEvent.GatewayLabels = apiEvent.GatewayLabels
+		// TenantDomain is used to keep organization ID in choreo-scenario
+		removeEvent.OrganizationID = apiEvent.TenantDomain
 		removeEvent.IsRemoveEvent = true
 		if removeEvent.GatewayLabels != nil {
 			APIEventArray = append(APIEventArray, removeEvent)
 			sync.APIDeployAndRemoveEventChannel <- APIEventArray
 		}
 	}
-	return
 }
 
 // Download the artifacts related to the UUId and GatewayLabels of the api event.
-func getArtifacts(apiEvent *msg.APIEvent, config *config.Config, APIEventArray []sync.APIEvent) error {
+func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, APIEventArray []sync.APIEvent) error {
 	// Get the UUID and GatewayLabels from api event.
 	uuid := apiEvent.UUID
 	gatewayLabels := apiEvent.GatewayLabels
