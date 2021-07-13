@@ -18,6 +18,7 @@ package startup
 
 import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
 
@@ -31,6 +32,7 @@ const (
 
 // Initialize for initialize all startup functions
 func Initialize() {
+	go health.WaitForDatabaseConnection()
 	database.ConnectToDb()
 	defer database.CloseDbConnection()
 	isDbConnectionAlive := database.WakeUpConnection()
@@ -48,7 +50,8 @@ func Initialize() {
 			return
 		}
 	} else {
-		logger.LoggerServer.Fatal("Error while initiating the database ")
+		health.SetDatabaseConnectionStatus(false)
+		logger.LoggerServer.Fatal("Error while initiating the database")
 	}
 }
 

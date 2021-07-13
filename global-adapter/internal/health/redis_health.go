@@ -54,15 +54,16 @@ func WaitForRedisCacheConnection() {
 
 // RedisCacheConnectRetry retries to connect to the redis cache if there is a connection error
 func RedisCacheConnectRetry(clientOptions *redis.Options) (*redis.Client, bool) {
-	// TODO: (Jayanie) maxAttempt and retryInterval Should be configurable?
+	conf := config.ReadConfigs()
+	maxAttempts := conf.RedisServer.OptionalMetadata.MaxRetryAttempts
 	var (
-		maxAttempt    int = 5
-		retryInterval time.Duration
+		retryInterval time.Duration = 5
 		attempt       int
 	)
-	for attempt = 1; attempt <= maxAttempt; attempt++ {
+	for attempt = 1; attempt <= maxAttempts; attempt++ {
 		rdb := redis.NewClient(clientOptions)
 		_, err := rdb.Ping().Result()
+		logger.LoggerHealth.Info(err)
 		if err != nil {
 			if strings.Contains(err.Error(), "timeout") {
 				time.Sleep(retryInterval * time.Second)

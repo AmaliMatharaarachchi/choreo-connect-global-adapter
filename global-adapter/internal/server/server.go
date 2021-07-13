@@ -52,6 +52,7 @@ func Run(conf *config.Config) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	go health.WaitForControlPlane()
 
 	// Process incoming events.
 	go messaging.ProcessEvents(conf)
@@ -59,6 +60,7 @@ func Run(conf *config.Config) {
 	go apipartition.ProcessEventsInDatabase()
 	// Consume non API events from channel.
 	go GetNonAPIDeployAndRemoveEventsFromChannel()
+
 	// Fetch APIs from control plane.
 	fetchAPIsOnStartUp(conf)
 
@@ -93,20 +95,15 @@ func Run(conf *config.Config) {
 	// register health service
 	healthservice.RegisterHealthServer(grpcServer, &health.Server{})
 
-	go func() {
-		health.WaitForControlPlane()
-		// TODO: (Jayanie) Finalize where to include WaitForDatabaseConnection() and 
-		// WaitForRedisCacheConnection() methods
-		healthGA.WaitForDatabaseConnection()
-		healthGA.WaitForRedisCacheConnection()
-		healthGA.WaitForGrpcServer()
-		logger.LoggerServer.Info("XDS server is starting.")
-		if err = grpcServer.Serve(listener); err != nil {
-			healthGA.SetGrpcServerStatus(false)
-			logger.LoggerServer.Fatal("Error while starting gRPC server.")
-		}
+	logger.LoggerServer.Info("XDS server is starting.")
+	err = grpcServer.Serve(listener)
+	go healthGA.WaitForGrpcServer()
+	if err != nil {
+		healthGA.SetGrpcServerStatus(false)
+		logger.LoggerServer.Fatal("Error while starting gRPC server.")
+	} else {
 		healthGA.SetGrpcServerStatus(true)
-	}()
+	}
 
 OUTER:
 	for {
