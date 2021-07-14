@@ -419,5 +419,5 @@ func getLaLabel(labelHierarchy string, apiID int, partitionSize int) string {
 		partitionID = div
 	}
 
-	return fmt.Sprintf("%sP-%d", labelHierarchy, partitionID)
+	return fmt.Sprintf("%s-P%d", labelHierarchy, partitionID)
 }
