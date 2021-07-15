@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
@@ -50,9 +51,9 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 		// Read the API details from the channel.
 		data := <-c
 		if data.Resp != nil {
-			// Implement the health check.
 			// For successfull fetches, data.Resp would return a byte slice with API project(s)
 			logger.LoggerSync.Debugf("API project received...")
+			health.SetControlPlaneRestAPIStatus(true)
 			var deployments sync.DeploymentDescriptor
 			err := json.Unmarshal([]byte(string(data.Resp)), &deployments)
 			if err != nil {
