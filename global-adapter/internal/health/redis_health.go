@@ -50,6 +50,7 @@ func WaitForRedisCacheConnection() {
 			conf.RedisServer.Host, conf.RedisServer.Port, redisConnected)
 	}
 	redisCacheConnectionEstablished = true
+	logger.LoggerHealth.Info("Successfully connected to the Redis cache.")
 }
 
 // RedisCacheConnectRetry retries to connect to the redis cache if there is a connection error
@@ -63,7 +64,6 @@ func RedisCacheConnectRetry(clientOptions *redis.Options) (*redis.Client, bool) 
 	for attempt = 1; attempt <= maxAttempts; attempt++ {
 		rdb := redis.NewClient(clientOptions)
 		_, err := rdb.Ping().Result()
-		logger.LoggerHealth.Info(err)
 		if err != nil {
 			if strings.Contains(err.Error(), "timeout") {
 				time.Sleep(retryInterval * time.Second)

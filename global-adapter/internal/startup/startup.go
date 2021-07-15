@@ -32,7 +32,10 @@ const (
 
 // Initialize for initialize all startup functions
 func Initialize() {
+	// Checks database connection health and Waits for database connection
 	go health.WaitForDatabaseConnection()
+	// Checks redis cache connection health and Waits for redis cache connection
+	go health.WaitForRedisCacheConnection()
 	database.ConnectToDb()
 	defer database.CloseDbConnection()
 	isDbConnectionAlive := database.WakeUpConnection()

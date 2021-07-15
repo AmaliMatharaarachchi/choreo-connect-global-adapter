@@ -47,11 +47,14 @@ const grpcMaxConcurrentStreams = 1000000
 // Run functions starts the XDS Server.
 func Run(conf *config.Config) {
 	logger.LoggerServer.Info("Starting global adapter ....")
+	// Checks grpc server health and Waits for grpc server
+	go healthGA.WaitForGrpcServer()
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	// Checks control plane health and Waits for Control plane
 	go health.WaitForControlPlane()
 
 	// Process incoming events.
@@ -94,15 +97,13 @@ func Run(conf *config.Config) {
 
 	// register health service
 	healthservice.RegisterHealthServer(grpcServer, &health.Server{})
-
 	logger.LoggerServer.Info("XDS server is starting.")
-	err = grpcServer.Serve(listener)
-	go healthGA.WaitForGrpcServer()
-	if err != nil {
+	// Set the Grpc server health status
+	healthGA.SetGrpcServerStatus(true)
+	if err = grpcServer.Serve(listener); err != nil {
+		// Set the Grpc server health status to false
 		healthGA.SetGrpcServerStatus(false)
 		logger.LoggerServer.Fatal("Error while starting gRPC server.")
-	} else {
-		healthGA.SetGrpcServerStatus(true)
 	}
 
 OUTER:

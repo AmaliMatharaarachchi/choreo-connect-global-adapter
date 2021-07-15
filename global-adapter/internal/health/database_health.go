@@ -46,4 +46,5 @@ func WaitForDatabaseConnection() {
 			conf.DataBase.Name, conf.DataBase.Host, conf.DataBase.Port, dbConnected)
 	}
 	databaseConnectionEstablished = true
+	logger.LoggerHealth.Info("Successfully connected to the Database.")
 }

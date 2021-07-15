@@ -43,4 +43,5 @@ func WaitForGrpcServer() {
 		logger.LoggerHealth.Debugf("Status of the grpc server returned: %v", grpcServerEstablished)
 	}
 	grpcServerEstablished = true
+	logger.LoggerHealth.Info("Successfully connected to the Grpc server.")
 }
