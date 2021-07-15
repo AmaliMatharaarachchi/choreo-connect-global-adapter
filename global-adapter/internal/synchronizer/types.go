@@ -18,12 +18,13 @@ package synchronizer
 
 // APIEvent is the structure of an API event in GA.
 type APIEvent struct {
-	UUID          string
-	RevisionID    string
-	Context       string
-	Version       string
-	GatewayLabels []string
-	IsRemoveEvent bool
+	UUID           string
+	RevisionID     string
+	Context        string
+	Version        string
+	GatewayLabels  []string
+	OrganizationID string
+	IsRemoveEvent  bool
 }
 
 // CpError Control Plane error structure for runtime-artifact

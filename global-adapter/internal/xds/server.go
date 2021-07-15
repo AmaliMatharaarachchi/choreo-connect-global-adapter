@@ -68,13 +68,14 @@ func GetAPICache() wso2_cache.SnapshotCache {
 }
 
 // addSingleAPI adds the API entry to XDS cache. Label should contain the paritionID along with label hierarchy.
-func addSingleAPI(label, apiUUID, revisionUUID string) {
+func addSingleAPI(label, apiUUID, revisionUUID, organizationUUID string) {
 	logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s", label, apiUUID, revisionUUID)
 	var newSnapshot wso2_cache.Snapshot
 	version := rand.Intn(maxRandomInt)
 	api := &ga_api.Api{
-		ApiUUID:      apiUUID,
-		RevisionUUID: revisionUUID,
+		ApiUUID:          apiUUID,
+		RevisionUUID:     revisionUUID,
+		OrganizationUUID: organizationUUID,
 	}
 	currentSnapshot, err := apiCache.GetSnapshot(label)
 
@@ -133,7 +134,7 @@ func ProcessSingleEvent(event *internal_types.LaAPIEvent) {
 	if event.IsRemoveEvent {
 		removeAPI(event.LabelHierarchy, event.APIUUID)
 	} else {
-		addSingleAPI(event.Label, event.APIUUID, event.RevisionUUID)
+		addSingleAPI(event.Label, event.APIUUID, event.RevisionUUID, event.OrganizationUUID)
 	}
 }
 
@@ -146,9 +147,11 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 		label := event.Label
 		apiUUID := event.APIUUID
 		revisionUUID := event.RevisionUUID
+		organizationUUID := event.OrganizationUUID
 		api := &ga_api.Api{
-			ApiUUID:      apiUUID,
-			RevisionUUID: revisionUUID,
+			ApiUUID:          apiUUID,
+			RevisionUUID:     revisionUUID,
+			OrganizationUUID: organizationUUID,
 		}
 
 		snapshotEntry, snapshotFound := snapshotMap[label]

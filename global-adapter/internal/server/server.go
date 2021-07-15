@@ -27,6 +27,7 @@ import (
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	healthGA "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
@@ -35,6 +36,8 @@ import (
 	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 	ga_service "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/service/ga"
 	wso2_server "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/server/v3"
+	"github.com/wso2/product-microgateway/adapter/pkg/health"
+	healthservice "github.com/wso2/product-microgateway/adapter/pkg/health/api/wso2/health/service"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 	"github.com/wso2/product-microgateway/adapter/pkg/tlsutils"
 	"google.golang.org/grpc"
@@ -47,11 +50,15 @@ const grpcMaxConcurrentStreams = 1000000
 // Run functions starts the XDS Server.
 func Run(conf *config.Config) {
 	logger.LoggerServer.Info("Starting global adapter ....")
+	// Checks grpc server health and Waits for grpc server
+	go healthGA.WaitForGrpcServer()
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	// Checks control plane health and Waits for Control plane
+	go health.WaitForControlPlane()
 
 	// Process incoming events.
 	go messaging.ProcessEvents(conf)
@@ -59,6 +66,7 @@ func Run(conf *config.Config) {
 	go apipartition.ProcessEventsInDatabase()
 	// Consume non API events from channel.
 	go GetNonAPIDeployAndRemoveEventsFromChannel()
+
 	// Fetch APIs from control plane.
 	fetchAPIsOnStartUp(conf)
 
@@ -93,8 +101,14 @@ func Run(conf *config.Config) {
 		logger.LoggerServer.Fatalf("Error while listening on port: %s", port)
 	}
 
+	// register health service
+	healthservice.RegisterHealthServer(grpcServer, &health.Server{})
 	logger.LoggerServer.Info("XDS server is starting.")
+	// Set the Grpc server health status
+	healthGA.SetGrpcServerStatus(true)
 	if err = grpcServer.Serve(listener); err != nil {
+		// Set the Grpc server health status to false
+		healthGA.SetGrpcServerStatus(false)
 		logger.LoggerServer.Fatal("Error while starting gRPC server.")
 	}
 

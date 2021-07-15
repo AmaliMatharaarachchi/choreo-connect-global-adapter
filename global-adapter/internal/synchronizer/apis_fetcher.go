@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
@@ -50,9 +51,9 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 		// Read the API details from the channel.
 		data := <-c
 		if data.Resp != nil {
-			// Implement the health check.
 			// For successfull fetches, data.Resp would return a byte slice with API project(s)
 			logger.LoggerSync.Debugf("API project received...")
+			health.SetControlPlaneRestAPIStatus(true)
 			var deployments sync.DeploymentDescriptor
 			err := json.Unmarshal([]byte(string(data.Resp)), &deployments)
 			if err != nil {
@@ -98,7 +99,8 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, inco
 		apiEvent.UUID = deployment.APIFile[:24]
 		// Add the revision ID to the api event.
 		apiEvent.RevisionID = deployment.APIFile[25:49]
-
+		// Organization ID is required for the API struct sent over XDS to the local adapter
+		apiEvent.OrganizationID = deployment.OrganizationID
 		// Read the environments.
 		environments := deployment.Environments
 		for _, env := range environments {
@@ -111,11 +113,9 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, inco
 			apiEvent.Context = incomingAPIEvent.Context
 			apiEvent.Version = incomingAPIEvent.Version
 		}
-
 		// Add API Event to array.
 		APIEventArray = append(APIEventArray, apiEvent)
 	}
 	logger.LoggerSync.Debugf("Write API Events %v to the APIDeployAndRemoveEventChannel ", APIEventArray)
 	APIDeployAndRemoveEventChannel <- APIEventArray
-	return
 }

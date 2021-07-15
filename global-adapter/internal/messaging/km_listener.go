@@ -34,7 +34,7 @@ func handleKMConfiguration() {
 	logger.LoggerMsg.Info("handle: deliveries channel closed")
 }
 
-func writeNonAPIEventToChannel(data *amqp.Delivery) {
+func writeNonAPIEventToChannel(data amqp.Delivery) {
 	nonAPIEvent := []byte(string(data.Body))
 	logger.LoggerMsg.Debugf("Write non API Event %s to the NonAPIDeployAndRemoveEventChannel", &nonAPIEvent)
 	NonAPIDeployAndRemoveEventChannel <- nonAPIEvent

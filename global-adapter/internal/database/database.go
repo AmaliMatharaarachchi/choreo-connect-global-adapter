@@ -19,8 +19,10 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
 
@@ -32,49 +34,42 @@ const (
 var DB *sql.DB
 
 // ConnectToDb - connecting with the database server
-func ConnectToDb() bool {
-	var isConnected bool
-	var retryAttempts = 0
-	conf := config.ReadConfigs()
+func ConnectToDb() {
 	var err error
+	conf := config.ReadConfigs()
 	connString := fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d;database=%s", conf.DataBase.Host, conf.DataBase.Username, conf.DataBase.Password, conf.DataBase.Port, conf.DataBase.Name)
 	DB, err = sql.Open(sqlDriver, connString)
-	for {
-		if retryAttempts >= conf.DataBase.OptionalMetadata.MaxRetryAttempts {
-			logger.LoggerServer.Fatalf("DB connection error - %v", err)
-			break
-		} else {
-			if err != nil {
-				logger.LoggerServer.Errorf("DB connection error - %v", err)
-			} else {
-				logger.LoggerServer.Debug("Established the DB connection ...")
-				isConnected = true
-				break
-			}
-		}
-		retryAttempts++
+	if err != nil {
+		logger.LoggerServer.Debugf("DB connection error: %v", err)
 	}
-
-	return isConnected
 }
 
 // WakeUpConnection - checking whether the databace connection is still alive , if not alive then reconnect to the DB
 func WakeUpConnection() bool {
+	conf := config.ReadConfigs()
 	pingError := DB.Ping()
 	var isPing bool = false
-
-	if pingError != nil {
-		isConnected := ConnectToDb()
-		pingErr := DB.Ping()
-		if isConnected && pingErr == nil {
-			isPing = true
-		} else {
-			logger.LoggerServer.Debug("Error while initiating the database ", pingErr)
-		}
-	} else {
+	maxAttempts := conf.DataBase.OptionalMetadata.MaxRetryAttempts
+	var (
+		retryInterval time.Duration = 5
+		attempt       int
+	)
+	if pingError == nil {
 		isPing = true
+	} else {
+		logger.LoggerServer.Debugf("Error while initiating the database %v. Retrying to connect to database", pingError)
+		for attempt = 1; attempt <= maxAttempts; attempt++ {
+			ConnectToDb()
+			err := DB.Ping()
+			if err == nil {
+				isPing = true
+				break
+			} else {
+				time.Sleep(retryInterval * time.Second)
+			}
+		}
 	}
-
+	health.SetDatabaseConnectionStatus(isPing)
 	return isPing
 }
 
