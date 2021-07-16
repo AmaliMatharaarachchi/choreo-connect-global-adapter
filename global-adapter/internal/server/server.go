@@ -19,6 +19,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"os"
@@ -38,7 +39,9 @@ import (
 	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	healthservice "github.com/wso2/product-microgateway/adapter/pkg/health/api/wso2/health/service"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
+	"github.com/wso2/product-microgateway/adapter/pkg/tlsutils"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 // TODO: (VirajSalaka) check this is streams per connections or total number of concurrent streams.
@@ -49,7 +52,7 @@ func Run(conf *config.Config) {
 	logger.LoggerServer.Info("Starting global adapter ....")
 	// Checks grpc server health and Waits for grpc server
 	go healthGA.WaitForGrpcServer()
-	sig := make(chan os.Signal)
+	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -72,18 +75,21 @@ func Run(conf *config.Config) {
 	var grpcOptions []grpc.ServerOption
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
 
-	// publicKeyLocation := "/home/wso2/security/mg.pem"
-	// privateKeyLocation := "/home/wso2/security/mg.key"
-	// cert, err := tlsutils.GetServerCertificate(publicKeyLocation, privateKeyLocation)
-	// if err != nil {
-	// 	fmt.Println("Error while loading certs")
-	// } else {
-	// 	grpcOptions = append(grpcOptions, grpc.Creds(
-	// 		credentials.NewTLS(&tls.Config{
-	// 			Certificates: []tls.Certificate{cert},
-	// 		}),
-	// 	))
-	// }
+	publicKeyLocation := conf.Keystore.PublicKeyLocation
+	privateKeyLocation := conf.Keystore.PrivateKeyLocation
+	cert, err := tlsutils.GetServerCertificate(publicKeyLocation, privateKeyLocation)
+	caCertPool := tlsutils.GetTrustedCertPool(conf.Truststore.Location)
+	if err != nil {
+		logger.LoggerServer.Fatal("Error while loading private key public key pair.", err)
+	} else {
+		grpcOptions = append(grpcOptions, grpc.Creds(
+			credentials.NewTLS(&tls.Config{
+				Certificates: []tls.Certificate{cert},
+				ClientAuth:   tls.RequireAndVerifyClientCert,
+				ClientCAs:    caCertPool,
+			}),
+		))
+	}
 
 	grpcServer := grpc.NewServer(grpcOptions...)
 	ga_service.RegisterApiGADiscoveryServiceServer(grpcServer, enforcerAPIDsSrv)
