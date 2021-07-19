@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2021, WSO2 Inc. (http://www.wso2.org)
+  ~
+  ~ WSO2 Inc. licenses this file to you under the Apache License,
+  ~ Version 2.0 (the "License"); you may not use this file except
+  ~ in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing,
+  ~ software distributed under the License is distributed on an
+  ~ "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  ~ KIND, either express or implied. See the License for the
+  ~ specific language governing permissions and limitations
+  ~ under the License.
+  -->
+
+<assembly>
+    <includeBaseDirectory>false</includeBaseDirectory>
+    <id>Choreo-Connect-GA</id>
+    <formats>
+        <format>zip</format>
+    </formats>
+
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.directory}/cc-dist/choreo-connect-${choreoConnect.version}/docker-compose/resources</directory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/resources</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>src/main/resources/additional</directory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/additional</outputDirectory>
+        </fileSet>
+    </fileSets>
+    <files>
+        <file>
+            <source>src/main/resources/docker-compose.yaml</source>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga</outputDirectory>
+        </file>
+        <file>
+            <source>src/main/resources/conf/config.toml</source>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/conf</outputDirectory>
+        </file>
+        <file>
+            <source>src/main/resources/conf/ga_config.toml</source>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/conf</outputDirectory>
+        </file>
+        <file>
+            <source>${project.build.directory}/cc-dist/choreo-connect-${choreoConnect.version}/docker-compose/choreo-connect/conf/log_config.toml</source>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/conf</outputDirectory>
+        </file>
+        <file>
+            <source>${project.build.directory}/cc-dist/choreo-connect-${choreoConnect.version}/docker-compose/choreo-connect/conf/log4j2.properties</source>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/conf</outputDirectory>
+        </file>
+        <file>
+            <source>../../global-adapter/resources/security/keystore/global-adapter.pem</source>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/resources/adapter/security/truststore</outputDirectory>
+        </file>
+    </files>
+</assembly>
