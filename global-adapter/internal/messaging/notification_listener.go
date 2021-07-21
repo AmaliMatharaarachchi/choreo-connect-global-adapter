@@ -138,7 +138,7 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 
 	// Fetch API details from control plane and write API details to the channel c.
 	adapter.GetAPIs(c, &uuid, serviceURL, username, password, gatewayLabels, skipSSL, truststoreLocation,
-		sync.RuntimeMetaDataEndpoint, false)
+		sync.RuntimeMetaDataEndpoint, false, nil)
 	// Get deployment.json file from channel c.
 	deploymentDescriptor, err := sync.GetArtifactDetailsFromChannel(c, serviceURL,
 		username, password, skipSSL, truststoreLocation, retryInterval)
@@ -147,7 +147,7 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)
 		return err
 	}
-	sync.AddAPIEventsToChannel(deploymentDescriptor, apiEvent)
+	sync.AddAPIEventsToChannel(deploymentDescriptor)
 
 	return nil
 }

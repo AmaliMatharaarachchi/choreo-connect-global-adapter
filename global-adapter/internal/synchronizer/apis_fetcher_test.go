@@ -108,7 +108,7 @@ func TestAddAPIEventsToChannel(t *testing.T) {
 			},
 		},
 	}
-	go AddAPIEventsToChannel(&deploymentDescriptor, nil)
+	go AddAPIEventsToChannel(&deploymentDescriptor)
 	// Consume API events from channel.
 	APIEventsArray := <-APIDeployAndRemoveEventChannel
 
