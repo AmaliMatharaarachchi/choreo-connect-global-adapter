@@ -14,30 +14,27 @@
   ~ limitations under the License.
   -->
 
-  <assembly>
+<assembly>
     <includeBaseDirectory>false</includeBaseDirectory>
-    <id>adapter</id>
+    <id>mssql</id>
     <formats>
         <format>dir</format>
     </formats>
     <files>
         <file>
-            <source>target/global-adapter-linux</source>
+            <source>src/main/resources/entrypoint.sh</source>
             <outputDirectory></outputDirectory>
+            <fileMode>755</fileMode>
         </file>
         <file>
-            <source>target/grpc_health_probe-linux-amd64</source>
+            <source>src/main/resources/init-db.sh</source>
             <outputDirectory></outputDirectory>
+            <fileMode>755</fileMode>
+        </file>
+        <file>
+            <source>src/main/resources/init.sql</source>
+            <outputDirectory></outputDirectory>
+            <fileMode>644</fileMode>
         </file>
     </files>
-    <fileSets>
-        <fileSet>
-            <directory>resources/conf</directory>
-            <outputDirectory>conf</outputDirectory>
-        </fileSet>
-        <fileSet>
-            <directory>resources/security</directory>
-            <outputDirectory>security</outputDirectory>
-        </fileSet>
-    </fileSets>
 </assembly>

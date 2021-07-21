@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
@@ -49,11 +50,10 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 	for i := 0; i < 1; i++ {
 		// Read the API details from the channel.
 		data := <-c
-		logger.LoggerSync.Debugf("Receiving data for environments")
 		if data.Resp != nil {
-			// Implement the health check.
 			// For successfull fetches, data.Resp would return a byte slice with API project(s)
 			logger.LoggerSync.Debugf("API project received...")
+			health.SetControlPlaneRestAPIStatus(true)
 			var deployments sync.DeploymentDescriptor
 			err := json.Unmarshal([]byte(string(data.Resp)), &deployments)
 			if err != nil {
@@ -61,6 +61,16 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 				return &deployments, err
 			}
 			return &deployments, nil
+		} else if data.ErrorCode == 404 {
+			// This condition is checked to prevent GA from crashing when Control Plane doesn't have APIs intially
+			// With a 404 http error code the response contains a API Manager error code 900910 hence checking for it
+			var error CpError
+			unErr := json.Unmarshal([]byte(data.Err.Error()), &error)
+			if unErr == nil && error.Code == 900910 {
+				logger.LoggerSync.Info("No APIs received from control plane starting global adapter with empty object")
+			} else {
+				logger.LoggerSync.Fatalf("Error occurred when retrieving APIs from control plane: %v", data.Err)
+			}
 		} else if data.ErrorCode >= 400 && data.ErrorCode < 500 {
 			logger.LoggerSync.Fatalf("Error occurred when retrieving APIs from control plane: %v", data.Err)
 		} else {
@@ -89,7 +99,8 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, inco
 		apiEvent.UUID = deployment.APIFile[:24]
 		// Add the revision ID to the api event.
 		apiEvent.RevisionID = deployment.APIFile[25:49]
-
+		// Organization ID is required for the API struct sent over XDS to the local adapter
+		apiEvent.OrganizationID = deployment.OrganizationID
 		// Read the environments.
 		environments := deployment.Environments
 		for _, env := range environments {
@@ -102,11 +113,9 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, inco
 			apiEvent.Context = incomingAPIEvent.Context
 			apiEvent.Version = incomingAPIEvent.Version
 		}
-
 		// Add API Event to array.
 		APIEventArray = append(APIEventArray, apiEvent)
 	}
 	logger.LoggerSync.Debugf("Write API Events %v to the APIDeployAndRemoveEventChannel ", APIEventArray)
 	APIDeployAndRemoveEventChannel <- APIEventArray
-	return
 }

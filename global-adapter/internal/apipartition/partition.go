@@ -35,6 +35,7 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
 )
 
 // TODO : Following 2 lines no need in near future.Since no need to fetch API info from the CP
@@ -65,11 +66,9 @@ const (
 	defaultGatewayLabel    string = "default"
 )
 
-var apisChan = make(chan []types.LaAPIState)
-
 // PopulateAPIData - populating API infomation to Database and redis cache
 func PopulateAPIData(apis []synchronizer.APIEvent) {
-	var laAPIList []types.LaAPIState
+	var laAPIList []*types.LaAPIEvent
 	var cacheObj []string
 
 	database.WakeUpConnection()
@@ -91,8 +90,14 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 
 				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
-				apiState := types.LaAPIState{LabelHierarchy: gatewayLabel, Label: label, Revision: apis[ind].RevisionID, EventType: types.APICreate}
-				laAPIList = append(laAPIList, apiState)
+				apiState := types.LaAPIEvent{
+					LabelHierarchy:   gatewayLabel,
+					Label:            label,
+					RevisionUUID:     apis[ind].RevisionID,
+					APIUUID:          apis[ind].UUID,
+					OrganizationUUID: apis[ind].OrganizationID,
+				}
+				laAPIList = append(laAPIList, &apiState)
 
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
 				if cacheKey != "" {
@@ -109,16 +114,24 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 	if len(cacheObj) >= 2 {
 		rc := cache.GetClient()
 		cachingError := cache.SetCacheKeys(cacheObj, rc)
-		if cachingError == nil {
-			pushToChan(apisChan, laAPIList)
+		if cachingError != nil {
+			return
 		}
+		pushToXdsCache(laAPIList)
 	}
 
 }
 
-func pushToChan(c chan []types.LaAPIState, laAPIList []types.LaAPIState) {
+func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 	logger.LoggerServer.Debug("API List : ", len(laAPIList))
-	// apisChan <- laAPIList
+	if len(laAPIList) == 0 {
+		return
+	}
+	if len(laAPIList) > 1 {
+		xds.AddMultipleAPIs(laAPIList)
+		return
+	}
+	xds.ProcessSingleEvent(laAPIList[0])
 }
 
 // insertRecord always return the adapter label for the relevant API
@@ -249,7 +262,6 @@ func updateFromEvents(apis []synchronizer.APIEvent) {
 		return
 	}
 	if len(apis) == 0 {
-		// TODO: (VirajSalaka) print error message?
 		return
 	}
 	isRemoveEvent := apis[0].IsRemoveEvent
@@ -273,13 +285,25 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 			stmt, _ := database.DB.Prepare(database.QueryDeleteAPI)
 
 			for index := range api.GatewayLabels {
-				_, error := stmt.Exec(api.UUID, api.GatewayLabels[index])
+				gatewayLabel := api.GatewayLabels[index]
+
+				// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+				if gatewayLabel == productionSandboxLabel {
+					gatewayLabel = defaultGatewayLabel
+				}
+				_, error := stmt.Exec(api.UUID, gatewayLabel)
 				if error != nil {
 					logger.LoggerServer.Error("Error while deleting the API UUID : ", api.UUID, " ", error)
 					// break
 				} else {
 					logger.LoggerServer.Info("API deleted from the database : ", api.UUID)
-					updateRedisCache(api, api.GatewayLabels[index], nil, types.APIDelete)
+					updateRedisCache(api, gatewayLabel, nil, types.APIDelete)
+					pushToXdsCache([]*types.LaAPIEvent{{
+						APIUUID:          api.UUID,
+						IsRemoveEvent:    true,
+						OrganizationUUID: api.OrganizationID,
+						LabelHierarchy:   gatewayLabel,
+					}})
 					return true
 				}
 			}
@@ -395,5 +419,5 @@ func getLaLabel(labelHierarchy string, apiID int, partitionSize int) string {
 		partitionID = div
 	}
 
-	return fmt.Sprintf("%sP-%d", labelHierarchy, partitionID)
+	return fmt.Sprintf("%s-P%d", labelHierarchy, partitionID)
 }

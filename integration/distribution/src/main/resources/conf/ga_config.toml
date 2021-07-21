@@ -1,5 +1,4 @@
 # The configuration file for mgw
-
 [keystore]
   certPath = "$env{MGW_HOME}/security/keystore/global-adapter.pem"
   keyPath = "$env{MGW_HOME}/security/keystore/global-adapter.key"
@@ -9,15 +8,15 @@
 	
 # Control plane's connection details
 [controlPlane]
-  #serviceUrl = "https://apim:9443/"
-  #username="admin"
-  password="$env{cp_admin_pwd}"
+  serviceUrl = "https://192.168.8.100:9443/"
+  username="admin"
+  password="admin"
   environmentLabels = ["Default", "Prod"]
-  #retryInterval = 5
-  #skipSSLVerification=true
+  retryInterval = 5
+  skipSSLVerification=true
   # Message broker connection URL of the control plane
   [controlPlane.jmsConnectionParameters]
-    eventListeningEndpoints = ["amqp://admin:$env{cp_admin_pwd}@apim:5672?retries='10'&connectdelay='30'"]
+    eventListeningEndpoints = ["amqp://admin:admin@192.168.8.100:5672?retries='10'&connectdelay='30'"]
 
 [server]
   host = '0.0.0.0'
@@ -28,10 +27,10 @@
     password = '$env{ga_admin_pwd}'
 
 [database]
-  name = 'choreo-mssql'
-  username = 'db_user'
-  password = '$env{ga_db_pwd}'
-  host = 'mssql-db'
+  name = 'globalAdapter'
+  username = 'SA'
+  password = 'Admin001'
+  host = 'sql-host'
   port = 1433
   validationQuery = 'select 1'
   [database.pooloptions]
@@ -42,10 +41,10 @@
   defaultAutoCommit = true
 
 [redisServer]
-  host = 'redis-host-url'
-  port = 6380
-  password = '$env{redis_host_pwd}'
-  clientName = 'global-adapter'
-  databaseIndex = 2
+  host = 'redis-host'
+  port = 6379
+  password = 'admin'
+  clientName = 'default'
+  databaseIndex = 0
   connectionPoolSize = 3
   maxRetryCount = 10

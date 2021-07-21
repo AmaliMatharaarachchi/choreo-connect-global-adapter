@@ -20,13 +20,14 @@ package messaging
 
 import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 )
 
 // ProcessEvents to pass event consumption.
 func ProcessEvents(config *config.Config) {
-	_ = msg.InitiateJMSConnection(config.ControlPlane.JmsConnectionParameters.EventListeningEndpoints)
-	// TODO: (Jayanie) use above return value(error) for health check.
+	err := msg.InitiateJMSConnection(config.ControlPlane.JmsConnectionParameters.EventListeningEndpoints)
+	health.SetControlPlaneJmsStatus(err == nil)
 
 	// Handle notification events.
 	go handleNotification(config)

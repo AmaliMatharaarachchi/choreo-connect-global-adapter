@@ -35,8 +35,8 @@ func TestGetCacheKey(t *testing.T) {
 
 func TestGetLaLabel(t *testing.T) {
 	label := getLaLabel("dev", 1, 10)
-	assert.Equal(t, label, "devP-1", "Label Invalid")
+	assert.Equal(t, label, "dev-P1", "Label Invalid")
 
 	label2 := getLaLabel("dev", 12, 5)
-	assert.Equal(t, label2, "devP-3", "Label Invalid")
+	assert.Equal(t, label2, "dev-P3", "Label Invalid")
 }
