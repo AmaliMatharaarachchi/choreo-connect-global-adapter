@@ -30,6 +30,11 @@ spec:
       labels:
         choreo.component: choreo-connect-global-adapter
     spec:
+      securityContext:
+        runAsUser: 10500
+        runAsGroup: 10500
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: choreo-connect-global-adapter
         volumeMounts:
@@ -48,6 +53,9 @@ spec:
           readOnly: true
         image: wso2/choreo-connect-global-adapter:1.0.0-SNAPSHOT
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
         env:
         - name: GLOBAL_ADAPTER_PRIVATE_KEY_PATH
           value: "/home/wso2/security/keystore/mg.key"
