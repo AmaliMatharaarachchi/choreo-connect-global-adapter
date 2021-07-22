@@ -20,12 +20,14 @@ package config
 import (
 	"testing"
 	"time"
+	"os"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestReadConfigs(t *testing.T) {
 	// Read configuration file.
+	os.Setenv("cp_admin_pwd", "admin")
 	conf:= ReadConfigs()
 	controlPlane := conf.ControlPlane
 
