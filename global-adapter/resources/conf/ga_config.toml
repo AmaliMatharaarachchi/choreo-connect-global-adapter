@@ -9,8 +9,8 @@
 	
 # Control plane's connection details
 [controlPlane]
-  #serviceUrl = "https://apim:9443/"
-  #username="admin"
+  serviceUrl = "https://apim:9443/"
+  username="admin"
   password="$env{cp_admin_pwd}"
   environmentLabels = ["Default", "Prod"]
   #retryInterval = 5

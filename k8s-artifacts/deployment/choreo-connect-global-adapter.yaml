@@ -51,6 +51,12 @@ spec:
         - name: secret-mgw
           mountPath: /mnt/csi/secret-mgw
           readOnly: true
+        - name: secret-redis
+          mountPath: /mnt/csi/secret-redis
+          readOnly: true
+        - name: secret-cc-ga-credentials
+          mountPath: /mnt/csi/secret-cc-ga-credentials
+          readOnly: true                    
         image: wso2/choreo-connect-global-adapter:1.0.0-SNAPSHOT
         imagePullPolicy: IfNotPresent
         securityContext:
@@ -71,6 +77,11 @@ spec:
             secretKeyRef:
               key: GLOBAL_ADAPTER_MSSQL_PASSWORD
               name: secret-cc-ga-credentials
+        - name: redis_host_pwd
+          valueFrom:
+            secretKeyRef:
+              key: REDIS_PASSWORD
+              name: secret-redis              
         - name: cp_admin_pwd
           valueFrom:
             secretKeyRef:
@@ -97,6 +108,12 @@ spec:
           initialDelaySeconds: 8
           periodSeconds: 5
       volumes:
+      - name: global-adapter-keystore-vol
+        configMap:
+          name: global-adapter-keystore-vol
+      - name: global-adapter-truststore-vol
+        configMap:
+          name: global-adapter-truststore-vol        
       - name: global-adapter-config
         configMap:
           name: cc-global-adapter-conf
@@ -124,4 +141,12 @@ spec:
             secretProviderClass: secret-cc-ga-credentials
           nodePublishSecretRef:
             name: csi-secret-store-azure      
-      restartPolicy: Always
+      - name: secret-redis
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: secret-redis
+          nodePublishSecretRef:
+            name: csi-secret-store-azure            
+      restartPolicy: Always      
