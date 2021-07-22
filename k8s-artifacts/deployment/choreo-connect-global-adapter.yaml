@@ -65,12 +65,12 @@ spec:
           valueFrom:
             secretKeyRef:
               key: GLOBAL_ADAPTER_ADMIN_PASSWORD
-              name: secret-mgw
+              name: secret-cc-ga-credentials
         - name: ga_db_pwd
           valueFrom:
             secretKeyRef:
               key: GLOBAL_ADAPTER_MSSQL_PASSWORD
-              name: secret-mgw
+              name: secret-cc-ga-credentials
         - name: cp_admin_pwd
           valueFrom:
             secretKeyRef:
@@ -116,4 +116,12 @@ spec:
             secretProviderClass: secret-cc-ga-keystore
           nodePublishSecretRef:
             name: csi-secret-store-azure
+      - name: secret-cc-ga-credentials
+        csi:
+          driver: secrets-store.csi.k8s.io
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: secret-cc-ga-credentials
+          nodePublishSecretRef:
+            name: csi-secret-store-azure      
       restartPolicy: Always
