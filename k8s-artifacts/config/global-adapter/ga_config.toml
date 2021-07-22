@@ -1,12 +1,12 @@
 # The configuration file for mgw
 
 [keystore]
-  certPath = "$env{MGW_HOME}/security/keystore/global-adapter.pem"
-  keyPath = "$env{MGW_HOME}/security/keystore/global-adapter.key"
-  
+  certPath = "/home/wso2/security/mg.pem"
+  keyPath = "/home/wso2/security/mg.key"
+
 [truststore]
-  location = "$env{MGW_HOME}/security/truststore"
-	
+  location = "/home/wso2/security/truststore"
+
 # Control plane's connection details
 [controlPlane]
   #serviceUrl = "https://apim:9443/"
