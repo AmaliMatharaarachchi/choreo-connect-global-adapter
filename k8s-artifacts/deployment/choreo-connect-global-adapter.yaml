@@ -86,7 +86,7 @@ spec:
           valueFrom:
             secretKeyRef:
               key: SUPER_ADMIN_PSWD
-              name: secret-apim
+              name: secret-mgw
         resources:
           requests:
             memory: "250Mi"
