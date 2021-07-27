@@ -42,8 +42,17 @@ spec:
           name: secret-cc-ga-keystore
           readOnly: true
           subPath: GLOBAL_ADAPTER_KEYSTORE_KEY
-        - mountPath: /home/wso2/security/keystore
+        - mountPath: /home/wso2/security/keystore/mg.key
+          name: secret-mgw-keystore
+          readOnly: true
+          subPath: ADAPTER_KEYSTORE_KEY
+        - mountPath: /home/wso2/security/keystore/mg.pem
+          name: secret-mgw-keystore
+          readOnly: true
+          subPath: ADAPTER_KEYSTORE_CERTIFICATE                    
+        - mountPath: /home/wso2/security/keystore/global-adapter.pem
           name: global-adapter-keystore-vol
+          subPath: global-adapter.pem
         - mountPath: /home/wso2/security/truststore
           name: global-adapter-truststore-vol
         - mountPath: /home/wso2/conf
@@ -67,6 +76,12 @@ spec:
           value: "/home/wso2/security/keystore/mg.key"
         - name: GLOBAL_ADAPTER_PUBLIC_CERT_PATH
           value: "/home/wso2/security/keystore/mg.pem"
+        - name: ADAPTER_PRIVATE_KEY_PATH
+          value: /home/wso2/security/keystore/mg.key
+        - name: ADAPTER_PUBLIC_CERT_PATH
+          value: /home/wso2/security/keystore/mg.pem 
+        - name: GLOBAL_ADAPTER_SERVER_NAME
+          value: global-adapter           
         - name: ga_admin_pwd
           valueFrom:
             secretKeyRef:
@@ -148,5 +163,13 @@ spec:
           volumeAttributes:
             secretProviderClass: secret-redis
           nodePublishSecretRef:
-            name: csi-secret-store-azure            
+            name: csi-secret-store-azure 
+      - csi:
+          driver: secrets-store.csi.k8s.io
+          nodePublishSecretRef:
+            name: csi-secret-store-azure
+          readOnly: true
+          volumeAttributes:
+            secretProviderClass: secret-mgw-keystore
+        name: secret-mgw-keystore                       
       restartPolicy: Always      
