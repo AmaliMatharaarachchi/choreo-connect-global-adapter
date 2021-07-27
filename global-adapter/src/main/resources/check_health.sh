@@ -19,7 +19,8 @@
 ADAPTER_XDS_PORT="${ADAPTER_XDS_PORT:-18000}"
 grpc_health_probe -addr "localhost:${ADAPTER_XDS_PORT}" \
     -tls \
-    -tls-ca-cert "${ADAPTER_PUBLIC_CERT_PATH}" \
+    -tls-ca-cert "${GLOBAL_ADAPTER_PUBLIC_CERT_PATH}" \
     -tls-client-cert "${ADAPTER_PUBLIC_CERT_PATH}" \
     -tls-client-key "${ADAPTER_PRIVATE_KEY_PATH}" \
+    -tls-server-name "${GLOBAL_ADAPTER_SERVER_NAME}" \
     -connect-timeout=3s
