@@ -1,0 +1,204 @@
+version: "2.4"
+networks:
+  cc_internal:
+    name: cc_internal
+  apim_and_cc:
+    external:
+      name: apim_and_cc
+services:
+  router1:
+    image: wso2/choreo-connect-router:0.9.1-SNAPSHOT
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+    environment:
+      - ROUTER_ADMIN_HOST=0.0.0.0
+      - ROUTER_ADMIN_PORT=9000
+      - ROUTER_CLUSTER=default_cluster
+      - ROUTER_LABEL=Default
+      - ROUTER_PRIVATE_KEY_PATH=/home/wso2/security/keystore/mg.key
+      - ROUTER_PUBLIC_CERT_PATH=/home/wso2/security/keystore/mg.pem
+      - ADAPTER_HOST=adapter1
+      - ADAPTER_PORT=18000
+      - ADAPTER_CA_CERT_PATH=/home/wso2/security/truststore/mg.pem
+      - ENFORCER_HOST=enforcer1
+      - ENFORCER_PORT=8081
+      - ENFORCER_CA_CERT_PATH=/home/wso2/security/truststore/mg.pem
+    volumes:
+      - ../resources/router/security:/home/wso2/security
+    ports:
+      - "9095:9095"
+      - "9000:9000"
+      - "9090:9090"
+    networks:
+      - cc_internal
+    mem_limit: 512m
+  router2:
+    image: wso2/choreo-connect-router:0.9.1-SNAPSHOT
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+    environment:
+      - ROUTER_ADMIN_HOST=0.0.0.0
+      - ROUTER_ADMIN_PORT=9000
+      - ROUTER_CLUSTER=default_cluster
+      - ROUTER_LABEL=Default
+      - ROUTER_PRIVATE_KEY_PATH=/home/wso2/security/keystore/mg.key
+      - ROUTER_PUBLIC_CERT_PATH=/home/wso2/security/keystore/mg.pem
+      - ADAPTER_HOST=adapter2
+      - ADAPTER_PORT=18000
+      - ADAPTER_CA_CERT_PATH=/home/wso2/security/truststore/mg.pem
+      - ENFORCER_HOST=enforcer2
+      - ENFORCER_PORT=8081
+      - ENFORCER_CA_CERT_PATH=/home/wso2/security/truststore/mg.pem
+    volumes:
+      - ../resources/router/security:/home/wso2/security
+    ports:
+      - "9096:9095"
+      - "9001:9000"
+      - "9091:9090"
+    networks:
+      - cc_internal
+    mem_limit: 512m
+  adapter1:
+    image: wso2/choreo-connect-adapter:0.9.1-SNAPSHOT
+    networks:
+      - cc_internal
+      - apim_and_cc
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+    volumes:
+      - ../resources/adapter/security:/home/wso2/security
+      - ./conf/log_config.toml:/home/wso2/conf/log_config.toml
+      - ./conf/config.toml:/home/wso2/conf/config.toml
+    environment:
+      - ADAPTER_PRIVATE_KEY_PATH=/home/wso2/security/keystore/mg.key
+      - ADAPTER_PUBLIC_CERT_PATH=/home/wso2/security/keystore/mg.pem
+      - cp_admin_pwd=admin
+      - adapter_admin_pwd=admin
+      - localLabel=Default-P1
+    ports:
+      - "9843:9843"
+    mem_limit: 256m
+  adapter2:
+    image: wso2/choreo-connect-adapter:0.9.1-SNAPSHOT
+    networks:
+      - cc_internal
+      - apim_and_cc
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+    volumes:
+      - ../resources/adapter/security:/home/wso2/security
+      - ./conf/log_config.toml:/home/wso2/conf/log_config.toml
+      - ./conf/config.toml:/home/wso2/conf/config.toml
+    environment:
+      - ADAPTER_PRIVATE_KEY_PATH=/home/wso2/security/keystore/mg.key
+      - ADAPTER_PUBLIC_CERT_PATH=/home/wso2/security/keystore/mg.pem
+      - cp_admin_pwd=admin
+      - adapter_admin_pwd=admin
+      - localLabel=Default-P2
+    ports:
+      - "9844:9843"
+    mem_limit: 256m
+  global-adapter:
+    image: wso2/choreo-connect-global-adapter:1.0.0-SNAPSHOT
+    networks:
+      - cc_internal
+      - apim_and_cc
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+    volumes:
+      - ./conf/ga_config.toml:/home/wso2/conf/ga_config.toml
+      - ./conf/log_config.toml:/home/wso2/conf/log_config.toml
+      - ./additional/ga-ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt
+    mem_limit: 1200m
+  sql-host:
+    image: wso2am/choreo-connect-global-adapter-mssql:1.0.0-SNAPSHOT
+    networks:
+      - cc_internal
+  redis-host:
+    image: redis:latest
+    networks:
+      - cc_internal
+    volumes:
+      - ./additional/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./additional/redis.key:/usr/local/etc/redis/redis.key
+      - ./additional/redis.crt:/usr/local/etc/redis/redis.crt
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    mem_limit: 256m
+    ports:
+      - "6379:6379"
+  enforcer1:
+    image: wso2/choreo-connect-enforcer:0.9.1-SNAPSHOT
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+    volumes:
+      - ../resources/enforcer/security:/home/wso2/security
+      - ./conf/log4j2.properties:/home/wso2/conf/log4j2.properties
+      - ../resources/enforcer/dropins:/home/wso2/lib/dropins
+    environment:
+      - ENFORCER_PRIVATE_KEY_PATH=/home/wso2/security/keystore/mg.key
+      - ENFORCER_PUBLIC_CERT_PATH=/home/wso2/security/keystore/mg.pem
+      - TRUSTED_CA_CERTS_PATH=/home/wso2/security/truststore
+      - ADAPTER_HOST_NAME=adapter
+      - ADAPTER_HOST=adapter1
+      - ADAPTER_XDS_PORT=18000
+      - ENFORCER_LABEL=Default
+      - ENFORCER_REGION=UNKNOWN
+      - XDS_MAX_MSG_SIZE=4194304
+      - XDS_MAX_RETRIES=3
+      - JAVA_OPTS=-Xms256m -Xmx256m ${JAVA_OPTS} -Dhttpclient.hostnameVerifier=AllowAll
+      - apim_admin_pwd=admin
+      - enforcer_admin_pwd=admin
+      - tm_admin_pwd=admin
+      - analytics_authURL=https://localhost:8080
+      - analytics_authToken=
+    networks:
+      - cc_internal
+      - apim_and_cc
+    ports:
+      - "8081:8081"
+    mem_limit: 512m
+  enforcer2:
+    image: wso2/choreo-connect-enforcer:0.9.1-SNAPSHOT
+    mem_limit: 512m
+    logging:
+      options:
+        max-size: "20m"
+        max-file: "5"
+    volumes:
+      - ../resources/enforcer/security:/home/wso2/security
+      - ./conf/log4j2.properties:/home/wso2/conf/log4j2.properties
+      - ../resources/enforcer/dropins:/home/wso2/lib/dropins
+    environment:
+      - ENFORCER_PRIVATE_KEY_PATH=/home/wso2/security/keystore/mg.key
+      - ENFORCER_PUBLIC_CERT_PATH=/home/wso2/security/keystore/mg.pem
+      - TRUSTED_CA_CERTS_PATH=/home/wso2/security/truststore
+      - ADAPTER_HOST_NAME=adapter
+      - ADAPTER_HOST=adapter2
+      - ADAPTER_XDS_PORT=18000
+      - ENFORCER_LABEL=Default
+      - ENFORCER_REGION=UNKNOWN
+      - XDS_MAX_MSG_SIZE=4194304
+      - XDS_MAX_RETRIES=3
+      - JAVA_OPTS=-Xms256m -Xmx256m ${JAVA_OPTS} -Dhttpclient.hostnameVerifier=AllowAll
+      - apim_admin_pwd=admin
+      - enforcer_admin_pwd=admin
+      - tm_admin_pwd=admin
+      - analytics_authURL=https://localhost:8080
+      - analytics_authToken=
+    networks:
+      - cc_internal
+      - apim_and_cc
+    ports:
+      - "8082:8081"

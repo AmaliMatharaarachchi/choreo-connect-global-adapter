@@ -2,6 +2,8 @@ module github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter
 
 go 1.15
 
+replace github.com/wso2/product-microgateway/adapter => github.com/VirajSalaka/product-microgateway/adapter v0.0.0-20210719081110-8c7462a03dc2
+
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/denisenkom/go-mssqldb v0.10.0
@@ -13,7 +15,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.6.1
-	github.com/wso2/product-microgateway/adapter v0.0.0-20210713051609-eb629bd9e62e
+	github.com/wso2/product-microgateway/adapter v0.0.0
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/tools v0.1.4 // indirect
 	google.golang.org/genproto v0.0.0-20201201144952-b05cb90ed32e
