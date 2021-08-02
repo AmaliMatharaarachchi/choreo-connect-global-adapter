@@ -44,6 +44,7 @@ var basicAuth string = "Basic YWRtaW46YWRtaW4="
 
 var configs = config.ReadConfigs()
 var partitionSize = configs.Server.PartitionSize
+var deployAdapterTriggered bool
 
 // CacheAction is use as enum type for Redis cache update event type
 type CacheAction int
@@ -205,8 +206,10 @@ func getAvailableID(hierarchyID string) int {
 
 	if nextAvailableID == 0 {
 		nextAvailableID = getNextIncrementalID(hierarchyID)
+		if nextAvailableID != -1 {
+			triggerNewDeploymentIfRequired(nextAvailableID, partitionSize)
+		}
 	}
-
 	logger.LoggerServer.Debug("Next available ID for hierarchy ", hierarchyID, " is ", nextAvailableID)
 	return nextAvailableID
 }
@@ -420,4 +423,19 @@ func getLaLabel(labelHierarchy string, apiID int, partitionSize int) string {
 	}
 
 	return fmt.Sprintf("%s-P%d", labelHierarchy, partitionID)
+}
+
+func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int) {
+	remainder := incrementalID % partitionSize
+	partitionThreshold := configs.Server.PartitionTriggerThreshold
+	// If the remainder is 1, it is deployed in the new adapter parition. Hence the deployAdapterTriggered is set to false
+	if remainder == 1 {
+		deployAdapterTriggered = false
+	}
+	if !deployAdapterTriggered && float32(remainder)/float32(partitionSize) > partitionThreshold {
+		// Currently, the global adapter prints a log.
+		logger.LoggerServer.Infof("%s percentage of the adapter partition: %d is exceeded.",
+			fmt.Sprintf("%.2f", partitionThreshold*100), (incrementalID/partitionSize)+1)
+		deployAdapterTriggered = true
+	}
 }
