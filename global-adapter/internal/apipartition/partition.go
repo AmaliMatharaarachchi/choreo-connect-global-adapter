@@ -150,7 +150,7 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.Ev
 			adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
 		} else {
 			for {
-				availableID := getAvailableID(gwLabel)
+				availableID, isNewID := getAvailableID(gwLabel)
 				if availableID == -1 { // Return -1 due to an error
 					logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
 					break
@@ -165,7 +165,11 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.Ev
 						}
 					} else {
 						adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
-						logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
+						logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
+						// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
+						if isNewID {
+							triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionTriggerThreshold)
+						}
 						break
 					}
 				}
@@ -200,18 +204,20 @@ func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
 // Function returns the next available inremental ID. For collect the next available ID , there are 2 helper functions.
 // 1. getEmptiedId() -  Return if there any emptied ID. Return smallest first ID.If no emptied IDs available , then returns 0.
 // 2. getNextIncrementalId() - If getEmptiedId return 0 , then this function returns next incremental ID.
-func getAvailableID(hierarchyID string) int {
+// The second return value is false if the helper method 1 determines the ID. true otherwise.
+func getAvailableID(hierarchyID string) (int, bool) {
 
 	var nextAvailableID int = getEmptiedID(hierarchyID)
-
+	newIDAssigned := false
 	if nextAvailableID == 0 {
 		nextAvailableID = getNextIncrementalID(hierarchyID)
 		if nextAvailableID != -1 {
-			triggerNewDeploymentIfRequired(nextAvailableID, partitionSize, configs.Server.PartitionTriggerThreshold)
+			newIDAssigned = true
+			// triggerNewDeploymentIfRequired(nextAvailableID, partitionSize, configs.Server.PartitionTriggerThreshold)
 		}
 	}
 	logger.LoggerAPIPartition.Debug("Next available ID for hierarchy ", hierarchyID, " is ", nextAvailableID)
-	return nextAvailableID
+	return nextAvailableID, newIDAssigned
 }
 
 // Observing emptied incremental ID
@@ -431,9 +437,10 @@ func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int, partit
 	if remainder == 1 {
 		deployAdapterTriggered = false
 	}
+	// deployAdapterTriggered is executed avoid printing multiple log entries if the threshold exceeds.
 	if !deployAdapterTriggered && float32(remainder)/float32(partitionSize) > partitionThreshold {
 		// Currently, the global adapter prints a log.
-		logger.LoggerAPIPartition.Infof("%s percentage of the adapter partition: %d is exceeded.",
+		logger.LoggerAPIPartition.Infof("%s percentage of the adapter partition: %d is filled.",
 			fmt.Sprintf("%.2f", partitionThreshold*100), (incrementalID/partitionSize)+1)
 		deployAdapterTriggered = true
 	}
