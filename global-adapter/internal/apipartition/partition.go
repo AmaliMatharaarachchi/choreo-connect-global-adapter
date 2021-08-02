@@ -168,7 +168,7 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.Ev
 						logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
 						// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
 						if isNewID {
-							triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionTriggerThreshold)
+							triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionThreshold)
 						}
 						break
 					}
@@ -213,7 +213,6 @@ func getAvailableID(hierarchyID string) (int, bool) {
 		nextAvailableID = getNextIncrementalID(hierarchyID)
 		if nextAvailableID != -1 {
 			newIDAssigned = true
-			// triggerNewDeploymentIfRequired(nextAvailableID, partitionSize, configs.Server.PartitionTriggerThreshold)
 		}
 	}
 	logger.LoggerAPIPartition.Debug("Next available ID for hierarchy ", hierarchyID, " is ", nextAvailableID)
