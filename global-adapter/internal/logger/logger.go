@@ -38,6 +38,7 @@ const (
 	pkgSync         = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 	pkgMsg          = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
 	pkgHealth       = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/messaging"
+	pkgAPIPartition = "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 )
 
 // logger package references
@@ -48,6 +49,7 @@ var (
 	LoggerSync         *logrus.Logger
 	LoggerMsg          *logrus.Logger
 	LoggerHealth       *logrus.Logger
+	LoggerAPIPartition *logrus.Logger
 )
 
 func init() {
@@ -62,5 +64,6 @@ func UpdateLoggers() {
 	LoggerSync = logging.InitPackageLogger(pkgSync)
 	LoggerMsg = logging.InitPackageLogger(pkgMsg)
 	LoggerHealth = logging.InitPackageLogger(pkgHealth)
+	LoggerAPIPartition = logging.InitPackageLogger(pkgAPIPartition)
 	logrus.Info("Updated loggers")
 }

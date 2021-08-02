@@ -89,7 +89,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 			if label != "" {
 				cacheKey := getCacheKey(&apis[ind], gatewayLabel)
 
-				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
+				logger.LoggerAPIPartition.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
 				apiState := types.LaAPIEvent{
 					LabelHierarchy:   gatewayLabel,
@@ -107,7 +107,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 				}
 
 			} else {
-				logger.LoggerServer.Errorf("Error while fetching the API label UUID : %v ", apis[ind].UUID)
+				logger.LoggerAPIPartition.Errorf("Error while fetching the API label UUID : %v ", apis[ind].UUID)
 			}
 		}
 	}
@@ -124,7 +124,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 }
 
 func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
-	logger.LoggerServer.Debug("API List : ", len(laAPIList))
+	logger.LoggerAPIPartition.Debug("API List : ", len(laAPIList))
 	if len(laAPIList) == 0 {
 		return
 	}
@@ -142,30 +142,30 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.Ev
 	stmt, error := database.DB.Prepare(database.QueryInsertAPI)
 
 	if error != nil {
-		logger.LoggerServer.Errorf("Error while persist the API info for UUID : %v ", &api.UUID)
+		logger.LoggerAPIPartition.Errorf("Error while persist the API info for UUID : %v ", &api.UUID)
 	} else {
 		isExists, apiID := isAPIExists(api.UUID, gwLabel)
 		if isExists {
-			logger.LoggerServer.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
+			logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
 			adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
 		} else {
 			for {
 				availableID := getAvailableID(gwLabel)
 				if availableID == -1 { // Return -1 due to an error
-					logger.LoggerServer.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
+					logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
 					break
 				} else {
 					_, err := stmt.Exec(api.UUID, &gwLabel, availableID)
 					if err != nil {
 						if strings.Contains(err.Error(), "duplicate key") {
-							logger.LoggerServer.Debug(" ID already exists ", err)
+							logger.LoggerAPIPartition.Debug(" ID already exists ", err)
 							continue
 						} else {
-							logger.LoggerServer.Error("Error while writing partition information ", err)
+							logger.LoggerAPIPartition.Error("Error while writing partition information ", err)
 						}
 					} else {
 						adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
-						logger.LoggerServer.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
+						logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLebl : ", gwLabel, " partitionId : ", availableID)
 						break
 					}
 				}
@@ -184,14 +184,14 @@ func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
 	row, err := database.DB.Query(database.QueryIsAPIExists, uuid, labelHierarchy)
 	if err == nil {
 		if !row.Next() {
-			logger.LoggerServer.Debug("Record does not exist for labelHierarchy : ", labelHierarchy, " and uuid : ", uuid)
+			logger.LoggerAPIPartition.Debug("Record does not exist for labelHierarchy : ", labelHierarchy, " and uuid : ", uuid)
 		} else {
 			row.Scan(&apiID)
-			logger.LoggerServer.Debug("API already persisted : ", uuid, " for ", labelHierarchy)
+			logger.LoggerAPIPartition.Debug("API already persisted : ", uuid, " for ", labelHierarchy)
 			return true, &apiID
 		}
 	} else {
-		logger.LoggerServer.Error("Error when checking whether the API is exists. uuid : ", uuid, " ", err)
+		logger.LoggerAPIPartition.Error("Error when checking whether the API is exists. uuid : ", uuid, " ", err)
 	}
 
 	return false, nil
@@ -207,10 +207,10 @@ func getAvailableID(hierarchyID string) int {
 	if nextAvailableID == 0 {
 		nextAvailableID = getNextIncrementalID(hierarchyID)
 		if nextAvailableID != -1 {
-			triggerNewDeploymentIfRequired(nextAvailableID, partitionSize)
+			triggerNewDeploymentIfRequired(nextAvailableID, partitionSize, configs.Server.PartitionTriggerThreshold)
 		}
 	}
-	logger.LoggerServer.Debug("Next available ID for hierarchy ", hierarchyID, " is ", nextAvailableID)
+	logger.LoggerAPIPartition.Debug("Next available ID for hierarchy ", hierarchyID, " is ", nextAvailableID)
 	return nextAvailableID
 }
 
@@ -221,9 +221,9 @@ func getEmptiedID(hierarchyID string) int {
 	if error == nil {
 		stmt.Next()
 		stmt.Scan(&emptiedID)
-		logger.LoggerServer.Debug("The next available id from deleted APIs | hierarchy : ", hierarchyID, " is : ", emptiedID)
+		logger.LoggerAPIPartition.Debug("The next available id from deleted APIs | hierarchy : ", hierarchyID, " is : ", emptiedID)
 	} else {
-		logger.LoggerServer.Error("Error while getting next available id from deleted APIs | hierarchy : ", hierarchyID)
+		logger.LoggerAPIPartition.Error("Error while getting next available id from deleted APIs | hierarchy : ", hierarchyID)
 	}
 
 	return emptiedID
@@ -238,10 +238,10 @@ func getNextIncrementalID(hierarchyID string) int {
 		stmt.Next()
 		stmt.Scan(&highestID)
 		nextIncrementalID = highestID + 1
-		logger.LoggerServer.Debug("Next incremental ID for hierarchy : ", hierarchyID, " is : ", nextIncrementalID)
+		logger.LoggerAPIPartition.Debug("Next incremental ID for hierarchy : ", hierarchyID, " is : ", nextIncrementalID)
 	} else {
 		nextIncrementalID = -1
-		logger.LoggerServer.Error("Error while getting next incremental ID | hierarcy : ", hierarchyID)
+		logger.LoggerAPIPartition.Error("Error while getting next incremental ID | hierarcy : ", hierarchyID)
 	}
 
 	return nextIncrementalID
@@ -280,7 +280,7 @@ func updateFromEvents(apis []synchronizer.APIEvent) {
 // If gwLabels are empty , don`t delete the reord (since it is an "API Update event")
 func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 	if len(api.GatewayLabels) > 0 {
-		logger.LoggerServer.Debug("API undeploy event received : ", api.UUID)
+		logger.LoggerAPIPartition.Debug("API undeploy event received : ", api.UUID)
 
 		if database.WakeUpConnection() {
 			defer database.CloseDbConnection()
@@ -296,10 +296,10 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 				}
 				_, error := stmt.Exec(api.UUID, gatewayLabel)
 				if error != nil {
-					logger.LoggerServer.Error("Error while deleting the API UUID : ", api.UUID, " ", error)
+					logger.LoggerAPIPartition.Error("Error while deleting the API UUID : ", api.UUID, " ", error)
 					// break
 				} else {
-					logger.LoggerServer.Info("API deleted from the database : ", api.UUID)
+					logger.LoggerAPIPartition.Info("API deleted from the database : ", api.UUID)
 					updateRedisCache(api, gatewayLabel, nil, types.APIDelete)
 					pushToXdsCache([]*types.LaAPIEvent{{
 						APIUUID:          api.UUID,
@@ -312,7 +312,7 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 			}
 		}
 	} else {
-		logger.LoggerServer.Debug("API update event received : ", api.UUID)
+		logger.LoggerAPIPartition.Debug("API update event received : ", api.UUID)
 	}
 
 	return false
@@ -324,7 +324,7 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 	rc := cache.GetClient()
 	key := getCacheKey(api, labelHierarchy)
 	if key != "" {
-		logger.LoggerServer.Debug("Redis cache updating ")
+		logger.LoggerAPIPartition.Debug("Redis cache updating ")
 
 		switch eventType {
 		case types.APIDelete:
@@ -367,7 +367,7 @@ func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 		cacheKey = fmt.Sprintf(clientName+"#%s#%s_%s_%s", labelHierarchy, organization, basePath, version)
 	}
 
-	logger.LoggerServer.Debug(" Generated cache key : ", cacheKey)
+	logger.LoggerAPIPartition.Debug(" Generated cache key : ", cacheKey)
 	return cacheKey
 }
 
@@ -402,7 +402,7 @@ func fetchAPIInfo(apiUUID, gwLabel string) *types.API {
 			apiInfo = &response.List[0]
 			break
 		} else {
-			logger.LoggerServer.Error("Error when fetching API info from /apis for API : ", uuid, " .Error : ", err)
+			logger.LoggerAPIPartition.Error("Error when fetching API info from /apis for API : ", uuid, " .Error : ", err)
 			continue
 		}
 	}
@@ -425,16 +425,15 @@ func getLaLabel(labelHierarchy string, apiID int, partitionSize int) string {
 	return fmt.Sprintf("%s-P%d", labelHierarchy, partitionID)
 }
 
-func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int) {
+func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int, partitionThreshold float32) {
 	remainder := incrementalID % partitionSize
-	partitionThreshold := configs.Server.PartitionTriggerThreshold
 	// If the remainder is 1, it is deployed in the new adapter parition. Hence the deployAdapterTriggered is set to false
 	if remainder == 1 {
 		deployAdapterTriggered = false
 	}
 	if !deployAdapterTriggered && float32(remainder)/float32(partitionSize) > partitionThreshold {
 		// Currently, the global adapter prints a log.
-		logger.LoggerServer.Infof("%s percentage of the adapter partition: %d is exceeded.",
+		logger.LoggerAPIPartition.Infof("%s percentage of the adapter partition: %d is exceeded.",
 			fmt.Sprintf("%.2f", partitionThreshold*100), (incrementalID/partitionSize)+1)
 		deployAdapterTriggered = true
 	}
