@@ -92,7 +92,7 @@ func addSingleAPI(label, apiUUID, revisionUUID, organizationUUID string) {
 	}
 	apiCache.SetSnapshot(label, newSnapshot)
 	introducedLabels[label] = true
-	logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
+	logger.LoggerXds.Infof("API Snapshot is updated for label %s with the version %d.", label, version)
 }
 
 // removeAPI removes the API entry from XDS cache

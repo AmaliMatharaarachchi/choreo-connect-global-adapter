@@ -28,7 +28,6 @@ import (
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2/product-microgateway/adapter/pkg/health"
-	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
@@ -57,7 +56,7 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 			var deployments sync.DeploymentDescriptor
 			err := json.Unmarshal([]byte(string(data.Resp)), &deployments)
 			if err != nil {
-				logger.LoggerSync.Errorf("Error occured while unmarshalling deplyment data. Error: %v", err.Error())
+				logger.LoggerSync.Errorf("Error occured while unmarshalling deployment data. Error: %v", err.Error())
 				return &deployments, err
 			}
 			return &deployments, nil
@@ -85,7 +84,7 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 }
 
 // AddAPIEventsToChannel function updates the api event details and add it to the API event array.
-func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, incomingAPIEvent *msg.APIEvent) {
+func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor) {
 	// Create an APIEvent array.
 	APIEventArray := []APIEvent{}
 
@@ -109,10 +108,9 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, inco
 		}
 
 		// Add context and version of incoming API events to the apiEvent.
-		if incomingAPIEvent != nil {
-			apiEvent.Context = incomingAPIEvent.Context
-			apiEvent.Version = incomingAPIEvent.Version
-		}
+		apiEvent.Context = deployment.APIContext
+		apiEvent.Version = deployment.Version
+
 		// Add API Event to array.
 		APIEventArray = append(APIEventArray, apiEvent)
 	}
