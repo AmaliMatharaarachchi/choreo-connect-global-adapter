@@ -80,7 +80,7 @@ services:
       - ADAPTER_PUBLIC_CERT_PATH=/home/wso2/security/keystore/mg.pem
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
-      - localLabel=Default-P1
+      - localLabel=Default-p1
     ports:
       - "9843:9843"
     mem_limit: 256m
@@ -102,7 +102,7 @@ services:
       - ADAPTER_PUBLIC_CERT_PATH=/home/wso2/security/keystore/mg.pem
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
-      - localLabel=Default-P2
+      - localLabel=Default-p2
     ports:
       - "9844:9843"
     mem_limit: 256m

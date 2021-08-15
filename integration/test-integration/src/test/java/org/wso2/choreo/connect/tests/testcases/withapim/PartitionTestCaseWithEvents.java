@@ -38,7 +38,6 @@ import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisClientConfig;
 
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -173,12 +172,11 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
 
     private void initializeEntryMap() {
         testEntryList = new ArrayList<>();
-        // Lowercase partition default-p1
-        addTestEntryToList("APIEvent1", "1.0.0", "testOrg1/apiEvent1", "Default-P1");
-        addTestEntryToList("APIEvent2", "1.0.0", "testOrg1/apiEvent2", "Default-P1");
-        addTestEntryToList("APIEvent3", "1.0.0", "testOrg1/apiEvent3", "Default-P1");
-        addTestEntryToList("APIEvent4", "1.0.0", "testOrg1/apiEvent4", "Default-P2");
-        addTestEntryToList("APIEvent5", "1.0.0", "testOrg1/apiEvent5", "Default-P2");
+        addTestEntryToList("APIEvent1", "1.0.0", "testOrg1/apiEvent1", "Default-p1");
+        addTestEntryToList("APIEvent2", "1.0.0", "testOrg1/apiEvent2", "Default-p1");
+        addTestEntryToList("APIEvent3", "1.0.0", "testOrg1/apiEvent3", "Default-p1");
+        addTestEntryToList("APIEvent4", "1.0.0", "testOrg1/apiEvent4", "Default-p2");
+        addTestEntryToList("APIEvent5", "1.0.0", "testOrg1/apiEvent5", "Default-p2");
     }
 
     private void assert200Response(String url) throws CCTestException {
@@ -224,8 +222,8 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
 
     public void populationPartitionEndpointMap() {
         partitionEndpointMap = new HashMap<>();
-        partitionEndpointMap.put("Default-P1", "https://localhost:9095/");
-        partitionEndpointMap.put("Default-P2", "https://localhost:9096/");
+        partitionEndpointMap.put("Default-p1", "https://localhost:9095/");
+        partitionEndpointMap.put("Default-p2", "https://localhost:9096/");
     }
 
     private TestEntry deleteTestEntry(TestEntry testEntry) throws Exception {
