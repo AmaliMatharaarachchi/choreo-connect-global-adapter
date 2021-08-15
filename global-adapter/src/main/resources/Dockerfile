@@ -49,6 +49,7 @@ USER ${MG_USER}
 COPY maven/conf conf
 COPY maven/security security
 COPY maven/global-adapter-linux global-adapter
+COPY check_health.sh .
 
 ENV LOG_CONFIG_PATH="${MG_USER_HOME}/conf/log_config.toml"
 

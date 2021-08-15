@@ -66,7 +66,7 @@ const (
 	defaultGatewayLabel    string = "default"
 )
 
-// PopulateAPIData - populating API infomation to Database and redis cache
+// PopulateAPIData - populating API information to Database and redis cache
 func PopulateAPIData(apis []synchronizer.APIEvent) {
 	var laAPIList []*types.LaAPIEvent
 	var cacheObj []string
@@ -154,7 +154,7 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.Ev
 					logger.LoggerServer.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
 					break
 				} else {
-					_, err := stmt.Exec(api.UUID, &gwLabel, availableID)
+					_, err := stmt.Exec(api.UUID, &gwLabel, availableID, api.OrganizationID)
 					if err != nil {
 						if strings.Contains(err.Error(), "duplicate key") {
 							logger.LoggerServer.Debug(" ID already exists ", err)
@@ -334,7 +334,7 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	// apiId : Incremental ID
 	// Cache Key pattern : <organization id>_<base path>_<api version>
-	// Cache Value : Pertion Label ID ie: devP-1, prodP-3
+	// Cache Value : Pertion Label ID ie: dev-p1, prod-p3
 	// labelHierarchy : gateway label (dev,prod and etc)
 
 	var version string
@@ -359,7 +359,6 @@ func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	}
 
 	// MOVE HERE <-- Read [1]
-
 	if organization != "" && version != "" && basePath != "" {
 		cacheKey = fmt.Sprintf(clientName+"#%s#%s_%s_%s", labelHierarchy, organization, basePath, version)
 	}
@@ -419,5 +418,5 @@ func getLaLabel(labelHierarchy string, apiID int, partitionSize int) string {
 		partitionID = div
 	}
 
-	return fmt.Sprintf("%s-P%d", labelHierarchy, partitionID)
+	return fmt.Sprintf("%s-p%d", labelHierarchy, partitionID)
 }

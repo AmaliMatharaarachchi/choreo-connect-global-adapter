@@ -1,6 +1,5 @@
-#!/bin/bash
 # --------------------------------------------------------------------
-# Copyright (c) 2021, WSO2 Inc. (http://wso2.com) All Rights Reserved.
+# Copyright (c) 2021, WSO2 Inc. (http://wso2.com).
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,12 +14,23 @@
 # limitations under the License.
 # -----------------------------------------------------------------------
 
-# TODO: (VirajSalaka) Fix appropriately once the health check is implemented.
-ADAPTER_XDS_PORT="${ADAPTER_XDS_PORT:-18000}"
-grpc_health_probe -addr "localhost:${ADAPTER_XDS_PORT}" \
-    -tls \
-    -tls-ca-cert "${GLOBAL_ADAPTER_PUBLIC_CERT_PATH}" \
-    -tls-client-cert "${ADAPTER_PUBLIC_CERT_PATH}" \
-    -tls-client-key "${ADAPTER_PRIVATE_KEY_PATH}" \
-    -tls-server-name "${GLOBAL_ADAPTER_SERVER_NAME}" \
-    -connect-timeout=3s
+# Service for Global Adapter
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    choreo.component: choreo-connect-global-adapter
+  name: global-adapter
+spec:
+  selector:
+    choreo.component: choreo-connect-global-adapter
+  ports:
+  - name: "http-gamanagementserver"
+    port: 18000
+    targetPort: 18000
+    protocol: TCP
+  - name: "https-global-adapter"
+    port: 9843
+    targetPort: 9843
+    protocol: TCP

@@ -95,9 +95,8 @@ func TestAddAPIEventsToChannel(t *testing.T) {
 							Vhost: "localhost",
 						},
 					},
-					Version: "1.0.0",
+					Version:    "1.0.0",
 					APIContext: "/testorg/myorg/v1",
-
 				},
 				{
 					APIFile: "50d2cda9e9cab41a3244fa91-70d2cdade9cab41a3214fa98",
@@ -107,7 +106,7 @@ func TestAddAPIEventsToChannel(t *testing.T) {
 							Vhost: "localhost",
 						},
 					},
-					Version: "1.0.0",
+					Version:    "1.0.0",
 					APIContext: "/testorg/myorg/v1",
 				},
 			},
