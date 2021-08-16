@@ -34,16 +34,18 @@ if [ -d "$APIM_DIR" ]; then
 else
   mkdir -p gen/choreo-apim
   cd gen/choreo-apim
+#  TODO: (VirajSalaka) check if it is executed from a workflow, then it is not required to clone
   git clone https://github.com/wso2-enterprise/choreo-product-apim
-  cd choreo-product-apim
   if [ $? -eq 0 ]; then
     echo "Clone operation for choreo-product-apim is successful"
   else
     echo "Clone operation for choreo-product-apim is failed"
     exit 1
   fi
+  cd choreo-product-apim
 fi
 
+# TODO: (VirajSalaka) rather than copying the yaml, get it merged to the choreo-product-apim
 cp ${script_dir}/../resources/publisher-api.yaml modules/integration/tests-common/clients/publisher/src/main/resources/publisher-api.yaml
 
 if [[ -z "${JAVA_8_HOME}" ]]; then

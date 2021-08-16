@@ -1,4 +1,5 @@
 # The configuration file for mgw
+# TODO: (VirajSalaka) Allow unchanged properties to be selected from default config
 [keystore]
   certPath = "$env{MGW_HOME}/security/keystore/global-adapter.pem"
   keyPath = "$env{MGW_HOME}/security/keystore/global-adapter.key"

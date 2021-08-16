@@ -93,13 +93,6 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         //Invoke all the added API
         for (TestEntry testEntry : testEntryList) {
 
-            String orgHandle = testEntry.getApiContext().substring(0, testEntry.getApiContext()
-                    .indexOf("/", 1));
-            String context = testEntry.getApiContext()
-                    .substring(testEntry.getApiContext().indexOf("/", 1));
-            // Check if the redis entry is as expected.
-            checkRedisEntry(orgHandle, context, testEntry.getApiVersion(), testEntry.getPartition());
-
             // Checks against both the router partitions available.
             // If the partition matches, it should return 200 OK, otherwise 404.
             checkTestEntry(testEntry);
@@ -114,6 +107,7 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         TestEntry testEntryFirst = testEntryList.get(0);
         TestEntry testEntryLast = testEntryList.get(testEntryListSize - 1);
 
+        // TODO: (VirajSalaka) Use Undeploy instead
         testEntryFirst = deleteTestEntry(testEntryFirst);
         String testEntryFirstPartition = testEntryFirst.getPartition();
         testEntryLast = deleteTestEntry(testEntryLast);
@@ -193,11 +187,11 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
                 "Status code mismatched. Endpoint:" + url + " HttpResponse ");
     }
 
-    private void addTestEntryToList(String apiName, String apiVersion, String apiContext, String endpoint) {
+    private void addTestEntryToList(String apiName, String apiVersion, String apiContext, String partition) {
         TestEntry testEntry = new TestEntry();
         testEntry.setApiName(apiName);
         testEntry.setApiVersion(apiVersion);
-        testEntry.setPartition(endpoint);
+        testEntry.setPartition(partition);
         testEntry.setApiContext(apiContext);
         testEntryList.add(testEntry);
     }

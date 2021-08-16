@@ -68,6 +68,7 @@
                         <configuration>
                             <target>
                                 <unzip src="../distribution/target/choreo-connect-ga-${project.version}.zip" dest="${basedir}/../test-integration/target" />
+<!--                                TODO: (Viraj Salaka) Parameterize the version numbers-->
                                 <replaceregexp file="src/test/resources/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-router\:.*" replace="wso2/choreo-connect-router:0.9.1-SNAPSHOT" byline="true" />
                                 <replaceregexp file="src/test/resources/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-adapter\:.*" replace="wso2/choreo-connect-adapter:0.9.1-SNAPSHOT" byline="true" />
                                 <replaceregexp file="src/test/resources/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-enforcer\:.*" replace="wso2/choreo-connect-enforcer:0.9.1-SNAPSHOT" byline="true" />

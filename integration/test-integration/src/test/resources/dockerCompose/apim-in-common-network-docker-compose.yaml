@@ -12,9 +12,6 @@ services:
       - "8243:8243"
     volumes:
       - ./conf/deployment.toml:/home/wso2carbon/wso2am-4.0.0-SNAPSHOT/repository/conf/deployment.toml
-#      - ./dependencies/bson-4.1.0.jar:/home/wso2carbon/wso2am-4.0.0-SNAPSHOT/repository/components/lib/bson-4.1.0.jar
-#      - ./dependencies/mongodb-driver-core-4.1.0.jar:/home/wso2carbon/wso2am-4.0.0-SNAPSHOT/repository/components/lib/mongodb-driver-core-4.1.0.jar
-#      - ./dependencies/mongodb-driver-sync-4.1.0.jar:/home/wso2carbon/wso2am-4.0.0-SNAPSHOT/repository/components/lib/mongodb-driver-sync-4.1.0.jar
     networks:
       - apim_and_cc
   

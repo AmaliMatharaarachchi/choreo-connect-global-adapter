@@ -35,6 +35,7 @@
             <class name="org.wso2.choreo.connect.tests.setup.withapim.ApimStartupExecutor"/>
             <class name="org.wso2.choreo.connect.tests.setup.withapim.ApimClientsPreparer"/>
             <class name="org.wso2.choreo.connect.tests.setup.withapim.ApimPreparer"/>
+<!--            TODO: (VirajSalaka) Adapter GA Restarts-->
             <class name="org.wso2.choreo.connect.tests.setup.withapim.CCStartupExecutorWithPartitions"/>
             <class name="org.wso2.choreo.connect.tests.testcases.withapim.PartitionTestCaseWithEvents"/>
         </classes>
