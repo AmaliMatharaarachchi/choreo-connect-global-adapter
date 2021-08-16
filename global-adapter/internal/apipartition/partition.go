@@ -83,10 +83,12 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 				gatewayLabel = defaultGatewayLabel
 			}
 
-			label := insertRecord(&apis[ind], gatewayLabel, types.APICreate)
+			// It is required to convert the gateway label to lowercase as the partition name is required for deploying k8s
+			// services
+			label := insertRecord(&apis[ind], strings.ToLower(gatewayLabel), types.APICreate)
 
 			if label != "" {
-				cacheKey := getCacheKey(&apis[ind], gatewayLabel)
+				cacheKey := getCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
 
 				logger.LoggerServer.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
@@ -257,6 +259,8 @@ func ProcessEventsInDatabase() {
 // for update the DB for JMS event
 // TODO : if event is for undeploy or remove task , then API should delete from the DB
 func updateFromEvents(apis []synchronizer.APIEvent) {
+	// When multiple APIs (> 1) are present, it corresponding to the startup scenario. Hence the IsRemoveEvent flag is not
+	// considered.
 	if len(apis) > 1 {
 		PopulateAPIData(apis)
 		return
@@ -297,12 +301,12 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 					// break
 				} else {
 					logger.LoggerServer.Info("API deleted from the database : ", api.UUID)
-					updateRedisCache(api, gatewayLabel, nil, types.APIDelete)
+					updateRedisCache(api, strings.ToLower(gatewayLabel), nil, types.APIDelete)
 					pushToXdsCache([]*types.LaAPIEvent{{
 						APIUUID:          api.UUID,
 						IsRemoveEvent:    true,
 						OrganizationUUID: api.OrganizationID,
-						LabelHierarchy:   gatewayLabel,
+						LabelHierarchy:   strings.ToLower(gatewayLabel),
 					}})
 					return true
 				}
