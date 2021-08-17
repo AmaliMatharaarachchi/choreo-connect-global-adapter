@@ -25,11 +25,13 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.wso2.am.integration.test.utils.bean.APIRequest;
 import org.wso2.choreo.connect.tests.apim.ApimBaseTest;
+import org.wso2.choreo.connect.tests.apim.ApimResourceProcessor;
 import org.wso2.choreo.connect.tests.apim.dto.AppWithConsumerKey;
 import org.wso2.choreo.connect.tests.apim.dto.Application;
 import org.wso2.choreo.connect.tests.apim.utils.PublisherUtils;
 import org.wso2.choreo.connect.tests.apim.utils.StoreUtils;
 import org.wso2.choreo.connect.tests.context.CCTestException;
+import org.wso2.choreo.connect.tests.setup.withapim.ApimPreparer;
 import org.wso2.choreo.connect.tests.util.HttpResponse;
 import org.wso2.choreo.connect.tests.util.HttpsClientRequest;
 import org.wso2.choreo.connect.tests.util.TestConstant;
@@ -47,33 +49,62 @@ import java.util.Map;
 
 public class PartitionTestCaseWithEvents extends ApimBaseTest {
     private static final String APP_NAME = "GlobalAdapterEventTest";
+    private static final String PARTITION_1 = "Default-p1";
+    private static final String PARTITION_2 = "Default-p2";
     private String applicationId;
     Map <String, String> headers;
-    List<TestEntry> testEntryList;
+    List<TestEntry> newAPITestEntryList = new ArrayList<>();
+    List<TestEntry> existingAPITestEntryList = new ArrayList<>();
     private Map<String, String> partitionEndpointMap;
     private Jedis jedis;
+    private AppWithConsumerKey appWithConsumerKey;
 
     @BeforeClass(alwaysRun = true, description = "initialize setup")
     void setup() throws Exception {
         super.initWithSuperTenant();
         // Populate the API Entries which are going to be added in the middle.
-        initializeEntryMap();
+        initializeTestEntryMap();
         // Initialize Jedis (Redis_ Client
         jedis = createJedisConnection();
         // Populate partition against endpoint.
         populationPartitionEndpointMap();
+
+        Application app = new Application(APP_NAME, TestConstant.APPLICATION_TIER.UNLIMITED);
+        appWithConsumerKey = StoreUtils.createApplicationWithKeys(app, storeRestClient);
+        applicationId = appWithConsumerKey.getApplicationId();
+    }
+
+    @Test
+    public void testAlreadyExistingAPIs() throws Exception {
+        for (TestEntry entry : existingAPITestEntryList) {
+            String apiId = ApimResourceProcessor.apiNameToId.get(entry.getApiName());
+            entry.setApiID(apiId);
+            StoreUtils.subscribeToAPI(apiId, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
+        }
+        Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted when waiting for the " +
+                "subscriptions to be deployed");
+
+        String accessToken = StoreUtils.generateUserAccessToken(apimServiceURLHttps,
+                appWithConsumerKey.getConsumerKey(), appWithConsumerKey.getConsumerSecret(),
+                new String[]{}, user, storeRestClient);
+
+        headers = new HashMap<>();
+        headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
+
+        //Invoke all the added API
+        for (TestEntry testEntry : existingAPITestEntryList) {
+
+            // Checks against both the router partitions available.
+            // If the partition matches, it should return 200 OK, otherwise 404.
+            checkTestEntry(testEntry, false);
+        }
+
     }
 
     @Test
     public void testCreateEvents() throws Exception {
-        //Create, deploy and publish API - only to specifically test events.
-        // For other testcases the json is used to create APIs, Apps, Subscriptions
-        //Create App. Subscribe.
-        Application app = new Application(APP_NAME, TestConstant.APPLICATION_TIER.UNLIMITED);
-        AppWithConsumerKey appWithConsumerKey = StoreUtils.createApplicationWithKeys(app, storeRestClient);
-        applicationId = appWithConsumerKey.getApplicationId();
 
-        for (TestEntry entry : testEntryList) {
+        for (TestEntry entry : newAPITestEntryList) {
             APIRequest apiRequest = PublisherUtils.createSampleAPIRequest(
                     entry.getApiName(), entry.getApiContext(), entry.getApiVersion(), user.getUserName());
             String apiId = PublisherUtils.createAndPublishAPI(apiRequest, publisherRestClient);
@@ -91,21 +122,21 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
         //Invoke all the added API
-        for (TestEntry testEntry : testEntryList) {
+        for (TestEntry testEntry : newAPITestEntryList) {
 
             // Checks against both the router partitions available.
             // If the partition matches, it should return 200 OK, otherwise 404.
-            checkTestEntry(testEntry);
+            checkTestEntry(testEntry, true);
         }
     }
 
     @Test
     public void testDeleteAndAddTwoAPIs() throws Exception {
-        int testEntryListSize = testEntryList.size();
+        int testEntryListSize = newAPITestEntryList.size();
         // first delete the 1st API and the last API in list (which belongs to two partitions)
         // now there is a vacant index in each partition.
-        TestEntry testEntryFirst = testEntryList.get(0);
-        TestEntry testEntryLast = testEntryList.get(testEntryListSize - 1);
+        TestEntry testEntryFirst = newAPITestEntryList.get(0);
+        TestEntry testEntryLast = newAPITestEntryList.get(testEntryListSize - 1);
 
         // TODO: (VirajSalaka) Use Undeploy instead
         testEntryFirst = deleteTestEntry(testEntryFirst);
@@ -135,8 +166,8 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         StoreUtils.subscribeToAPI(apiId, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
         Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting to subscription delete event");
 
-        checkTestEntry(testEntryFirst);
-        checkTestEntry(testEntryLast);
+        checkTestEntry(testEntryFirst, true);
+        checkTestEntry(testEntryLast, true);
     }
 
     @Test
@@ -144,7 +175,7 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         StoreUtils.removeAllSubscriptionsForAnApp(applicationId, storeRestClient);
         Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting to subscription delete event");
 
-        for (TestEntry testEntry : testEntryList) {
+        for (TestEntry testEntry : newAPITestEntryList) {
             String endpoint = partitionEndpointMap.get(testEntry.getPartition());
             String invocationUrl = endpoint + testEntry.getApiContext() + "/" + testEntry.getApiVersion()
                     + testEntry.getResourcePath();
@@ -154,7 +185,7 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
                     "Status code mismatched. Endpoint:" + endpoint + " HttpResponse ");
         }
         storeRestClient.removeApplicationById(applicationId);
-        for (TestEntry testEntry : testEntryList) {
+        for (TestEntry testEntry : newAPITestEntryList) {
             publisherRestClient.deleteAPI(testEntry.getApiID());
             Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting to API delete event");
             String endpoint = partitionEndpointMap.get(testEntry.getPartition());
@@ -164,13 +195,28 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         }
     }
 
-    private void initializeEntryMap() {
-        testEntryList = new ArrayList<>();
-        addTestEntryToList("APIEvent1", "1.0.0", "testOrg1/apiEvent1", "Default-p1");
-        addTestEntryToList("APIEvent2", "1.0.0", "testOrg1/apiEvent2", "Default-p1");
-        addTestEntryToList("APIEvent3", "1.0.0", "testOrg1/apiEvent3", "Default-p1");
-        addTestEntryToList("APIEvent4", "1.0.0", "testOrg1/apiEvent4", "Default-p2");
-        addTestEntryToList("APIEvent5", "1.0.0", "testOrg1/apiEvent5", "Default-p2");
+    private void initializeTestEntryMap() {
+        addTestEntryToList(existingAPITestEntryList, "API1", "1.0.0", "testOrg1/api1",
+                PARTITION_1);
+        addTestEntryToList(existingAPITestEntryList, "API2", "1.0.0", "testOrg1/api2",
+                PARTITION_1);
+        addTestEntryToList(existingAPITestEntryList, "API3", "1.0.0", "testOrg1/api3",
+                PARTITION_1);
+        addTestEntryToList(existingAPITestEntryList, "API4", "1.0.0", "testOrg1/api4",
+                PARTITION_1);
+        addTestEntryToList(existingAPITestEntryList, "API5", "1.0.0", "testOrg1/api5",
+                PARTITION_1);
+
+        addTestEntryToList(newAPITestEntryList, "APIEvent1", "1.0.0", "testOrg1/apiEvent1",
+                PARTITION_1);
+        addTestEntryToList(newAPITestEntryList, "APIEvent2", "1.0.0", "testOrg1/apiEvent2",
+                PARTITION_1);
+        addTestEntryToList(newAPITestEntryList, "APIEvent3", "1.0.0", "testOrg1/apiEvent3",
+                PARTITION_1);
+        addTestEntryToList(newAPITestEntryList, "APIEvent4", "1.0.0", "testOrg1/apiEvent4",
+                PARTITION_2);
+        addTestEntryToList(newAPITestEntryList, "APIEvent5", "1.0.0", "testOrg1/apiEvent5",
+                PARTITION_2);
     }
 
     private void assert200Response(String url) throws CCTestException {
@@ -187,7 +233,8 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
                 "Status code mismatched. Endpoint:" + url + " HttpResponse ");
     }
 
-    private void addTestEntryToList(String apiName, String apiVersion, String apiContext, String partition) {
+    private void addTestEntryToList(List<TestEntry> testEntryList, String apiName, String apiVersion,
+                                    String apiContext, String partition) {
         TestEntry testEntry = new TestEntry();
         testEntry.setApiName(apiName);
         testEntry.setApiVersion(apiVersion);
@@ -216,8 +263,8 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
 
     public void populationPartitionEndpointMap() {
         partitionEndpointMap = new HashMap<>();
-        partitionEndpointMap.put("Default-p1", "https://localhost:9095/");
-        partitionEndpointMap.put("Default-p2", "https://localhost:9096/");
+        partitionEndpointMap.put(PARTITION_1, "https://localhost:9095/");
+        partitionEndpointMap.put(PARTITION_2, "https://localhost:9096/");
     }
 
     private TestEntry deleteTestEntry(TestEntry testEntry) throws Exception {
@@ -231,11 +278,11 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         Assert.assertNotNull(response, "Error occurred while invoking the endpoint " + invocationUrl + " HttpResponse ");
         Assert.assertEquals(response.getResponseCode(), HttpStatus.SC_NOT_FOUND,
                 "Status code mismatched. Endpoint:" + invocationUrl + " HttpResponse ");
-        testEntryList.remove(testEntry);
+        newAPITestEntryList.remove(testEntry);
         return testEntry;
     }
 
-    private void checkTestEntry(TestEntry testEntry) throws Exception {
+    private void checkTestEntry(TestEntry testEntry, boolean verifyInOtherRouter) throws Exception {
         String orgHandle = testEntry.getApiContext().substring(0, testEntry.getApiContext().indexOf("/", 1));
         String context = testEntry.getApiContext().substring(testEntry.getApiContext().indexOf("/", 1));
         checkRedisEntry(orgHandle, context, testEntry.getApiVersion(), testEntry.getPartition());
@@ -244,7 +291,7 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
                     + testEntry.getApiVersion() + testEntry.getResourcePath();
             if (testEntry.getPartition().equals(mapEntry.getKey())) {
                 assert200Response(url);
-            } else {
+            } else if (verifyInOtherRouter){
                 assert404Response(url);
             }
         }
@@ -256,9 +303,7 @@ class TestEntry {
     private String apiName;
     private String apiVersion;
     private String apiContext;
-    private String applicationName;
     private String apiID;
-    private String applicationID;
     private String partition;
     private String resourcePath = "/pet/findByStatus";
 
@@ -286,28 +331,12 @@ class TestEntry {
         this.apiContext = apiContext;
     }
 
-    public String getApplicationName() {
-        return applicationName;
-    }
-
-    public void setApplicationName(String applicationName) {
-        this.applicationName = applicationName;
-    }
-
     public String getApiID() {
         return apiID;
     }
 
     public void setApiID(String apiID) {
         this.apiID = apiID;
-    }
-
-    public String getApplicationID() {
-        return applicationID;
-    }
-
-    public void setApplicationID(String applicationID) {
-        this.applicationID = applicationID;
     }
 
     public String getPartition() {
