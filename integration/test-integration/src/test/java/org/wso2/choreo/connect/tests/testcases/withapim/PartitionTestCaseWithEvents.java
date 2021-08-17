@@ -58,7 +58,7 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         // Populate the API Entries which are going to be added in the middle.
         initializeTestEntryMap();
         // Initialize Jedis (Redis_ Client
-        jedis = createJedisConnection();
+        jedis = PartitionTestUtils.createJedisConnection();
 
         Application app = new Application(APP_NAME, TestConstant.APPLICATION_TIER.UNLIMITED);
         appWithConsumerKey = StoreUtils.createApplicationWithKeys(app, storeRestClient);
@@ -208,18 +208,6 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
                 PartitionTestUtils.PARTITION_2);
         PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent5", "1.0.0", "testOrg1/apiEvent5",
                 PartitionTestUtils.PARTITION_2);
-    }
-
-    public static Jedis createJedisConnection() {
-        JedisClientConfig config = DefaultJedisClientConfig.builder().database(0).clientName("global-adapter")
-                .socketTimeoutMillis(300000).build();
-        try (Jedis jedis = new Jedis(new URI("rediss://redis-host:6379"), config)) {
-            jedis.auth("admin");
-            return jedis;
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     private PartitionTestEntry deleteTestEntry(PartitionTestEntry testEntry) throws Exception {

@@ -29,7 +29,7 @@
     </listeners>
 
     <test name="global-adapter-partitioning">
-        <parameter name="isGASpecific" value="ga_test_apis.json"/>
+        <parameter name="isGASpecific" value="ga_test_apis_startup.json"/>
         <classes>
             <!-- To avoid apim restarting everytime while writing tests, follow the instructions in integration/test-integration/readme.md -->
             <class name="org.wso2.choreo.connect.tests.setup.withapim.ApimStartupExecutor"/>
@@ -37,7 +37,7 @@
             <class name="org.wso2.choreo.connect.tests.setup.withapim.ApimPreparer"/>
 <!--            TODO: (VirajSalaka) Adapter GA Restarts-->
             <class name="org.wso2.choreo.connect.tests.setup.withapim.CCStartupExecutorWithPartitions"/>
-            <class name="org.wso2.choreo.connect.tests.testcases.withapim.PartitionTestCaseWithEvents"/>
+            <class name="org.wso2.choreo.connect.tests.testcases.withapim.PartitionTestCaseStartup"/>
         </classes>
     </test>
     <test name="cc-shutdown-and-apim-shutdown-after-partitioning" parallel="false">

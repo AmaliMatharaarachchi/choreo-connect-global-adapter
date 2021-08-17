@@ -62,9 +62,14 @@ public class PartitionTestUtils {
 
     private static void checkRedisEntry(Jedis jedis, String orgHandle, String apiContext, String apiVersion,
                                  String expectedValue) {
-        String value = jedis.get(String.format("global-adapter#Default#%s_%s_%s",orgHandle, apiContext, apiVersion));
+        String value = getRedisEntry(jedis, orgHandle, apiContext, apiVersion);
         Assert.assertEquals(value, expectedValue, " Mismatch found while reading redis entry for " +
                 String.format("global-adapter#Default#%s_%s_%s",orgHandle, apiContext, apiVersion));
+    }
+
+    public static String getRedisEntry(Jedis jedis, String orgHandle, String apiContext, String apiVersion) {
+        String value = jedis.get(String.format("global-adapter#Default#%s_%s_%s", orgHandle, apiContext, apiVersion));
+        return value;
     }
 
     public static void checkTestEntry(Jedis jedis, PartitionTestEntry testEntry, Map<String,String> headers,

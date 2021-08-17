@@ -1,6 +1,7 @@
 package org.wso2.choreo.connect.tests.testcases.withapim;
 
 import com.google.common.net.HttpHeaders;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.wso2.choreo.connect.tests.apim.ApimBaseTest;
@@ -22,21 +23,18 @@ import java.util.Map;
 public class PartitionTestCaseStartup extends ApimBaseTest {
 
     private static final String APP_NAME = "GlobalAdapterEventTest";
-    private static final String PARTITION_1 = "Default-p1";
-    private static final String PARTITION_2 = "Default-p2";
+
     List<PartitionTestEntry> existingAPITestEntryList = new ArrayList<>();
     private String applicationId;
     Map<String, String> headers;
-    private Map<String, String> partitionEndpointMap;
     private AppWithConsumerKey appWithConsumerKey;
     private Jedis jedis;
 
     @BeforeClass(alwaysRun = true, description = "initialize setup")
     void setup() throws Exception {
         super.initWithSuperTenant();
-        partitionEndpointMap =  PartitionTestUtils.PARTITION_ENDPOINT_MAP;
         // Populate the API Entries which are going to be added in the middle.
-//        initializeTestEntryMap();
+        initializeTestEntryMap();
         // Initialize Jedis Client
         jedis = PartitionTestUtils.createJedisConnection();
 
@@ -62,12 +60,52 @@ public class PartitionTestCaseStartup extends ApimBaseTest {
         headers = new HashMap<>();
         headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
+        // Population PartitionID (During startup, it is not possible to point out which API is deployed in
+        // which partition. Hence the partitionID should be populated from the redis.
+        // To check if the partitioning has happened properly, we need to depend on whether at least one API is assigned
+        // to the partition_2
+        int partition2AssignedCount = 0;
+        for (PartitionTestEntry testEntry : existingAPITestEntryList) {
+            String orgHandle = testEntry.getApiContext().substring(0, testEntry.getApiContext().indexOf("/", 1));
+            String context = testEntry.getApiContext().substring(testEntry.getApiContext().indexOf("/", 1));
+            // Checks against both the router partitions available.
+            // If the partition matches, it should return 200 OK, otherwise 404.
+            testEntry.setPartition(PartitionTestUtils.getRedisEntry(jedis, orgHandle, context,
+                    testEntry.getApiVersion()));
+            if (PartitionTestUtils.PARTITION_2.equals(testEntry.getPartition())) {
+                partition2AssignedCount++;
+            }
+        }
+        Assert.assertEquals(1, partition2AssignedCount, "Partition assignment mismatch.");
+
         //Invoke all the added API
         for (PartitionTestEntry testEntry : existingAPITestEntryList) {
 
             // Checks against both the router partitions available.
             // If the partition matches, it should return 200 OK, otherwise 404.
-            PartitionTestUtils.checkTestEntry(jedis, testEntry, headers, false);
+            PartitionTestUtils.checkTestEntry(jedis, testEntry, headers, true);
         }
+    }
+
+    private void initializeTestEntryMap() {
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API1", "1.0.0", "testOrg1/api1",
+                "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API2", "1.0.0", "testOrg1/api2",
+                "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API3", "1.0.0", "testOrg1/api3",
+                "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API4", "1.0.0", "testOrg1/api4",
+                "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API5", "1.0.0", "testOrg1/api5",
+                "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API6", "1.0.0", "testOrg1/api6",
+                "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API7", "1.0.0", "testOrg1/api7",
+                "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API8", "1.0.0", "testOrg1/api8",
+                "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API9", "1.0.0", "testOrg1/api9",
+                "");
+
     }
 }

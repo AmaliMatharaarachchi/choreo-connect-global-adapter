@@ -19,6 +19,7 @@ package org.wso2.choreo.connect.tests.apim;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.wso2.am.integration.test.impl.RestAPIPublisherImpl;
@@ -63,24 +64,26 @@ public class ApimResourceProcessor {
 
     public void createApisAppsSubs(String apiProvider, RestAPIPublisherImpl publisherRestClient,
                                    RestAPIStoreImpl storeRestClient) throws CCTestException, MalformedURLException {
-        createApisAppsSubs(apiProvider, publisherRestClient, storeRestClient, false);
+        createApisAppsSubs(apiProvider, publisherRestClient, storeRestClient, null);
     }
 
     public void createApisAppsSubs(String apiProvider, RestAPIPublisherImpl publisherRestClient,
-                                   RestAPIStoreImpl storeRestClient, boolean isGASpecific)
+                                   RestAPIStoreImpl storeRestClient, String apisJsonFilename)
             throws CCTestException, MalformedURLException {
-        createApisAndUpdateMap(apiProvider, publisherRestClient, isGASpecific);
-        createAppsAndUpdateMap(storeRestClient, isGASpecific);
-        createSubscriptions(storeRestClient, isGASpecific);
+        // Apis Json file path is only set if it is partitioning specific testcase
+        boolean isGAPartitioningTestCase = !StringUtils.isEmpty(apisJsonFilename);
+        createApisAndUpdateMap(apiProvider, publisherRestClient, apisJsonFilename);
+        createAppsAndUpdateMap(storeRestClient, isGAPartitioningTestCase);
+        createSubscriptions(storeRestClient, isGAPartitioningTestCase);
     }
 
     private void createApisAndUpdateMap(String apiProvider, RestAPIPublisherImpl publisherRestClient,
-                                        boolean isGASpecific) throws CCTestException, MalformedURLException {
+                                        String apisJsonFilename) throws CCTestException, MalformedURLException {
         String apisFileDir = Utils.getTargetDirPath()
                 + TestConstant.TEST_RESOURCES_PATH + BEFORE_CC_STARTUP_FOLDER;
         String apisFilePath;
-        if (isGASpecific) {
-            apisFilePath = apisFileDir + GA_APIS_FILE;
+        if (!StringUtils.isEmpty(apisJsonFilename)) {
+            apisFilePath = apisFileDir + apisJsonFilename;
         } else {
             apisFilePath = apisFileDir + APIS_FILE;
         }
