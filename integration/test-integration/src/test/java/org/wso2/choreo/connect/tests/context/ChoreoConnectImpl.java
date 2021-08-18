@@ -133,12 +133,33 @@ public abstract class ChoreoConnectImpl implements ChoreoConnect {
         Logger enforcerLogger = LoggerFactory.getLogger("Enforcer");
         Logger adapterLogger = LoggerFactory.getLogger("Adapter");
         Logger routerLogger = LoggerFactory.getLogger("Router");
+        Logger enforcerLogger1 = LoggerFactory.getLogger("Enforcer_1");
+        Logger adapterLogger1 = LoggerFactory.getLogger("Adapter_1");
+        Logger routerLogger1 = LoggerFactory.getLogger("Router_1");
+        Logger enforcerLogger2 = LoggerFactory.getLogger("Enforcer_2");
+        Logger adapterLogger2 = LoggerFactory.getLogger("Adapter_2");
+        Logger routerLogger2 = LoggerFactory.getLogger("Router_2");
+        Logger globalAdapter = LoggerFactory.getLogger("Global-Adapter");
         Slf4jLogConsumer enforcerLogConsumer = new Slf4jLogConsumer(enforcerLogger);
         Slf4jLogConsumer adapterLogConsumer = new Slf4jLogConsumer(adapterLogger);
         Slf4jLogConsumer routerLogConsumer = new Slf4jLogConsumer(routerLogger);
+        Slf4jLogConsumer enforcerLogConsumer1 = new Slf4jLogConsumer(enforcerLogger1);
+        Slf4jLogConsumer adapterLogConsumer1 = new Slf4jLogConsumer(adapterLogger1);
+        Slf4jLogConsumer routerLogConsumer1 = new Slf4jLogConsumer(routerLogger1);
+        Slf4jLogConsumer enforcerLogConsumer2 = new Slf4jLogConsumer(enforcerLogger2);
+        Slf4jLogConsumer adapterLogConsumer2 = new Slf4jLogConsumer(adapterLogger2);
+        Slf4jLogConsumer routerLogConsumer2 = new Slf4jLogConsumer(routerLogger2);
+        Slf4jLogConsumer globalAdapterLogConsumer = new Slf4jLogConsumer(globalAdapter);
         environment.withLogConsumer("enforcer", enforcerLogConsumer)
                 .withLogConsumer("adapter", adapterLogConsumer)
-                .withLogConsumer("router", routerLogConsumer);
+                .withLogConsumer("router", routerLogConsumer)
+                .withLogConsumer("enforcer1", enforcerLogConsumer1)
+                .withLogConsumer("adapter1", adapterLogConsumer1)
+                .withLogConsumer("router1", routerLogConsumer1)
+                .withLogConsumer("enforcer2", enforcerLogConsumer2)
+                .withLogConsumer("adapter2", adapterLogConsumer2)
+                .withLogConsumer("router2", routerLogConsumer2)
+                .withLogConsumer("global-adapter", globalAdapterLogConsumer);
         if (Boolean.parseBoolean(System.getenv(ENFORCER_DEBUG_ENV))) {
             environment.withEnv("JAVA_OPTS", "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5006");
         }
