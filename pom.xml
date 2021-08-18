@@ -104,5 +104,6 @@
         <analytics.publisher.client.version>1.0.0</analytics.publisher.client.version>
         <jedis.version>3.6.3</jedis.version>
         <choreo.connect.version>0.9.1-SNAPSHOT</choreo.connect.version>
+        <maven.surefire.plugin.version>2.22.2</maven.surefire.plugin.version>
     </properties>
 </project>

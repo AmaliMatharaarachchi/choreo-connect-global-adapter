@@ -127,29 +127,31 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
 
         testEntryFirst = undeployTestEntry(testEntryFirst);
         String testEntryFirstPartition = testEntryFirst.getPartition();
+        String testEntryFirstAPIID = testEntryFirst.getApiID();
         testEntryLast = undeployTestEntry(testEntryLast);
         String testEntryLastPartition = testEntryLast.getPartition();
+        String testEntryLastAPIID = testEntryLast.getApiID();
 
         // Since the order is going to be changed, the partitions should be swapped.
         testEntryFirst.setPartition(testEntryLastPartition);
         testEntryLast.setPartition(testEntryFirstPartition);
 
         // change the order and redeploy.
-        APIRequest apiRequest = PublisherUtils.createSampleAPIRequest(
-                testEntryLast.getApiName(), testEntryLast.getApiContext(), testEntryLast.getApiVersion(),
-                user.getUserName());
-        String apiId = PublisherUtils.createAndPublishAPI(apiRequest, publisherRestClient);
-        StoreUtils.subscribeToAPI(apiId, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
-        testEntryLast.setApiID(apiId);
+//        APIRequest apiRequest = PublisherUtils.createSampleAPIRequest(
+//                testEntryLast.getApiName(), testEntryLast.getApiContext(), testEntryLast.getApiVersion(),
+//                user.getUserName());
+        PublisherUtils.createAPIRevisionAndDeploy(testEntryLastAPIID, publisherRestClient);
+        StoreUtils.subscribeToAPI(testEntryLastAPIID, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
+        testEntryLast.setApiID(testEntryLastAPIID);
         Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting to subscription delete event");
 
 
-        apiRequest = PublisherUtils.createSampleAPIRequest(
-                testEntryFirst.getApiName(), testEntryFirst.getApiContext(), testEntryFirst.getApiVersion(),
-                user.getUserName());
-        apiId = PublisherUtils.createAndPublishAPI(apiRequest, publisherRestClient);
-        testEntryFirst.setApiID(apiId);
-        StoreUtils.subscribeToAPI(apiId, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
+//        apiRequest = PublisherUtils.createSampleAPIRequest(
+//                testEntryFirst.getApiName(), testEntryFirst.getApiContext(), testEntryFirst.getApiVersion(),
+//                user.getUserName());
+        PublisherUtils.createAPIRevisionAndDeploy(testEntryFirstAPIID, publisherRestClient);
+        testEntryFirst.setApiID(testEntryFirstAPIID);
+        StoreUtils.subscribeToAPI(testEntryFirstAPIID, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
         Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting to subscription delete event");
 
         PartitionTestUtils.checkTestEntry(jedis, testEntryFirst, headers, true);
