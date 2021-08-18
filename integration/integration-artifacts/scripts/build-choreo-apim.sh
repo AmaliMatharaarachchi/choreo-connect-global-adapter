@@ -20,29 +20,33 @@ script_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 cd $script_dir
 #rm -rf target
 APIM_DIR="${script_dir}/gen/choreo-apim"
-if [ -d "$APIM_DIR" ]; then
-  cd gen/choreo-apim/choreo-product-apim
-  git stash save --include-untracked
-  git stash drop stash@{0}
-  git pull origin main
-  if [ $? -eq 0 ]; then
-    echo "Pull operation for choreo-product-apim is successful"
+
+# If the workflow environment variable is available, there is no need to clone or pull the repository
+if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
+  if [ -d "$APIM_DIR" ]; then
+    cd gen/choreo-apim/choreo-product-apim
+    git stash save --include-untracked
+    git stash drop stash@{0}
+    git pull origin main
+    if [ $? -eq 0 ]; then
+      echo "Pull operation for choreo-product-apim is successful"
+    else
+      echo "Pull operation for choreo-product-apim is failed"
+      exit 1
+    fi
   else
-    echo "Pull operation for choreo-product-apim is failed"
-    exit 1
+    mkdir -p gen/choreo-apim
+    cd gen/choreo-apim
+  #  TODO: (VirajSalaka) check if it is executed from a workflow, then it is not required to clone
+    git clone https://github.com/wso2-enterprise/choreo-product-apim
+    if [ $? -eq 0 ]; then
+      echo "Clone operation for choreo-product-apim is successful"
+    else
+      echo "Clone operation for choreo-product-apim is failed"
+      exit 1
+    fi
+    cd choreo-product-apim
   fi
-else
-  mkdir -p gen/choreo-apim
-  cd gen/choreo-apim
-#  TODO: (VirajSalaka) check if it is executed from a workflow, then it is not required to clone
-  git clone https://github.com/wso2-enterprise/choreo-product-apim
-  if [ $? -eq 0 ]; then
-    echo "Clone operation for choreo-product-apim is successful"
-  else
-    echo "Clone operation for choreo-product-apim is failed"
-    exit 1
-  fi
-  cd choreo-product-apim
 fi
 
 # TODO: (VirajSalaka) rather than copying the yaml, get it merged to the choreo-product-apim
