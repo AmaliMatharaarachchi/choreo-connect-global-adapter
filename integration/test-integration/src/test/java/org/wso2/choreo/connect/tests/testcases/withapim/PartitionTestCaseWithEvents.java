@@ -32,12 +32,8 @@ import org.wso2.choreo.connect.tests.apim.utils.PublisherUtils;
 import org.wso2.choreo.connect.tests.apim.utils.StoreUtils;
 import org.wso2.choreo.connect.tests.common.model.PartitionTestEntry;
 import org.wso2.choreo.connect.tests.util.*;
-import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisClientConfig;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -129,10 +125,9 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         PartitionTestEntry testEntryFirst = newAPITestEntryList.get(0);
         PartitionTestEntry testEntryLast = newAPITestEntryList.get(testEntryListSize - 1);
 
-        // TODO: (VirajSalaka) Use Undeploy instead
-        testEntryFirst = deleteTestEntry(testEntryFirst);
+        testEntryFirst = undeployTestEntry(testEntryFirst);
         String testEntryFirstPartition = testEntryFirst.getPartition();
-        testEntryLast = deleteTestEntry(testEntryLast);
+        testEntryLast = undeployTestEntry(testEntryLast);
         String testEntryLastPartition = testEntryLast.getPartition();
 
         // Since the order is going to be changed, the partitions should be swapped.
@@ -210,10 +205,10 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
                 PartitionTestUtils.PARTITION_2);
     }
 
-    private PartitionTestEntry deleteTestEntry(PartitionTestEntry testEntry) throws Exception {
+    private PartitionTestEntry undeployTestEntry(PartitionTestEntry testEntry) throws Exception {
         StoreUtils.removeSubscriptionsForAnAPI(applicationId, testEntry.getApiID(), storeRestClient);
         Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting to subscription delete event");
-        publisherRestClient.deleteAPI(testEntry.getApiID());
+        PublisherUtils.undeployAndDeleteAPIRevisions(testEntry.getApiID(), publisherRestClient);
         String invocationUrl = PartitionTestUtils.PARTITION_ENDPOINT_MAP.get(testEntry.getPartition()) + testEntry.getApiContext() + "/"
                 + testEntry.getApiVersion() + testEntry.getResourcePath();
         Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting to API delete event");

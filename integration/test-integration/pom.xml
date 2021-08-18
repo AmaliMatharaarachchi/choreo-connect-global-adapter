@@ -37,7 +37,6 @@
                 <version>2.22.2</version>
                 <configuration>
                     <systemPropertyVariables>
-                    <!-- TODO: (VirajSalaka) Copy this jar from microgateway repository-->
                         <jwt_transformer_jar>
                             ${basedir}/target/test-integration-${project.version}.jar
                         </jwt_transformer_jar>
@@ -69,7 +68,6 @@
                         <configuration>
                             <target>
                                 <unzip src="../distribution/target/choreo-connect-ga-${project.version}.zip" dest="${basedir}/../test-integration/target" />
-<!--                                TODO: (Viraj Salaka) Parameterize the version numbers-->
                                 <replaceregexp file="src/test/resources/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-router\:.*" replace="wso2/choreo-connect-router:${choreo.connect.version}" byline="true" />
                                 <replaceregexp file="src/test/resources/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-adapter\:.*" replace="wso2/choreo-connect-adapter:${choreo.connect.version}" byline="true" />
                                 <replaceregexp file="src/test/resources/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-enforcer\:.*" replace="wso2/choreo-connect-enforcer:${choreo.connect.version}" byline="true" />
