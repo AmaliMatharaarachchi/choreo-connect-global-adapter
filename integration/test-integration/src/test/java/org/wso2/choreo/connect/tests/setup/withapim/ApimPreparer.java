@@ -39,7 +39,7 @@ public class ApimPreparer extends ApimBaseTest {
      */
     @BeforeTest
     @Parameters({"isGASpecific"})
-    private void createApiAppSubsEtc(@Optional("false") String isGASpecific) throws Exception {
+    private void createApiAppSubsEtc(@Optional("") String isGASpecific) throws Exception {
         super.initWithSuperTenant();
         // The tests can be run against the same API Manager instance. Therefore, we clean first
         // in case the tests get interrupted before it ends in the previous run

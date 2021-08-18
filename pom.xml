@@ -66,15 +66,15 @@
             </modules>
         </profile>
         <profile>
-            <id>IntegrationWithResources</id>
+            <id>ReleaseWithResourcesGen</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
             <modules>
                 <module>global-adapter</module>
                 <module>integration/database</module>
-                <module>integration/distribution</module>
                 <module>integration/integration-artifacts</module>
+                <module>integration/distribution</module>
                 <module>integration/test-integration</module>
             </modules>
         </profile>
