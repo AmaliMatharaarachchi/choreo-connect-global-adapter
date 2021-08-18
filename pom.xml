@@ -53,6 +53,16 @@
                 <module>global-adapter</module>
             </modules>
         </profile>
+        <profile>
+            <id>Release</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>global-adapter</module>
+                <module>integration</module>
+            </modules>
+        </profile>
     </profiles>
 
     <properties>
