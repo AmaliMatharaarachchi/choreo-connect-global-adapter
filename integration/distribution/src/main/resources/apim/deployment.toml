@@ -37,12 +37,12 @@ key_password =  "wso2carbon"
 type = "mongodb"
 
 [apim.persistence.properties]
-connection_string = "mongodb+srv://viraj:adminvirajg@cluster0.ngll6.mongodb.net/APIM_DB?retryWrites=true&amp;w=majority"
+connection_string = ""
 api_uri = "https://cloud.mongodb.com/api/atlas/v1.0"
-group_id = "60e6bffe8b552c0152f94ba6"
-cluster_name = "Cluster0"
-public_key = "tajibnyf"
-private_key = "24033628-c071-4bb5-af21-038d8c9c5775"
+group_id = ""
+cluster_name = ""
+public_key = ""
+private_key = ""
 thread_count = 5
 retry_count = 3
 

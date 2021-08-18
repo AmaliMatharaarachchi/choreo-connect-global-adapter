@@ -147,30 +147,4 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <profiles>
-        <profile>
-            <id>Integration</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <modules>
-                <module>database</module>
-                <module>distribution</module>
-                <module>test-integration</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>IntegrationWithResources</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <modules>
-                <module>database</module>
-                <module>distribution</module>
-                <module>integration-artifacts</module>
-                <module>test-integration</module>
-            </modules>
-        </profile>
-    </profiles>
 </project>

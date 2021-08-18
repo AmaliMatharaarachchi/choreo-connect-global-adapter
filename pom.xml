@@ -60,7 +60,22 @@
             </activation>
             <modules>
                 <module>global-adapter</module>
-                <module>integration</module>
+                <module>integration/database</module>
+                <module>integration/distribution</module>
+                <module>integration/test-integration</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>IntegrationWithResources</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <modules>
+                <module>global-adapter</module>
+                <module>integration/database</module>
+                <module>integration/distribution</module>
+                <module>integration/integration-artifacts</module>
+                <module>integration/test-integration</module>
             </modules>
         </profile>
     </profiles>
@@ -87,5 +102,7 @@
         <carbon.apimgt.version>9.0.174</carbon.apimgt.version>
         <awaitility.version>3.1.2</awaitility.version>
         <analytics.publisher.client.version>1.0.0</analytics.publisher.client.version>
+        <jedis.version>3.6.3</jedis.version>
+        <choreo.connect.version>0.9.1-SNAPSHOT</choreo.connect.version>
     </properties>
 </project>
