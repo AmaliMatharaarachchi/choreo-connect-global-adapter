@@ -37,8 +37,8 @@ import java.util.Map;
  */
 public class PartitionTestUtils {
     public static final Map<String, String> PARTITION_ENDPOINT_MAP;
-    public static final String PARTITION_1 = "Default-p1";
-    public static final String PARTITION_2 = "Default-p2";
+    public static final String PARTITION_1 = "default-p1";
+    public static final String PARTITION_2 = "default-p2";
 
     static {
         Map<String, String> map = new HashMap<>();
@@ -64,11 +64,11 @@ public class PartitionTestUtils {
                                  String expectedValue) {
         String value = getRedisEntry(jedis, orgHandle, apiContext, apiVersion);
         Assert.assertEquals(value, expectedValue, " Mismatch found while reading redis entry for " +
-                String.format("global-adapter#Default#%s_%s_%s",orgHandle, apiContext, apiVersion));
+                String.format("global-adapter#default#%s_%s_%s",orgHandle, apiContext, apiVersion));
     }
 
     public static String getRedisEntry(Jedis jedis, String orgHandle, String apiContext, String apiVersion) {
-        String value = jedis.get(String.format("global-adapter#Default#%s_%s_%s", orgHandle, apiContext, apiVersion));
+        String value = jedis.get(String.format("global-adapter#default#%s_%s_%s", orgHandle, apiContext, apiVersion));
         return value;
     }
 
