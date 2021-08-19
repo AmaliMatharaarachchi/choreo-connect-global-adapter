@@ -8,7 +8,7 @@
 	
 # Control plane's connection details
 [controlPlane]
-  serviceUrl = "https://192.168.8.100:9443/"
+  serviceUrl = "https://apim:9443/"
   username="admin"
   password="admin"
   environmentLabels = ["Default", "Prod"]
@@ -16,7 +16,7 @@
   skipSSLVerification=true
   # Message broker connection URL of the control plane
   [controlPlane.jmsConnectionParameters]
-    eventListeningEndpoints = ["amqp://admin:admin@192.168.8.100:5672?retries='10'&connectdelay='30'"]
+    eventListeningEndpoints = ["amqp://admin:admin@apim:5672?retries='10'&connectdelay='30'"]
 
 [server]
   host = '0.0.0.0'
