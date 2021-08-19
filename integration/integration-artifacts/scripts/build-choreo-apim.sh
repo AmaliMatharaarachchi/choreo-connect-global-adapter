@@ -49,9 +49,6 @@ if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
   fi
 fi
 
-# TODO: (VirajSalaka) rather than copying the yaml, get it merged to the choreo-product-apim
-cp ${script_dir}/../resources/publisher-api.yaml modules/integration/tests-common/clients/publisher/src/main/resources/publisher-api.yaml
-
 if [[ -z "${JAVA_8_HOME}" ]]; then
   echo "Error: JAVA_8_HOME is not defined."
   exit 1
