@@ -11,8 +11,8 @@ services:
       - "9443:9443"
       - "5672:5672"
     volumes:
-      - ./apim/deployment.toml:/home/wso2carbon/wso2am-4.0.0-SNAPSHOT/repository/conf/deployment.toml
-      - ./apim/jaggeryapps:/home/wso2carbon/wso2am-4.0.0-SNAPSHOT/repository/deployment/server/jaggeryapps
+      - ./apim/deployment.toml:/home/wso2carbon/wso2-config-volume/repository/conf/deployment.toml
+      - ./apim/jaggeryapps:/home/wso2carbon/wso2-config-volume/repository/deployment/server/jaggeryapps
   router:
     image: wso2/choreo-connect-router:0.9.1-SNAPSHOT
     networks:
