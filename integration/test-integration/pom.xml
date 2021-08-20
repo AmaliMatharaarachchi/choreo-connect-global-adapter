@@ -222,7 +222,7 @@
         <dependency>
             <groupId>org.wso2.am.choreo.connect</groupId>
             <artifactId>mock-backend-server</artifactId>
-            <version>0.9.1-SNAPSHOT</version>
+            <version>${choreo.connect.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
