@@ -58,7 +58,7 @@ services:
       - GRPC_VERBOSITY=debug
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
-      - localLabel=Default-P1
+      - localLabel=default-p1
     ports:
       - "9843:9843"
   global-adapter:
