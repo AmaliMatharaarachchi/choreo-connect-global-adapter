@@ -43,7 +43,7 @@
                         <sun.net.http.allowRestrictedHeaders>true</sun.net.http.allowRestrictedHeaders>
                     </systemPropertyVariables>
                     <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng-cc-with-apim.xml</suiteXmlFile>
+<!--                        <suiteXmlFile>src/test/resources/testng-cc-with-apim.xml</suiteXmlFile>-->
                         <suiteXmlFile>src/test/resources/testng-cc-partitioning.xml</suiteXmlFile>
                         <suiteXmlFile>src/test/resources/testng-cc-partitioning-startup.xml</suiteXmlFile>
                     </suiteXmlFiles>
@@ -75,22 +75,6 @@
                                 <replaceregexp file="src/test/resources/dockerCompose/multiple-cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-adapter\:.*" replace="wso2/choreo-connect-adapter:${choreo.connect.version}" byline="true" />
                                 <replaceregexp file="src/test/resources/dockerCompose/multiple-cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-enforcer\:.*" replace="wso2/choreo-connect-enforcer:${choreo.connect.version}" byline="true" />
                                 <replaceregexp file="src/test/resources/dockerCompose/multiple-cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-global-adapter\:.*" replace="wso2/choreo-connect-global-adapter:${project.version}" byline="true" />
-                            </target>
-                        </configuration>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>overwrite-mongodb-config</id>
-                        <phase>process-test-classes</phase>
-                        <configuration>
-                            <target>
-                                <replaceregexp file="target/test-classes/configs/choreo-apim-deployment.toml" match="mongodb_connection_string" replace="${env.mongodb_connection_string}" byline="true" />
-                                <replaceregexp file="target/test-classes/configs/choreo-apim-deployment.toml" match="mongodb_group_id" replace="${env.mongodb_group_id}" byline="true" />
-                                <replaceregexp file="target/test-classes/configs/choreo-apim-deployment.toml" match="mongodb_cluster_name" replace="${env.mongodb_cluster_name}" byline="true" />
-                                <replaceregexp file="target/test-classes/configs/choreo-apim-deployment.toml" match="mongodb_public_key" replace="${env.mongodb_public_key}" byline="true" />
-                                <replaceregexp file="target/test-classes/configs/choreo-apim-deployment.toml" match="mongodb_private_key" replace="${env.mongodb_private_key}" byline="true" />
                             </target>
                         </configuration>
                         <goals>

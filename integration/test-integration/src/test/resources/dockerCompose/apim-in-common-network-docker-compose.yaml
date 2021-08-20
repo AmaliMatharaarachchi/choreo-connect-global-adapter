@@ -14,4 +14,10 @@ services:
       - ./conf/deployment.toml:/home/wso2carbon/wso2-config-volume/repository/conf/deployment.toml
     networks:
       - apim_and_cc
+    environment:
+      - MONGODB_CONNECTION_STRING=${mongodb_connection_string}
+      - MONGODB_GROUP_ID=${mongodb_group_id}
+      - MONGODB_CLUSTER_NAME=${mongodb_cluster_name}
+      - MONGODB_PUBLIC_KEY=${mongodb_public_key}
+      - MONGODB_PRIVATE_KEY=${mongodb_private_key}
   
