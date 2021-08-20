@@ -87,31 +87,34 @@ fi
 
 CC_DIR="${script_dir}/gen/choreo-connect"
 echo $CC_DIR
-if [ -d "${CC_DIR}" ]; then
-  cd gen/choreo-connect/product-microgateway
-  git pull origin feature/global-adapter
-  if [ $? -eq 0 ]; then
-    echo "Pull operation for choreo-connect is successful"
+# If the workflow environment variable is available, there is no need to clone or pull the repository
+if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
+  if [ -d "${CC_DIR}" ]; then
+    cd gen/choreo-connect/product-microgateway
+    git pull origin feature/global-adapter
+    if [ $? -eq 0 ]; then
+      echo "Pull operation for choreo-connect is successful"
+    else
+      echo "Pull operation for choreo-connect is failed"
+      exit 1
+    fi
   else
-    echo "Pull operation for choreo-connect is failed"
-    exit 1
-  fi
-else
-  cd gen
-  mkdir choreo-connect
-  cd choreo-connect
-  git clone https://github.com/wso2/product-microgateway
-  cd product-microgateway
-  if [ $? -eq 0 ]; then
-    echo "Clone operation for choreo-connect is successful"
-  else
-    echo "Clone operation for choreo-connect is failed"
-    exit 1
+    cd gen
+    mkdir choreo-connect
+    cd choreo-connect
+    git clone https://github.com/wso2/product-microgateway
+    cd product-microgateway
+    if [ $? -eq 0 ]; then
+      echo "Clone operation for choreo-connect is successful"
+    else
+      echo "Clone operation for choreo-connect is failed"
+      exit 1
+    fi
   fi
 fi
 
 git checkout feature/global-adapter
-mvn clean install -Dmaven.test.skip
+mvn clean install -P Release -Dmaven.test.skip
 
 if [ $? -eq 0 ]; then
     echo "Maven build for choreo-connect is successful"
