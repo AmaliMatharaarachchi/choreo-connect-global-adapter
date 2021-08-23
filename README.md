@@ -9,7 +9,7 @@ The architecture and the designs are discussed under the [API partitioning](http
   * [Initial proposal](https://docs.google.com/document/d/1g3ijX4KNdJHw5L4ud_D3CpQ7osUKgG3bZI7QtT41HmU/edit?usp=sharing)
   * [Final Document - WIP](https://docs.google.com/document/d/1zKUjRiQ1PQVDWZYjK9ns4S6ncx4Bfhn8d3fGGgNueKM/edit?usp=sharing) 
 
-The overall architectural for APIM partition is illustrated in the following diagram. 
+The overall architecture for APIM partition is illustrated in the following diagram. 
 
 ![API Partitioning Architecture]( Architecture.png "API Partitioning Architecture")
 
