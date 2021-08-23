@@ -34,12 +34,7 @@ public class CustomAnalyticMetricBuilder extends AbstractMetricEventBuilder {
     }
 
     @Override
-    public boolean validate() throws MetricReportingException {
-//        for (Object value : eventMap.values()) {
-//            if (!(value instanceof String)) {
-//                throw new MetricReportingException("Only attributes of type String is supported");
-//            }
-//        }
+    public boolean validate() {
         return true;
     }
 

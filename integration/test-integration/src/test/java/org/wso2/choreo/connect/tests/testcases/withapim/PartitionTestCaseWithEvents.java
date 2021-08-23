@@ -31,7 +31,11 @@ import org.wso2.choreo.connect.tests.apim.dto.Application;
 import org.wso2.choreo.connect.tests.apim.utils.PublisherUtils;
 import org.wso2.choreo.connect.tests.apim.utils.StoreUtils;
 import org.wso2.choreo.connect.tests.common.model.PartitionTestEntry;
-import org.wso2.choreo.connect.tests.util.*;
+import org.wso2.choreo.connect.tests.util.HttpsClientRequest;
+import org.wso2.choreo.connect.tests.util.HttpResponse;
+import org.wso2.choreo.connect.tests.util.PartitionTestUtils;
+import org.wso2.choreo.connect.tests.util.TestConstant;
+import org.wso2.choreo.connect.tests.util.Utils;
 import redis.clients.jedis.Jedis;
 
 import java.util.ArrayList;
@@ -80,7 +84,6 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
 
         //Invoke all the added API
         for (PartitionTestEntry testEntry : existingAPITestEntryList) {
-
             // Checks against both the router partitions available.
             // If the partition matches, it should return 200 OK, otherwise 404.
             PartitionTestUtils.checkTestEntry(jedis, testEntry, headers, false);
@@ -110,7 +113,6 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
 
         //Invoke all the added API
         for (PartitionTestEntry testEntry : newAPITestEntryList) {
-
             // Checks against both the router partitions available.
             // If the partition matches, it should return 200 OK, otherwise 404.
             PartitionTestUtils.checkTestEntry(jedis, testEntry, headers, true);
@@ -136,19 +138,11 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         testEntryFirst.setPartition(testEntryLastPartition);
         testEntryLast.setPartition(testEntryFirstPartition);
 
-        // change the order and redeploy.
-//        APIRequest apiRequest = PublisherUtils.createSampleAPIRequest(
-//                testEntryLast.getApiName(), testEntryLast.getApiContext(), testEntryLast.getApiVersion(),
-//                user.getUserName());
         PublisherUtils.createAPIRevisionAndDeploy(testEntryLastAPIID, publisherRestClient);
         StoreUtils.subscribeToAPI(testEntryLastAPIID, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
         testEntryLast.setApiID(testEntryLastAPIID);
         Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting to subscription delete event");
 
-
-//        apiRequest = PublisherUtils.createSampleAPIRequest(
-//                testEntryFirst.getApiName(), testEntryFirst.getApiContext(), testEntryFirst.getApiVersion(),
-//                user.getUserName());
         PublisherUtils.createAPIRevisionAndDeploy(testEntryFirstAPIID, publisherRestClient);
         testEntryFirst.setApiID(testEntryFirstAPIID);
         StoreUtils.subscribeToAPI(testEntryFirstAPIID, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
