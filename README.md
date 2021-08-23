@@ -11,5 +11,5 @@ The architecture and the designs are discussed under the [API partitioning](http
 
 The overall architectural for APIM partition is illustrated in the following diagram. 
 
-![alt text]( Architecture.png "API Partitioning Architecture")
+![API Partitioning Architecture]( Architecture.png "API Partitioning Architecture")
 
