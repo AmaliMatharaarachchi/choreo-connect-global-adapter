@@ -227,7 +227,7 @@ allowCredentials = false
 
 # Control plane's connection details
 [controlPlane]
-  enabled = false
+  enabled = true
   serviceUrl = "https://apim:9443/"
   username="admin"
   password="$env{cp_admin_pwd}"
