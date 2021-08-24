@@ -31,29 +31,33 @@
         </fileSet>
         <fileSet>
             <directory>src/main/resources/additional</directory>
-            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/additional</outputDirectory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/additional</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>src/main/resources/apim</directory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/apim</outputDirectory>
         </fileSet>
     </fileSets>
     <files>
         <file>
             <source>src/main/resources/docker-compose.yaml</source>
-            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga</outputDirectory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect</outputDirectory>
         </file>
         <file>
             <source>src/main/resources/conf/config.toml</source>
-            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/conf</outputDirectory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/conf</outputDirectory>
         </file>
         <file>
             <source>src/main/resources/conf/ga_config.toml</source>
-            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/conf</outputDirectory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/conf</outputDirectory>
         </file>
         <file>
             <source>${project.build.directory}/cc-dist/choreo-connect-${choreoConnect.version}/docker-compose/choreo-connect/conf/log_config.toml</source>
-            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/conf</outputDirectory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/conf</outputDirectory>
         </file>
         <file>
             <source>${project.build.directory}/cc-dist/choreo-connect-${choreoConnect.version}/docker-compose/choreo-connect/conf/log4j2.properties</source>
-            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect-ga/conf</outputDirectory>
+            <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/conf</outputDirectory>
         </file>
         <file>
             <source>../../global-adapter/resources/security/keystore/global-adapter.pem</source>

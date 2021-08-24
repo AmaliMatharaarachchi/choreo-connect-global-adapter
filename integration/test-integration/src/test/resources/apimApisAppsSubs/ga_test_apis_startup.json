@@ -1,0 +1,110 @@
+[
+  {
+    "name": "API1",
+    "version": "1.0.0",
+    "context": "testOrg1/api1",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API2",
+    "version": "1.0.0",
+    "context": "testOrg1/api2",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API3",
+    "version": "1.0.0",
+    "context": "testOrg1/api3",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API4",
+    "version": "1.0.0",
+    "context": "testOrg1/api4",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API5",
+    "version": "1.0.0",
+    "context": "testOrg1/api5",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API6",
+    "version": "1.0.0",
+    "context": "testOrg1/api6",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API7",
+    "version": "1.0.0",
+    "context": "testOrg1/api7",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API8",
+    "version": "1.0.0",
+    "context": "testOrg1/api8",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API9",
+    "version": "1.0.0",
+    "context": "testOrg1/api9",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  }
+]

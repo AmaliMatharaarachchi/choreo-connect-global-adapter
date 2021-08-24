@@ -3,10 +3,20 @@ networks:
   cc_internal:
     name: cc_internal
 services:
+  apim:
+    image: wso2/choreo-product-apim:4.0
+    networks:
+      - cc_internal
+    ports:
+      - "9443:9443"
+      - "5672:5672"
+    volumes:
+      - ./apim/deployment.toml:/home/wso2carbon/wso2-config-volume/repository/conf/deployment.toml
+      - ./apim/jaggeryapps:/home/wso2carbon/wso2-config-volume/repository/deployment/server/jaggeryapps
   router:
     image: wso2/choreo-connect-router:0.9.1-SNAPSHOT
-    networks: 
-        - cc_internal
+    networks:
+      - cc_internal
     logging:
       options:
         max-size: "20m"
@@ -33,7 +43,7 @@ services:
       - "9000:9000"
   adapter:
     image: wso2/choreo-connect-adapter:0.9.1-SNAPSHOT
-    networks: 
+    networks:
       - cc_internal
     logging:
       options:
@@ -48,40 +58,46 @@ services:
       - GRPC_VERBOSITY=debug
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
-      - localLabel=Default-P1
+      - localLabel=default-p1
     ports:
       - "9843:9843"
   global-adapter:
-    image: wso2/choreo-connect-global-adapter:1.0.0-SNAPSHOT  
-    networks: 
-      - cc_internal  
+    image: wso2/choreo-connect-global-adapter:1.0.0-SNAPSHOT
+    networks:
+      - cc_internal
     logging:
-        options:
-            max-size: "20m"
-            max-file: "5"  
+      options:
+        max-size: "20m"
+        max-file: "5"
     volumes:
       - ./conf/ga_config.toml:/home/wso2/conf/ga_config.toml
       - ./conf/log_config.toml:/home/wso2/conf/log_config.toml
       - ./additional/ga-ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt
   sql-host:
     image: wso2am/choreo-connect-global-adapter-mssql:1.0.0-SNAPSHOT
-    networks: 
-        - cc_internal 
+    networks:
+      - cc_internal
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 1024M
+    #     reservations:
+    #       memory: 1024M
   redis-host:
-    image: redis:latest   
-    networks: 
-        - cc_internal   
-    volumes:  
-        - ./additional/redis.conf:/usr/local/etc/redis/redis.conf
-        - ./additional/redis.key:/usr/local/etc/redis/redis.key
-        - ./additional/redis.crt:/usr/local/etc/redis/redis.crt
-    command: [ "redis-server", "/usr/local/etc/redis/redis.conf"] 
-#    environment:
-#      - REDIS_HOST=localhost
+    image: redis:latest
+    networks:
+      - cc_internal
+    volumes:
+      - ./additional/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./additional/redis.key:/usr/local/etc/redis/redis.key
+      - ./additional/redis.crt:/usr/local/etc/redis/redis.crt
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6379:6379"
   enforcer:
     image: wso2/choreo-connect-enforcer:0.9.1-SNAPSHOT
-    networks: 
-        - cc_internal
+    networks:
+      - cc_internal
     logging:
       options:
         max-size: "20m"
