@@ -139,7 +139,7 @@ func fetchAPIsOnStartUp(conf *config.Config) {
 
 	// Fetch APIs from control plane and write to the channel c.
 	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-		synchronizer.RuntimeMetaDataEndpoint, false)
+		synchronizer.RuntimeMetaDataEndpoint, false, nil)
 
 	// Get deployment.json from the channel c.
 	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
@@ -148,7 +148,7 @@ func fetchAPIsOnStartUp(conf *config.Config) {
 	if err != nil {
 		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)
 	} else {
-		synchronizer.AddAPIEventsToChannel(deploymentDescriptor, nil)
+		synchronizer.AddAPIEventsToChannel(deploymentDescriptor)
 	}
 }
 
