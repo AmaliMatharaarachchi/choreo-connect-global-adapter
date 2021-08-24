@@ -47,6 +47,8 @@ if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
     fi
     cd choreo-product-apim
   fi
+else
+ cd $GITHUB_WORKSPACE/integration/integration-artifacts/scripts/gen/choreo-apim/choreo-product-apim
 fi
 
 if [[ -z "${JAVA_8_HOME}" ]]; then
@@ -111,10 +113,12 @@ if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
       exit 1
     fi
   fi
+else
+  cd ${GITHUB_WORKSPACE}/integration/integration-artifacts/scripts/gen/choreo-connect/product-microgateway
 fi
 
 git checkout feature/global-adapter
-mvn clean install -P Release -Dmaven.test.skip
+mvn clean install -P Release -Dmaven.test.skip -s .maven/settings.xml
 
 if [ $? -eq 0 ]; then
     echo "Maven build for choreo-connect is successful"
