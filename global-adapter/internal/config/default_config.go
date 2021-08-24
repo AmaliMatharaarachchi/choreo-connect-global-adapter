@@ -20,9 +20,10 @@ package config
 // Configuration object which is populated with default values.
 var defaultConfig = &Config{
 	Server: server{
-		Host:          "0.0.0.0",
-		Port:          "9843",
-		PartitionSize: 1000,
+		Host:               "0.0.0.0",
+		Port:               "9843",
+		PartitionSize:      1000,
+		PartitionThreshold: 0.9,
 		Users: []User{
 			{
 				Username: "admin",

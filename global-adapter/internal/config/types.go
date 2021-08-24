@@ -69,10 +69,11 @@ type SecurityInfo struct {
 }
 
 type server struct {
-	Host          string
-	Port          string
-	PartitionSize int
-	Users         []User `toml:"users"`
+	Host               string
+	Port               string
+	PartitionSize      int
+	PartitionThreshold float32
+	Users              []User `toml:"users"`
 }
 
 // User represents registered GA Users.
