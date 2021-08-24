@@ -22,7 +22,7 @@ For the first build, run with `ReleaseWithResources` profile.
 This would generate the choreo-connect docker images and choreo-product-apim
 docker image.
 
-```mvn clean install -P ReleaseWithResources```
+```mvn clean install -P ReleaseWithResourcesGen```
 
 ---
 **NOTE**
