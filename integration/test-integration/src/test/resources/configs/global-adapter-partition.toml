@@ -1,0 +1,51 @@
+# The configuration file for mgw
+# TODO: (VirajSalaka) Allow unchanged properties to be selected from default config
+[keystore]
+  certPath = "$env{MGW_HOME}/security/keystore/global-adapter.pem"
+  keyPath = "$env{MGW_HOME}/security/keystore/global-adapter.key"
+
+[truststore]
+  location = "$env{MGW_HOME}/security/truststore"
+
+# Control plane's connection details
+[controlPlane]
+  serviceUrl = "https://apim:9443/"
+  username="admin"
+  password="admin"
+  environmentLabels = ["Default"]
+  retryInterval = 5
+  skipSSLVerification=true
+  # Message broker connection URL of the control plane
+  [controlPlane.jmsConnectionParameters]
+    eventListeningEndpoints = ["amqp://admin:admin@apim:5672?retries='10'&connectdelay='30'"]
+
+[server]
+  host = '0.0.0.0'
+  port = '9843'
+  partitionSize = 8
+  [[server.users]]
+    username = 'admin'
+    password = '$env{ga_admin_pwd}'
+
+[database]
+  name = 'globalAdapter'
+  username = 'SA'
+  password = 'Admin001'
+  host = 'sql-host'
+  port = 1433
+  validationQuery = 'select 1'
+  [database.pooloptions]
+  maxActive = 50
+  maxWait = 60000
+  testOnBorrow = true
+  validationInterval = 30000
+  defaultAutoCommit = true
+
+[redisServer]
+  host = 'redis-host'
+  port = 6379
+  password = 'admin'
+  clientName = 'default'
+  databaseIndex = 0
+  connectionPoolSize = 3
+  maxRetryCount = 10

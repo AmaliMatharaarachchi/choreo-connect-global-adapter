@@ -1,0 +1,62 @@
+[
+  {
+    "name": "API1",
+    "version": "1.0.0",
+    "context": "testOrg1/api1",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API2",
+    "version": "1.0.0",
+    "context": "testOrg1/api2",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API3",
+    "version": "1.0.0",
+    "context": "testOrg1/api3",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API4",
+    "version": "1.0.0",
+    "context": "testOrg1/api4",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  },
+  {
+    "name": "API5",
+    "version": "1.0.0",
+    "context": "testOrg1/api5",
+    "operationsDTOS": [
+      {
+        "verb": "GET",
+        "target": "/pet/findByStatus",
+        "throttlingPolicy": "Unlimited"
+      }
+    ]
+  }
+]

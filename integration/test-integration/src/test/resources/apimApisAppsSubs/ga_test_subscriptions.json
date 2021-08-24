@@ -1,0 +1,27 @@
+[
+  {
+    "apiName": "API1",
+    "appName": "GlobalAdapterTest",
+    "tier": "Unlimited"
+  },
+  {
+    "apiName": "API2",
+    "appName": "GlobalAdapterTest",
+    "tier": "Unlimited"
+  },
+  {
+    "apiName": "API3",
+    "appName": "GlobalAdapterTest",
+    "tier": "Unlimited"
+  },
+  {
+    "apiName": "API4",
+    "appName": "GlobalAdapterTest",
+    "tier": "Unlimited"
+  },
+  {
+    "apiName": "API5",
+    "appName": "GlobalAdapterTest",
+    "tier": "Unlimited"
+  }
+]
