@@ -16,7 +16,7 @@
 
 FROM openresty/openresty:alpine
 RUN apk update && apk upgrade && apk --no-cache add curl && \
-    ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log
+    ln -sf /dev/stdout /var/log/access.log && ln -sf /dev/stderr /var/log/error.log
 
 ARG NGINX_USER=nginx
 ARG NGINX_USER_ID=10600
