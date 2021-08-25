@@ -43,7 +43,7 @@
                         <sun.net.http.allowRestrictedHeaders>true</sun.net.http.allowRestrictedHeaders>
                     </systemPropertyVariables>
                     <suiteXmlFiles>
-<!--                        <suiteXmlFile>src/test/resources/testng-cc-with-apim.xml</suiteXmlFile>-->
+                        <suiteXmlFile>src/test/resources/testng-cc-with-apim.xml</suiteXmlFile>
                         <suiteXmlFile>src/test/resources/testng-cc-partitioning.xml</suiteXmlFile>
                         <suiteXmlFile>src/test/resources/testng-cc-partitioning-startup.xml</suiteXmlFile>
                     </suiteXmlFiles>
