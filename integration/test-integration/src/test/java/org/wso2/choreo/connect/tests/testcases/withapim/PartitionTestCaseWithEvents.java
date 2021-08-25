@@ -102,7 +102,7 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
             StoreUtils.subscribeToAPI(apiId, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
         }
 
-        Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted when waiting for the " +
+        Utils.delay(30000, "Interrupted when waiting for the " +
                 "subscriptions to be deployed");
         String accessToken = StoreUtils.generateUserAccessToken(apimServiceURLHttps,
                 appWithConsumerKey.getConsumerKey(), appWithConsumerKey.getConsumerSecret(),
