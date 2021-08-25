@@ -28,8 +28,7 @@ RUN \
     addgroup -S -g ${NGINX_USER_GROUP_ID} ${NGINX_USER_GROUP} \
     && adduser -S -u ${NGINX_USER_ID} -h ${NGINX_USER_HOME} -G ${NGINX_USER_GROUP} ${NGINX_USER} \
     && chown -R nginx:nginx /var/log \
-    && chown -R nginx:nginx /etc/nginx/conf.d \
-    && chown -R nginx:nginx /etc/nginx/sites-enabled \
+    && chown -R nginx:nginx /etc/nginx \
     && chown -R nginx:nginx /var/run/openresty \
     && chown -R nginx:nginx /usr/local/openresty/nginx/logs
 
