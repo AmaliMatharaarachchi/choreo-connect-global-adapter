@@ -50,8 +50,8 @@ public class PartitionTestUtils {
     // Creates the dedis connection
     public static Jedis createJedisConnection() {
         JedisClientConfig config = DefaultJedisClientConfig.builder().database(0).clientName("global-adapter")
-                .socketTimeoutMillis(300000).build();
-        try (Jedis jedis = new Jedis(new URI("rediss://redis-host:6379"), config)) {
+                .socketTimeoutMillis(300000).hostnameVerifier((hostname, session) -> true).build();
+        try (Jedis jedis = new Jedis(new URI("rediss://localhost:6379"), config)) {
             jedis.auth("admin");
             return jedis;
         } catch (URISyntaxException e) {

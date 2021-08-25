@@ -114,7 +114,7 @@ if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
 fi
 
 git checkout feature/global-adapter
-mvn clean install -P Release -Dmaven.test.skip
+mvn clean install -P Release -Dmaven.test.skip -s .maven/settings.xml
 
 if [ $? -eq 0 ]; then
     echo "Maven build for choreo-connect is successful"
