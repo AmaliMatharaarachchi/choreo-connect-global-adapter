@@ -35,4 +35,4 @@ RUN \
 COPY init.sh .
 RUN ["chmod", "+x", "init.sh"]
 
-USER ${NGINX_USER}
+#USER ${NGINX_USER}
