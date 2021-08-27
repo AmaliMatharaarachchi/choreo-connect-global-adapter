@@ -33,6 +33,26 @@
     <build>
         <plugins>
             <plugin>
+                <groupId>com.googlecode.maven-download-plugin</groupId>
+                <artifactId>download-maven-plugin</artifactId>
+                <version>${download.maven.plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>download choreo-connect</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>wget</goal>
+                        </goals>
+                        <configuration>
+                            <url>
+                                https://github.com/wso2/product-microgateway/releases/download/v0.9.0-rc/choreo-connect-0.9.0-rc.zip
+                            </url>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
@@ -40,13 +60,8 @@
                         <id>extract-choreo-connect</id>
                         <phase>generate-resources</phase>
                         <configuration>
-                            <tasks>
-                                <copy file="${project.basedir}/../integration-artifacts/scripts/gen/choreo-connect/product-microgateway/distribution/target/choreo-connect-${choreoConnect.version}.zip" todir="${project.build.directory}"/>
-                                <mkdir dir="${project.build.directory}/cc-dist"/>
-                                <unzip src="${project.build.directory}/choreo-connect-${choreoConnect.version}.zip" dest="${project.build.directory}/cc-dist"/>
-                            </tasks>
                             <target>
-                                <unzip src="${project.build.directory}/choreo-connect-${choreoConnect.version}.zip" dest="${project.build.directory}/cc-dist"/>
+                                <unzip src="${project.build.directory}/choreo-connect-0.9.0-rc.zip" dest="${project.build.directory}/cc-dist"/>
                             </target>
                         </configuration>
                         <goals>
@@ -60,7 +75,7 @@
                         </goals>
                         <configuration>
                             <target>
-                                <delete file="${project.build.directory}/choreo-connect-${choreoConnect.version}.zip"/>
+                                <delete file="${project.build.directory}/choreo-connect-0.9.0-rc.zip"/>
                                 <delete dir="${project.build.directory}/cc-dist" includeemptydirs="true" />-->
                             </target>
                         </configuration>
