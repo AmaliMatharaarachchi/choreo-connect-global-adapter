@@ -102,8 +102,6 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
             StoreUtils.subscribeToAPI(apiId, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
         }
 
-        Utils.delay(30000, "Interrupted when waiting for the " +
-                "subscriptions to be deployed");
         String accessToken = StoreUtils.generateUserAccessToken(apimServiceURLHttps,
                 appWithConsumerKey.getConsumerKey(), appWithConsumerKey.getConsumerSecret(),
                 new String[]{}, user, storeRestClient);
@@ -111,6 +109,8 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         headers = new HashMap<>();
         headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
+        Utils.delay(30000, "Interrupted when waiting for the " +
+                "subscriptions to be deployed");
         //Invoke all the added API
         for (PartitionTestEntry testEntry : newAPITestEntryList) {
             // Checks against both the router partitions available.
