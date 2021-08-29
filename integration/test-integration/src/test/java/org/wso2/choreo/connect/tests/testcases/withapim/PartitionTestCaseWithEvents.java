@@ -20,9 +20,13 @@ package org.wso2.choreo.connect.tests.testcases.withapim;
 
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.HttpStatus;
 import com.google.common.net.HttpHeaders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+import org.wso2.am.integration.clients.publisher.api.ApiException;
 import org.wso2.am.integration.test.utils.bean.APIRequest;
 import org.wso2.choreo.connect.tests.apim.ApimBaseTest;
 import org.wso2.choreo.connect.tests.apim.ApimResourceProcessor;
@@ -31,6 +35,7 @@ import org.wso2.choreo.connect.tests.apim.dto.Application;
 import org.wso2.choreo.connect.tests.apim.utils.PublisherUtils;
 import org.wso2.choreo.connect.tests.apim.utils.StoreUtils;
 import org.wso2.choreo.connect.tests.common.model.PartitionTestEntry;
+import org.wso2.choreo.connect.tests.context.CCTestException;
 import org.wso2.choreo.connect.tests.util.HttpsClientRequest;
 import org.wso2.choreo.connect.tests.util.HttpResponse;
 import org.wso2.choreo.connect.tests.util.PartitionTestUtils;
@@ -51,6 +56,7 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
     List<PartitionTestEntry> existingAPITestEntryList = new ArrayList<>();
     private Jedis jedis;
     private AppWithConsumerKey appWithConsumerKey;
+    private static final Logger log = LoggerFactory.getLogger(PartitionTestCaseWithEvents.class);
 
     @BeforeClass(alwaysRun = true, description = "initialize setup")
     void setup() throws Exception {
@@ -214,5 +220,29 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
                 "Status code mismatched. Endpoint:" + invocationUrl + " HttpResponse ");
         newAPITestEntryList.remove(testEntry);
         return testEntry;
+    }
+
+    @AfterClass
+    public void afterClass() {
+        for (Map.Entry<String, String> entry :
+                ApimResourceProcessor.applicationNameToId.entrySet()) {
+            try {
+                StoreUtils.removeAllSubscriptionsForAnApp(entry.getValue(), storeRestClient);
+            } catch (CCTestException e) {
+                log.error("Error while unsubscribing APIs under application: " + entry.getKey(), e);
+            }
+        }
+        try {
+            StoreUtils.removeAllSubscriptionsForAnApp(applicationId, storeRestClient);
+        } catch (CCTestException e) {
+            log.error("Error while unsubscribing APIs under application: " + applicationId, e);
+        }
+        for (Map.Entry<String, String> entry : ApimResourceProcessor.apiNameToId.entrySet()) {
+            try {
+                publisherRestClient.deleteAPI(entry.getValue());
+            } catch (ApiException e) {
+                log.error("Error while deleting API: " + entry.getKey(), e);
+            }
+        }
     }
 }
