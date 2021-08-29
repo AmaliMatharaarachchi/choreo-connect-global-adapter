@@ -7,7 +7,6 @@ import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.wso2.am.integration.clients.publisher.api.ApiException;
 import org.wso2.choreo.connect.tests.apim.ApimBaseTest;
 import org.wso2.choreo.connect.tests.apim.ApimResourceProcessor;
 import org.wso2.choreo.connect.tests.apim.dto.AppWithConsumerKey;
@@ -117,25 +116,10 @@ public class PartitionTestCaseStartup extends ApimBaseTest {
 
     @AfterClass
     public void afterClass() {
-        for (Map.Entry<String, String> entry :
-                ApimResourceProcessor.applicationNameToId.entrySet()) {
-            try {
-                StoreUtils.removeAllSubscriptionsForAnApp(entry.getValue(), storeRestClient);
-            } catch (CCTestException e) {
-                log.error("Error while unsubscribing APIs under application: " + entry.getKey(), e);
-            }
-        }
         try {
             StoreUtils.removeAllSubscriptionsForAnApp(applicationId, storeRestClient);
         } catch (CCTestException e) {
             log.error("Error while unsubscribing APIs under application: " + applicationId, e);
-        }
-        for (Map.Entry<String, String> entry : ApimResourceProcessor.apiNameToId.entrySet()) {
-            try {
-                publisherRestClient.deleteAPI(entry.getValue());
-            } catch (ApiException e) {
-                log.error("Error while deleting API: " + entry.getKey(), e);
-            }
         }
     }
 }
