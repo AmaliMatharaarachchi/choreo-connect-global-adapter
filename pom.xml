@@ -62,6 +62,8 @@
                 <module>global-adapter</module>
                 <module>integration/database</module>
                 <module>integration/distribution</module>
+                <!--Duplicated as it is required to build this separately for azure pipeline-->
+                <module>integration/mock-backend-server</module>
                 <module>integration/test-integration</module>
             </modules>
         </profile>
@@ -105,5 +107,6 @@
         <jedis.version>3.6.3</jedis.version>
         <choreo.connect.version>0.9.1-SNAPSHOT</choreo.connect.version>
         <maven.surefire.plugin.version>2.22.2</maven.surefire.plugin.version>
+        <grpc.netty.shaded.version>1.32.1</grpc.netty.shaded.version>
     </properties>
 </project>
