@@ -15,4 +15,4 @@
 # limitations under the License.
 # -----------------------------------------------------------------------
 
-curl -s -o -X PUT "http://localhost/init-redis-subscribe" > /dev/null 2>&1 &
+curl -s -o -X PUT "http://localhost:8080/init-redis-subscribe" > /dev/null 2>&1 &
