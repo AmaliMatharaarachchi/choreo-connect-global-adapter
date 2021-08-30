@@ -61,6 +61,12 @@ jobs:
         export MONGODB_CLUSTER_NAME="Cluster0"
         export MONGODB_PUBLIC_KEY="tajibnyf"
         export MONGODB_PRIVATE_KEY="24033628-c071-4bb5-af21-038d8c9c5775"
+    - name: Cache Maven packages
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
     - name: Build with Maven
       run: |
         export mongodb_connection_string="mongodb+srv://viraj:adminvirajg@cluster0.ngll6.mongodb.net/APIM_DB?retryWrites=true&amp;w=majority"

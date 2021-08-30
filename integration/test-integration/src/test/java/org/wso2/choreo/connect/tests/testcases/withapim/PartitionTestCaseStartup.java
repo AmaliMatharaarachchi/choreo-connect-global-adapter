@@ -70,14 +70,14 @@ public class PartitionTestCaseStartup extends ApimBaseTest {
         // To check if the partitioning has happened properly, we need to depend on whether at least one API is assigned
         // to the partition_2
         int partition2AssignedCount = 0;
-        for (PartitionTestEntry testEntry : existingAPITestEntryList) {
-            String orgHandle = testEntry.getApiContext().substring(0, testEntry.getApiContext().indexOf("/", 1));
-            String context = testEntry.getApiContext().substring(testEntry.getApiContext().indexOf("/", 1));
+        for (PartitionTestEntry testEntry : existingAPITestEntryList) {        
             // Checks against both the router partitions available.
             // If the partition matches, it should return 200 OK, otherwise 404.
-            testEntry.setPartition(PartitionTestUtils.getRedisEntry(jedis, orgHandle, context,
-                    testEntry.getApiVersion()));
-            if (PartitionTestUtils.PARTITION_2.equals(testEntry.getPartition())) {
+            String currentPartitionContext = PartitionTestUtils.getRedisEntry(jedis, testEntry.getApiContext(),
+                    testEntry.getApiVersion());
+            testEntry.setPartition(currentPartitionContext.split("/")[0]);
+            if (String.format("%s/%s/%s", PartitionTestUtils.PARTITION_2, testEntry.getApiContext(),
+                    testEntry.getApiVersion()).equals(currentPartitionContext)) {
                 partition2AssignedCount++;
             }
         }
