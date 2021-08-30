@@ -114,7 +114,7 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
         headers = new HashMap<>();
         headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
 
-        Utils.delay(30000, "Interrupted when waiting for the " +
+        Utils.delay(50000, "Interrupted when waiting for the " +
                 "subscriptions to be deployed");
         //Invoke all the added API
         for (PartitionTestEntry testEntry : newAPITestEntryList) {

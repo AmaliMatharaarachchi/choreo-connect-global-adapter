@@ -345,7 +345,7 @@ func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	var cacheKey string
 
 	if api.Context != ""  {
-		cacheKey = fmt.Sprintf(clientName+"#%s#%s", labelHierarchy, api.Context)
+		cacheKey = fmt.Sprintf("#%s#%s#%s",clientName, labelHierarchy, api.Context)
 	} else {
 		logger.LoggerAPIPartition.Error("Unable to get cache key due to empty API Context : ", api.UUID)
 	}

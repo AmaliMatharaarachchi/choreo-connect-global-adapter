@@ -64,11 +64,11 @@ public class PartitionTestUtils {
                                  String expectedValue) {
         String value = getRedisEntry(jedis, apiContext, apiVersion);
         Assert.assertEquals(value, expectedValue, " Mismatch found while reading redis entry for " +
-                String.format("global-adapter#default#/%s/%s", apiContext, apiVersion));
+                String.format("#global-adapter#default#/%s/%s", apiContext, apiVersion));
     }
 
     public static String getRedisEntry(Jedis jedis, String apiContext, String apiVersion) {
-        String value = jedis.get(String.format("global-adapter#default#/%s/%s", apiContext, apiVersion));
+        String value = jedis.get(String.format("#global-adapter#default#/%s/%s", apiContext, apiVersion));
         return value;
     }
 
