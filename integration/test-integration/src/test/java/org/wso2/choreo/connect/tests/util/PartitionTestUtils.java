@@ -60,23 +60,23 @@ public class PartitionTestUtils {
         return null;
     }
 
-    private static void checkRedisEntry(Jedis jedis, String orgHandle, String apiContext, String apiVersion,
+    private static void checkRedisEntry(Jedis jedis, String apiContext, String apiVersion,
                                  String expectedValue) {
-        String value = getRedisEntry(jedis, orgHandle, apiContext, apiVersion);
+        String value = getRedisEntry(jedis, apiContext, apiVersion);
         Assert.assertEquals(value, expectedValue, " Mismatch found while reading redis entry for " +
-                String.format("global-adapter#default#%s_%s_%s",orgHandle, apiContext, apiVersion));
+                String.format("global-adapter#default#/%s/%s", apiContext, apiVersion));
     }
 
-    public static String getRedisEntry(Jedis jedis, String orgHandle, String apiContext, String apiVersion) {
-        String value = jedis.get(String.format("global-adapter#default#%s_%s_%s", orgHandle, apiContext, apiVersion));
+    public static String getRedisEntry(Jedis jedis, String apiContext, String apiVersion) {
+        String value = jedis.get(String.format("global-adapter#default#/%s/%s", apiContext, apiVersion));
         return value;
     }
 
     public static void checkTestEntry(Jedis jedis, PartitionTestEntry testEntry, Map<String,String> headers,
                                 boolean verifyInOtherRouter) throws Exception {
-        String orgHandle = testEntry.getApiContext().substring(0, testEntry.getApiContext().indexOf("/", 1));
-        String context = testEntry.getApiContext().substring(testEntry.getApiContext().indexOf("/", 1));
-        checkRedisEntry(jedis, orgHandle, context, testEntry.getApiVersion(), testEntry.getPartition());
+        String expectedPartition = String.format("/%s/%s/%s", testEntry.getPartition(), testEntry.getApiContext(),
+                testEntry.getApiVersion());
+        checkRedisEntry(jedis, testEntry.getApiContext(), testEntry.getApiVersion(), expectedPartition);
         for (Map.Entry<String, String> mapEntry : PARTITION_ENDPOINT_MAP.entrySet()) {
             String url = mapEntry.getValue() + testEntry.getApiContext() + "/"
                     + testEntry.getApiVersion() + testEntry.getResourcePath();
