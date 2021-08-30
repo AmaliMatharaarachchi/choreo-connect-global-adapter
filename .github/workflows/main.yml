@@ -39,21 +39,21 @@ jobs:
       env:
         JAVA_11_HOME: "/opt/hostedtoolcache/Java_Adopt_jdk/11.0.11-9/x64"
     - name: Setup Go environment
-      uses: actions/setup-go@v2.1.3
+      uses: actions/setup-go@v2.1.3       
     - name: Setup Docker env
       run: |
-        export DOCKER_COMPOSE_VERSION=1.23.2
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-        sudo apt-get update
-        sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
-        sudo rm /usr/local/bin/docker-compose
-        curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
-        chmod +x docker-compose
-        sudo mv docker-compose /usr/local/bin
-        docker pull testcontainers/ryuk:0.3.0
-        export `go env | grep GOPATH`
-        export PATH="${GOPATH}/bin:${PATH}"
+          export DOCKER_COMPOSE_VERSION=1.23.2
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt-get update
+          sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+          sudo rm /usr/local/bin/docker-compose
+          curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
+          chmod +x docker-compose
+          sudo mv docker-compose /usr/local/bin
+          docker pull testcontainers/ryuk:0.3.0
+          export `go env | grep GOPATH`
+          export PATH="${GOPATH}/bin:${PATH}"
     - name: Setup Mongodb credentials
       run: |
         export MONGODB_CONNECTION_STRING="mongodb+srv://viraj:adminvirajg@cluster0.ngll6.mongodb.net/APIM_DB?retryWrites=true&amp;w=majority"
@@ -72,4 +72,4 @@ jobs:
         export JAVA_8_HOME="/opt/hostedtoolcache/Java_Adopt_jdk/8.0.292-1/x64"
         export JAVA_11_HOME="/opt/hostedtoolcache/Java_Adopt_jdk/11.0.11-9/x64"
         export PATH="${HOME}/go/bin:${PATH}"
-        mvn clean install -s .maven/settings.xml -P ReleaseWithResourcesGen
+        mvn clean install -s .maven/settings.xml
