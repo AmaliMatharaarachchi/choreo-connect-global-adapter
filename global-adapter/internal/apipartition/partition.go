@@ -348,7 +348,7 @@ func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 
 	var cacheKey string
 
-	if api.context != ""  {
+	if api.Context != ""  {
 		cacheKey = fmt.Sprintf(clientName+"#%s#%s", labelHierarchy, api.Context)
 	} else {
 		logger.LoggerAPIPartition.Error("Unable to get cache key due to empty API Context : ", api.UUID)
@@ -363,7 +363,7 @@ func getCacheValue(api *synchronizer.APIEvent, routerLabel string) string {
 
 	var cacheValue string
 
-	if api.context != "" {
+	if api.Context != "" {
 		cacheValue = fmt.Sprintf("/%s%s", routerLabel, api.Context)
 	} else {
 		logger.LoggerAPIPartition.Error("Unable to get cache value due to empty API Context : ", api.UUID)
