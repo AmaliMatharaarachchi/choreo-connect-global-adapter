@@ -19,20 +19,18 @@ RUN apk update && apk upgrade && apk --no-cache add curl && \
     ln -sf /dev/stdout /var/log/access.log && ln -sf /dev/stderr /var/log/error.log
 
 ARG NGINX_USER=nginx
-ARG NGINX_USER_ID=10600
 ARG NGINX_USER_GROUP=nginx
-ARG NGINX_USER_GROUP_ID=10600
-ARG NGINX_USER_HOME=/etc/${NGINX_USER}
 
 RUN \
-    addgroup -S -g ${NGINX_USER_GROUP_ID} ${NGINX_USER_GROUP} \
-    && adduser -S -u ${NGINX_USER_ID} -h ${NGINX_USER_HOME} -G ${NGINX_USER_GROUP} ${NGINX_USER} \
+    addgroup -S ${NGINX_USER_GROUP} \
+    && adduser -S ${NGINX_USER} \
     && chown -R nginx:nginx /var/log \
     && chown -R nginx:nginx /etc/nginx \
     && chown -R nginx:nginx /var/run/openresty \
+    && touch /usr/local/openresty/nginx/logs/nginx.pid \
     && chown -R nginx:nginx /usr/local/openresty/nginx/logs
 
 COPY init.sh .
 RUN ["chmod", "+x", "init.sh"]
 
-#USER ${NGINX_USER}
+USER ${NGINX_USER}
