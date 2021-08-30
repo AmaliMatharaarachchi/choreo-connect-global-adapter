@@ -22,11 +22,7 @@
 package apipartition
 
 import (
-	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/cache"
