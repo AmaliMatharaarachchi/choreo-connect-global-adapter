@@ -75,8 +75,8 @@ public class PartitionTestCaseStartup extends ApimBaseTest {
             // If the partition matches, it should return 200 OK, otherwise 404.
             String currentPartitionContext = PartitionTestUtils.getRedisEntry(jedis, testEntry.getApiContext(),
                     testEntry.getApiVersion());
-            testEntry.setPartition(currentPartitionContext.split("/")[1]);
-            if (String.format("/%s/%s/%s", PartitionTestUtils.PARTITION_2, testEntry.getApiContext(),
+            testEntry.setPartition(currentPartitionContext.split("/")[0]);
+            if (String.format("%s/%s/%s", PartitionTestUtils.PARTITION_2, testEntry.getApiContext(),
                     testEntry.getApiVersion()).equals(currentPartitionContext)) {
                 partition2AssignedCount++;
             }

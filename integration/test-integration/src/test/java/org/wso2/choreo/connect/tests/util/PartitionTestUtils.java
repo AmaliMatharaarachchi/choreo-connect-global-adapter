@@ -74,7 +74,7 @@ public class PartitionTestUtils {
 
     public static void checkTestEntry(Jedis jedis, PartitionTestEntry testEntry, Map<String,String> headers,
                                 boolean verifyInOtherRouter) throws Exception {
-        String expectedPartition = String.format("/%s/%s/%s", testEntry.getPartition(), testEntry.getApiContext(),
+        String expectedPartition = String.format("%s/%s/%s", testEntry.getPartition(), testEntry.getApiContext(),
                 testEntry.getApiVersion());
         checkRedisEntry(jedis, testEntry.getApiContext(), testEntry.getApiVersion(), expectedPartition);
         for (Map.Entry<String, String> mapEntry : PARTITION_ENDPOINT_MAP.entrySet()) {
