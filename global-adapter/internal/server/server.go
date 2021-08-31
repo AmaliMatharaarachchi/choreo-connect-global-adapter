@@ -75,6 +75,8 @@ func Run(conf *config.Config) {
 
 	if isAzureEventingFeatureFlagEnabled {
 		logger.LoggerServer.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Starting to integrate with azure service bus")
+		logger.LoggerServer.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] EventListeningEndpoint is ",
+			conf.ControlPlane.ASBConnectionParameters.EventListeningEndpoint)
 	}
 
 	// Process incoming events.
