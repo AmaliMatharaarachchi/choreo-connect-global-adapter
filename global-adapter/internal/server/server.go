@@ -62,6 +62,7 @@ func Run(conf *config.Config) {
 	// Checks control plane health and Waits for Control plane
 	go health.WaitForControlPlane()
 
+	// TODO: (dnwick) remove env variable once the feature is complete
 	featureFlagReplaceEventHubEnvValue := os.Getenv(featureFlagReplaceEventHub)
 	var isAzureEventingFeatureFlagEnabled bool
 	var err error
