@@ -57,8 +57,9 @@ func WakeUpConnection() bool {
 	if pingError == nil {
 		isPing = true
 	} else {
-		logger.LoggerServer.Debugf("Error while initiating the database %v. Retrying to connect to database", pingError)
 		for attempt = 1; attempt <= maxAttempts; attempt++ {
+			logger.LoggerServer.Infof("Error while initiating the database %v. Retrying to connect to database. " +
+				"Attempt %d", pingError, attempt)
 			ConnectToDb()
 			err := DB.Ping()
 			if err == nil {

@@ -42,7 +42,7 @@ public class CCStartupExecutorWithPartitions extends ApimBaseTest {
                 .withAllCustomImpls().build();
         ccInstance.start();
         Awaitility.await().pollDelay(20, TimeUnit.SECONDS).pollInterval(5, TimeUnit.SECONDS)
-                .atMost(2, TimeUnit.MINUTES).until(ccInstance.isHealthy());
+                .atMost(5, TimeUnit.MINUTES).until(ccInstance.isHealthy());
         Assert.assertTrue(ccInstance.checkCCInstanceHealth());
         Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME, "Interrupted while waiting for " +
                 "resources to be pulled from API Manager");

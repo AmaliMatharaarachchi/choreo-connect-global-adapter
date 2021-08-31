@@ -17,16 +17,23 @@
  */
 package org.wso2.choreo.connect.tests.setup.withapim;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
+import org.wso2.am.integration.clients.publisher.api.ApiException;
 import org.wso2.choreo.connect.tests.apim.ApimBaseTest;
 import org.wso2.choreo.connect.tests.apim.ApimResourceProcessor;
 import org.wso2.choreo.connect.tests.apim.utils.PublisherUtils;
 import org.wso2.choreo.connect.tests.apim.utils.StoreUtils;
+import org.wso2.choreo.connect.tests.context.CCTestException;
 import org.wso2.choreo.connect.tests.context.ChoreoConnectImpl;
 import org.wso2.choreo.connect.tests.util.TestConstant;
 import org.wso2.choreo.connect.tests.util.Utils;
+
+import java.util.Map;
 
 /**
  * APIs, Apps, Subs created here will be used to test whether
@@ -34,6 +41,7 @@ import org.wso2.choreo.connect.tests.util.Utils;
  * This class must run before CcStartupExecutor
  */
 public class ApimPreparer extends ApimBaseTest {
+    private static final Logger log = LoggerFactory.getLogger(ApimPreparer.class);
     /**
      * Initialize the clients in the super class and create APIs, Apps, Subscriptions etc.
      */
@@ -53,6 +61,25 @@ public class ApimPreparer extends ApimBaseTest {
             //wait till all resources deleted and are redeployed
             Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME*8, "Interrupted while waiting for DELETE and" +
                     " CREATE events to be deployed");
+        }
+    }
+
+    @AfterSuite
+    public void deleteAPIsApps() {
+        for (Map.Entry<String, String> entry :
+                ApimResourceProcessor.applicationNameToId.entrySet()) {
+            try {
+                StoreUtils.removeAllSubscriptionsForAnApp(entry.getValue(), storeRestClient);
+            } catch (CCTestException e) {
+                log.error("Error while unsubscribing APIs under application: " + entry.getKey(), e);
+            }
+        }
+        for (Map.Entry<String, String> entry : ApimResourceProcessor.apiNameToId.entrySet()) {
+            try {
+                publisherRestClient.deleteAPI(entry.getValue());
+            } catch (ApiException e) {
+                log.error("Error while deleting API: " + entry.getKey(), e);
+            }
         }
     }
 }

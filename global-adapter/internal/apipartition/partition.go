@@ -22,11 +22,7 @@
 package apipartition
 
 import (
-	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/cache"
@@ -37,10 +33,6 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
 )
-
-// TODO : Following 2 lines no need in near future.Since no need to fetch API info from the CP
-var ehURL string = "https://localhost:9443/internal/data/v1/apis/"
-var basicAuth string = "Basic YWRtaW46YWRtaW4="
 
 var configs = config.ReadConfigs()
 var partitionSize = configs.Server.PartitionSize
@@ -91,6 +83,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 
 			if label != "" {
 				cacheKey := getCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
+				cacheValue := getCacheValue(&apis[ind], label)
 
 				logger.LoggerAPIPartition.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
@@ -106,7 +99,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
 				if cacheKey != "" {
 					cacheObj = append(cacheObj, cacheKey)
-					cacheObj = append(cacheObj, label)
+					cacheObj = append(cacheObj, cacheValue)
 				}
 
 			} else {
@@ -347,77 +340,35 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 
 func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	// apiId : Incremental ID
-	// Cache Key pattern : <organization id>_<base path>_<api version>
-	// Cache Value : Pertion Label ID ie: dev-p1, prod-p3
+	// Cache Key pattern : #global-adapter#<environment-label>#<api-context>
+	// Cache Value : Partition Label ID ie: dev-p1, prod-p3
 	// labelHierarchy : gateway label (dev,prod and etc)
 
-	var version string
-	var basePath string
-	var organization string
 	var cacheKey string
 
-	if strings.TrimSpace(api.Context) == "" || strings.TrimSpace(api.Version) == "" {
-		// api := fetchAPIInfo(api.UUID, labelHierarchy) // deprecated
-		if api != nil {
-			version = api.Version
-			// basePath = api.Context
-			// organization = api.Organization
-		}
+	if api.Context != ""  {
+		cacheKey = fmt.Sprintf("#%s#%s#%s",clientName, labelHierarchy, api.Context)
 	} else {
-		version = api.Version
-		// [1]
-		// TODO (Shanaka) Following 3 lines of code segment should move to the " MOVE HERE "
-		splitVersion := strings.Split(api.Context, version)
-		basePath = strings.TrimSuffix("/"+strings.SplitN(splitVersion[0], "/", 3)[2], "/")
-		organization = strings.Split(splitVersion[0], "/")[1]
-	}
-
-	// MOVE HERE <-- Read [1]
-	if organization != "" && version != "" && basePath != "" {
-		cacheKey = fmt.Sprintf(clientName+"#%s#%s_%s_%s", labelHierarchy, organization, basePath, version)
+		logger.LoggerAPIPartition.Error("Unable to get cache key due to empty API Context : ", api.UUID)
 	}
 
 	logger.LoggerAPIPartition.Debug(" Generated cache key : ", cacheKey)
 	return cacheKey
 }
 
-//	TODO : No need to fetch API info from /apis endpoint, since API version and context will fetch from the inital request in future
-func fetchAPIInfo(apiUUID, gwLabel string) *types.API {
+func getCacheValue(api *synchronizer.APIEvent, routerLabel string) string {
+	// Cache value pattern : <router-label>/<api-context>
 
-	var apiInfo *types.API
+	var cacheValue string
 
-	if gwLabel == defaultGatewayLabel {
-		gwLabel = productionSandboxLabel
+	if api.Context != "" {
+		cacheValue = fmt.Sprintf("%s%s", routerLabel, api.Context)
+	} else {
+		logger.LoggerAPIPartition.Error("Unable to get cache value due to empty API Context : ", api.UUID)
 	}
 
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	req, _ := http.NewRequest("GET", ehURL, nil)
-	queryParam := req.URL.Query()
-	queryParam.Add(apiID, apiUUID)
-	queryParam.Add(gatewayLabel, gwLabel)
-	req.URL.RawQuery = queryParam.Encode()
-	client := &http.Client{
-		Transport: tr,
-	}
-	req.Header.Set(authorization, basicAuth)
-
-	for {
-		resp, err := client.Do(req)
-		if err == nil {
-			responseData, _ := ioutil.ReadAll(resp.Body)
-			var response types.Response
-			json.Unmarshal(responseData, &response)
-			apiInfo = &response.List[0]
-			break
-		} else {
-			logger.LoggerAPIPartition.Error("Error when fetching API info from /apis for API : ", uuid, " .Error : ", err)
-			continue
-		}
-	}
-
-	return apiInfo
+	logger.LoggerAPIPartition.Debug(" Generated cache Value : ", cacheValue)
+	return cacheValue
 }
 
 // Return a label generated against to the gateway label and incremental API ID

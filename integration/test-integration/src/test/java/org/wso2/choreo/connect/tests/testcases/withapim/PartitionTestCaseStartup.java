@@ -1,7 +1,10 @@
 package org.wso2.choreo.connect.tests.testcases.withapim;
 
 import com.google.common.net.HttpHeaders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.wso2.choreo.connect.tests.apim.ApimBaseTest;
@@ -10,6 +13,7 @@ import org.wso2.choreo.connect.tests.apim.dto.AppWithConsumerKey;
 import org.wso2.choreo.connect.tests.apim.dto.Application;
 import org.wso2.choreo.connect.tests.apim.utils.StoreUtils;
 import org.wso2.choreo.connect.tests.common.model.PartitionTestEntry;
+import org.wso2.choreo.connect.tests.context.CCTestException;
 import org.wso2.choreo.connect.tests.util.PartitionTestUtils;
 import org.wso2.choreo.connect.tests.util.TestConstant;
 import org.wso2.choreo.connect.tests.util.Utils;
@@ -23,6 +27,7 @@ import java.util.Map;
 public class PartitionTestCaseStartup extends ApimBaseTest {
 
     private static final String APP_NAME = "GlobalAdapterEventTest";
+    private static final Logger log = LoggerFactory.getLogger(PartitionTestCaseStartup.class);
 
     List<PartitionTestEntry> existingAPITestEntryList = new ArrayList<>();
     private String applicationId;
@@ -65,14 +70,14 @@ public class PartitionTestCaseStartup extends ApimBaseTest {
         // To check if the partitioning has happened properly, we need to depend on whether at least one API is assigned
         // to the partition_2
         int partition2AssignedCount = 0;
-        for (PartitionTestEntry testEntry : existingAPITestEntryList) {
-            String orgHandle = testEntry.getApiContext().substring(0, testEntry.getApiContext().indexOf("/", 1));
-            String context = testEntry.getApiContext().substring(testEntry.getApiContext().indexOf("/", 1));
+        for (PartitionTestEntry testEntry : existingAPITestEntryList) {        
             // Checks against both the router partitions available.
             // If the partition matches, it should return 200 OK, otherwise 404.
-            testEntry.setPartition(PartitionTestUtils.getRedisEntry(jedis, orgHandle, context,
-                    testEntry.getApiVersion()));
-            if (PartitionTestUtils.PARTITION_2.equals(testEntry.getPartition())) {
+            String currentPartitionContext = PartitionTestUtils.getRedisEntry(jedis, testEntry.getApiContext(),
+                    testEntry.getApiVersion());
+            testEntry.setPartition(currentPartitionContext.split("/")[0]);
+            if (String.format("%s/%s/%s", PartitionTestUtils.PARTITION_2, testEntry.getApiContext(),
+                    testEntry.getApiVersion()).equals(currentPartitionContext)) {
                 partition2AssignedCount++;
             }
         }
@@ -107,5 +112,14 @@ public class PartitionTestCaseStartup extends ApimBaseTest {
         PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API9", "1.0.0", "testOrg1/api9",
                 "");
 
+    }
+
+    @AfterClass
+    public void afterClass() {
+        try {
+            StoreUtils.removeAllSubscriptionsForAnApp(applicationId, storeRestClient);
+        } catch (CCTestException e) {
+            log.error("Error while unsubscribing APIs under application: " + applicationId, e);
+        }
     }
 }
