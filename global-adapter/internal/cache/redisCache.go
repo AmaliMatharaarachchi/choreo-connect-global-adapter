@@ -103,6 +103,6 @@ func PublishRedisEvent(channel string, client *redis.Client, event string) {
 	if res.Err() != nil {
 		logger.LoggerServer.Errorf("Error while publishing to redis channel: %s with event: %s, %v", channel, event, res.Err().Error())
 	} else {
-		logger.LoggerServer.Debug("Published Redis Event : ", channel)
+		logger.LoggerServer.Debug("Published redis event : ", channel)
 	}
 }
