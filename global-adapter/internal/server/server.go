@@ -42,10 +42,12 @@ import (
 	"github.com/wso2/product-microgateway/adapter/pkg/tlsutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"strconv"
 )
 
 // TODO: (VirajSalaka) check this is streams per connections or total number of concurrent streams.
 const grpcMaxConcurrentStreams = 1000000
+const featureFlagReplaceEventHub = "FEATURE_FLAG_REPLACE_EVENT_HUB"
 
 // Run functions starts the XDS Server.
 func Run(conf *config.Config) {
@@ -59,6 +61,21 @@ func Run(conf *config.Config) {
 	defer cancel()
 	// Checks control plane health and Waits for Control plane
 	go health.WaitForControlPlane()
+
+	featureFlagReplaceEventHubEnvValue := os.Getenv(featureFlagReplaceEventHub)
+	var isAzureEventingFeatureFlagEnabled bool
+	var err error
+	if featureFlagReplaceEventHubEnvValue != "" {
+		isAzureEventingFeatureFlagEnabled, err = strconv.ParseBool(featureFlagReplaceEventHubEnvValue)
+		if err != nil {
+			logger.LoggerServer.Error("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error occurred while parsing "+
+				"FEATURE_FLAG_REPLACE_EVENT_HUB environment value.", err)
+		}
+	}
+
+	if isAzureEventingFeatureFlagEnabled {
+		logger.LoggerServer.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Starting to integrate with azure service bus")
+	}
 
 	// Process incoming events.
 	go messaging.ProcessEvents(conf)
