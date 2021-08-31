@@ -96,3 +96,13 @@ func SetCacheKeys(cacheList []string, client *redis.Client) error {
 	}
 	return res.Err()
 }
+
+// PublishRedisEvent - Publish an event to Redis Server
+func PublishRedisEvent(channel string, client *redis.Client, event string) {
+	res := client.Publish(channel, event)
+	if res.Err() != nil {
+		logger.LoggerServer.Errorf("Error while publishing to redis channel: %s with event: %s, %v", channel, event, res.Err().Error())
+	} else {
+		logger.LoggerServer.Debug("Published redis event : ", channel)
+	}
+}

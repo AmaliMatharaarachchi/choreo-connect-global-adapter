@@ -57,6 +57,7 @@ const (
 	clientName             string = "global-adapter"
 	productionSandboxLabel string = "Production and Sandbox"
 	defaultGatewayLabel    string = "default"
+	deleteEvent            string = "delete"
 )
 
 // PopulateAPIData - populating API information to Database and redis cache
@@ -331,6 +332,7 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 		switch eventType {
 		case types.APIDelete:
 			go cache.RemoveCacheKey(key, rc)
+			go cache.PublishRedisEvent(key, rc, deleteEvent)
 		}
 	}
 
