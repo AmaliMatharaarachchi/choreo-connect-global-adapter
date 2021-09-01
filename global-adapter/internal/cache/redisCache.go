@@ -97,6 +97,13 @@ func SetCacheKeys(cacheList []string, client *redis.Client) error {
 	return res.Err()
 }
 
+// PublishUpdatedAPIKeys - Publish delete event to Redis Server for each API event.
+func PublishUpdatedAPIKeys(cacheList []string, client *redis.Client) {
+	for count := 0; count < len(cacheList); count = count + 2 {
+		PublishRedisEvent(cacheList[count], client, "delete")
+	}
+}
+
 // PublishRedisEvent - Publish an event to Redis Server
 func PublishRedisEvent(channel string, client *redis.Client, event string) {
 	res := client.Publish(channel, event)
