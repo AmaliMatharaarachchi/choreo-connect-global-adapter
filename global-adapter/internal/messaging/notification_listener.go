@@ -80,6 +80,22 @@ func handleNotification(config *config.Config) {
 	logger.LoggerMsg.Infof("handle: deliveries channel closed")
 }
 
+func handleAzureNotification() {
+	for d := range msg.AzureNotificationChannel {
+		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] message received for " +
+			"NotificationChannel = " + string(d))
+		var notification msg.EventNotification
+		error := parseNotificationJSONEvent(d, &notification)
+		if error != nil {
+			logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error while processing " +
+				"the notification event %v. Hence dropping the event", error)
+			continue
+		}
+		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received",
+			notification.Event.PayloadData.EventType)
+	}
+}
+
 // handle API deploy and remove events.
 func handleAPIDeployAndRemoveEvents(data []byte, eventType string, config *config.Config) {
 	var apiEvent msg.APIEvent
@@ -150,4 +166,13 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 	sync.AddAPIEventsToChannel(deploymentDescriptor)
 
 	return nil
+}
+
+func parseNotificationJSONEvent(data []byte, notification *msg.EventNotification) error {
+	unmarshalErr := json.Unmarshal(data, &notification)
+	if unmarshalErr != nil {
+		logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error occurred while unmarshalling " +
+			"notification event data %v", unmarshalErr)
+	}
+	return unmarshalErr
 }
