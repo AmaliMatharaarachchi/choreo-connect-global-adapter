@@ -27,7 +27,9 @@ import (
 )
 
 const (
-	componentName                              = "adapter"
+	componentName                              = "ga" //should not use longer names as subscription name has a limited
+	 											      // length of 50 and case case-insensitive. Sample unique
+	 											      // subscription name would be ga_41b19c44-f9e0-4b9a-90e3-7599dc1c0545_sub
 	subscriptionIdleTimeDuration               = time.Duration(72 * time.Hour)
 )
 
