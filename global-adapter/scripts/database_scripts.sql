@@ -9,3 +9,8 @@ CREATE TABLE globalAdapter.dbo.ga_local_adapter_partition (
 CREATE TABLE globalAdapter.dbo.la_partition_size (
 		parition_size int NULL
 );
+
+CREATE TABLE globalAdapter.dbo.ga_org_quota_status (
+		org_id varchar(150) NULL,
+		is_exceeded BIT NOT NULL DEFAULT 0,
+);

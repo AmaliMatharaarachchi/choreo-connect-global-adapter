@@ -339,6 +339,8 @@ github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLY
 github.com/vektah/gqlparser v1.1.2/go.mod h1:1ycwN7Ij5njmMkPPAOaRFY4rET2Enx7IkVv3vaXspKw=
 github.com/wso2/product-microgateway/adapter v0.0.0-20210825050740-c903c2cdcfb8 h1:3OdUnhWwrzIL9qwek+aubh5Kp+bgNf6FyjaSojgcEBQ=
 github.com/wso2/product-microgateway/adapter v0.0.0-20210825050740-c903c2cdcfb8/go.mod h1:hVmtUTN8Z98DouZjt6FJhfNZjSmMvowIZrbpUedJBAw=
+github.com/wso2/product-microgateway/adapter v0.0.0-20210901130010-96bbd976c86c h1:WOFArzsXDlSMDCZDt3SEGbuwruNG5HweOt84a+7/E6U=
+github.com/wso2/product-microgateway/adapter v0.0.0-20210901130010-96bbd976c86c/go.mod h1:hVmtUTN8Z98DouZjt6FJhfNZjSmMvowIZrbpUedJBAw=
 github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c/go.mod h1:lB8K/P019DLNhemzwFU4jHLhdvlE6uDZjXFejJXr49I=
 github.com/xdg/stringprep v0.0.0-20180714160509-73f8eece6fdc/go.mod h1:Jhud4/sHMO4oL310DaZAKk9ZaJ08SJfe+sJh0HrGL1Y=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=

@@ -132,6 +132,7 @@ func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 	xds.ProcessSingleEvent(laAPIList[0])
 }
 
+// TODO When initial changes are tested, need to check whether org is blocked or not. If true, update redis with value 'blocked' for relevant key
 // insertRecord always return the adapter label for the relevant API
 // If the API is not in database, that will save to the database and return the label
 func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.EventType) string {
@@ -399,5 +400,52 @@ func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int, partit
 		logger.LoggerAPIPartition.Infof("%s percentage of the adapter partition: %d is filled.",
 			fmt.Sprintf("%.2f", partitionThreshold*100), (incrementalID/partitionSize)+1)
 		deployAdapterTriggered = true
+	}
+}
+
+func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValue string) {
+	var cacheObj []string
+	for index := range apiEvent.GatewayLabels {
+		gatewayLabel := apiEvent.GatewayLabels[index]
+
+		// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+		if gatewayLabel == productionSandboxLabel {
+			gatewayLabel = defaultGatewayLabel
+		}
+
+		// It is required to convert the gateway label to lowercase as the partition name is required for deploying k8s
+		// services
+		isExists, apiID := isAPIExists(apiEvent.UUID, gatewayLabel)
+		if isExists {
+			logger.LoggerAPIPartition.Debug("API : ", apiEvent.UUID, " has been already persisted to gateway : ", gatewayLabel)
+			label := getLaLabel(gatewayLabel, *apiID, partitionSize)
+
+			if label != "" {
+				cacheKey := getCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
+				if cacheValue == "" {
+					cacheValue = getCacheValue(&apiEvent, label)
+				}
+				logger.LoggerAPIPartition.Info("Label for : ", apiEvent.UUID, " and Gateway : ", gatewayLabel, " is ", label)
+
+				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
+				if cacheKey != "" {
+					cacheObj = append(cacheObj, cacheKey)
+					cacheObj = append(cacheObj, cacheValue)
+				}
+			} else {
+				logger.LoggerAPIPartition.Errorf("Error while fetching the API label UUID : %v ", apiEvent.UUID)
+			}
+		} else {
+			logger.LoggerAPIPartition.Warnf("Couldn't find API for UUID: %s, gatewayLabel: %s", apiEvent.UUID, gatewayLabel)
+		}
+	}
+
+	if len(cacheObj) >= 2 {
+		rc := cache.GetClient()
+		cachingError := cache.SetCacheKeys(cacheObj, rc)
+		if cachingError != nil {
+			return
+		}
+		cache.PublishUpdatedAPIKeys(cacheObj, rc)
 	}
 }
