@@ -40,13 +40,13 @@ func handleAzurebillingCycleResetEvents(conf *config.Config) {
 			logger.LoggerMsg.Errorf("Error while processing the billing cycle reset event %v. Hence dropping the event", error)
 			continue
 		}
-		logger.LoggerMsg.Infof("Billing cycle reset event for org ID: %s is received", resetEvent.orgUuid)
-		upsertQuotaExceededStatus(resetEvent.orgUuid, false)
+		logger.LoggerMsg.Infof("Billing cycle reset event for org ID: %s is received", resetEvent.OrgUUID)
+		upsertQuotaExceededStatus(resetEvent.OrgUUID, false)
 
 		// API IDs for org
-		apiIds, err := getApiIdsForOrg(resetEvent.orgUuid)
+		apiIds, err := getAPIIdsForOrg(resetEvent.OrgUUID)
 		if err != nil {
-			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", resetEvent.orgUuid, error)
+			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", resetEvent.OrgUUID, error)
 			continue
 		}
 

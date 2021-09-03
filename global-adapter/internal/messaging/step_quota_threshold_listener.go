@@ -40,17 +40,17 @@ func handleAzureStepQuotaExceededEvents(conf *config.Config) {
 			continue
 		}
 
-		if thresholdEvent.step_usage < 100 {
+		if thresholdEvent.StepUsage < 100 {
 			continue
 		}
 
-		logger.LoggerMsg.Infof("Step quota exceeded event is received for org ID: %s", thresholdEvent.orgId)
-		upsertQuotaExceededStatus(thresholdEvent.orgId, true)
+		logger.LoggerMsg.Infof("Step quota exceeded event is received for org ID: %s", thresholdEvent.OrgID)
+		upsertQuotaExceededStatus(thresholdEvent.OrgID, true)
 
 		// API IDs for org
-		apiIds, err := getApiIdsForOrg(thresholdEvent.orgId)
+		apiIds, err := getAPIIdsForOrg(thresholdEvent.OrgID)
 		if err != nil {
-			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", thresholdEvent.orgId, error)
+			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", thresholdEvent.OrgID, error)
 			continue
 		}
 

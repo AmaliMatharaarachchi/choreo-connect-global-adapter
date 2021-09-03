@@ -17,18 +17,18 @@
 
 package messaging
 
-// Struct for threshold reach events notifications
+// ThresholdReachedEvent Struct for threshold reach events notifications
 type ThresholdReachedEvent struct {
-	orgId      string `json:"orgId"`
-	orgHandle  string `json:"orgHandle"`
-	tierName   string `json:"tierName"`
-	threshold  int    `json:"threshold"`
-	step_usage int    `json:"step_usage"`
+	OrgID     string `json:"orgId"`
+	OrgHandle string `json:"orgHandle"`
+	TierName  string `json:"tierName"`
+	Threshold int    `json:"threshold"`
+	StepUsage int    `json:"step_usage"`
 }
 
-// Struct for billing cycle reset event notifications
+// BillingCycleResetEvent Struct for billing cycle reset event notifications
 type BillingCycleResetEvent struct {
-	orgUuid     string `json:"orgUuid"`
-	orgHandle   string `json:"orgHandle"`
-	monthOfYear int    `json:"monthOfYear"`
+	OrgUUID     string `json:"orgUuid"`
+	OrgHandle   string `json:"orgHandle"`
+	MonthOfYear int    `json:"monthOfYear"`
 }

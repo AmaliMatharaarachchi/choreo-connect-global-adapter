@@ -23,56 +23,55 @@ import (
 )
 
 // Multiple listeners needs to check whether an organisation is blocked or not when taking actions for the events
-func isQuotaExceededForOrg(orgId string) bool {
+func isQuotaExceededForOrg(orgID string) bool {
 	var isExceeded bool
-	row, err := database.DB.Query(database.QueryIsQuotaExceeded, orgId)
+	row, err := database.DB.Query(database.QueryIsQuotaExceeded, orgID)
 	if err == nil {
 		if !row.Next() {
-			logger.LoggerMsg.Debug("Record does not exist for orgId : %s", orgId)
+			logger.LoggerMsg.Debugf("Record does not exist for orgId : %s", orgID)
 		} else {
 			row.Scan(&isExceeded)
-			logger.LoggerMsg.Debug("Step quota limit exceeded : %v for orgId: %s", isExceeded, orgId)
+			logger.LoggerMsg.Debugf("Step quota limit exceeded : %v for orgId: %s", isExceeded, orgID)
 			return isExceeded
 		}
 	} else {
-		logger.LoggerMsg.Error("Error when checking whether organisation's quota exceeded or not for orgId : %s", orgId, err)
+		logger.LoggerMsg.Errorf("Error when checking whether organisation's quota exceeded or not for orgId : %s. Error: %v", orgID, err)
 	}
 	return isExceeded
 }
 
-func getApiIdsForOrg(orgId string) ([]string, error) {
+func getAPIIdsForOrg(orgID string) ([]string, error) {
 	var apiIds []string
-	row, err := database.DB.Query(database.QueryGetAPIsbyOrg, orgId)
+	row, err := database.DB.Query(database.QueryGetAPIsbyOrg, orgID)
 	if err == nil {
 		for row.Next() {
-			var apiId string
-			row.Scan(&apiId)
-			apiIds = append(apiIds, apiId)
+			var apiID string
+			row.Scan(&apiID)
+			apiIds = append(apiIds, apiID)
 		}
 
-		logger.LoggerMsg.Debug("Found %v APIs for org: %v", len(apiIds), orgId)
-		logger.LoggerMsg.Debug("APIs for org: %v are: %v", orgId, apiIds)
+		logger.LoggerMsg.Debugf("Found %v APIs for org: %v", len(apiIds), orgID)
+		logger.LoggerMsg.Debugf("APIs for org: %v are: %v", orgID, apiIds)
 	} else {
-		logger.LoggerMsg.Error("Error when fetching APIs for orgId : %s", orgId, err)
+		logger.LoggerMsg.Errorf("Error when fetching APIs for orgId : %s. Error: %v", orgID, err)
 		return nil, err
 	}
 	return apiIds, nil
 }
 
 // Multiple listeners needs to insert/update organisation's quota exceeded status
-func upsertQuotaExceededStatus(orgId string, status bool) error {
+func upsertQuotaExceededStatus(orgID string, status bool) error {
 	stmt, err := database.DB.Prepare(database.QueryUpsertQuotaStatus)
 	if err != nil {
-		logger.LoggerMsg.Error("Error while preparing quota exceeded query for org: %s", orgId, err)
+		logger.LoggerMsg.Errorf("Error while preparing quota exceeded query for org: %s. Error: %v", orgID, err)
 		return err
 	}
 
-	_, error := stmt.Exec(orgId, status)
+	_, error := stmt.Exec(orgID, status)
 	if error != nil {
-		logger.LoggerMsg.Error("Error while upserting quota exceeded status into DB for org: %s", orgId, err)
+		logger.LoggerMsg.Errorf("Error while upserting quota exceeded status into DB for org: %s. Error: %v", orgID, err)
 		return error
-	} else {
-		logger.LoggerMsg.Info("Successfully upserted quota exceeded status into DB for org: %s, status: %v", orgId, status)
-		return nil
 	}
+	logger.LoggerMsg.Infof("Successfully upserted quota exceeded status into DB for org: %s, status: %v", orgID, status)
+	return nil
 }
