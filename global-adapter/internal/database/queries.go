@@ -30,5 +30,6 @@ const (
 										FROM ga_local_adapter_partition ga_pt
 										where ga_pt.label_hierarchy = @p1
 									) temp where temp.rowId <> temp.api_id`
-	QueryGetPartitionSize string = "SELECT parition_size FROM la_partition_size"
+	QueryGetPartitionSize          string = "SELECT parition_size FROM la_partition_size"
+	QueryDeleteAPIsForOrganization string = "DELETE FROM ga_local_adapter_partition WHERE org_id = @p1"
 )

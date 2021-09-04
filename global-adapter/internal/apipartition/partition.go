@@ -322,6 +322,47 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 	return false
 }
 
+func DeleteApiRecords(apis []*synchronizer.APIEvent, organization string) bool {
+	if len(apis) > 0 {
+		logger.LoggerAPIPartition.Debug("APIs undeploy event received for organization: ", organization)
+		if database.WakeUpConnection() {
+			defer database.CloseDbConnection()
+
+			stmt, _ := database.DB.Prepare(database.QueryDeleteAPIsForOrganization)
+			_, err := stmt.Exec(organization)
+			if err != nil {
+				logger.LoggerAPIPartition.Error("Error while deleting the APIs from database for organization : ", organization, " ", err)
+				// break
+			} else {
+				logger.LoggerAPIPartition.Info("APIs deleted from the database for organization: ", organization)
+
+				for _, api := range apis {
+					for index := range api.GatewayLabels {
+						gatewayLabel := api.GatewayLabels[index]
+
+						// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+						if gatewayLabel == productionSandboxLabel {
+							gatewayLabel = defaultGatewayLabel
+						}
+
+						updateRedisCache(api, strings.ToLower(gatewayLabel), nil, types.APIDelete)
+						pushToXdsCache([]*types.LaAPIEvent{{
+							APIUUID:          api.UUID,
+							IsRemoveEvent:    true,
+							OrganizationUUID: api.OrganizationID,
+							LabelHierarchy:   strings.ToLower(gatewayLabel),
+						}})
+						return true
+
+					}
+				}
+			}
+
+		}
+	}
+	return false
+}
+
 // Cache update for undeploy APIs
 func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapterLabel *string, eventType types.EventType) {
 

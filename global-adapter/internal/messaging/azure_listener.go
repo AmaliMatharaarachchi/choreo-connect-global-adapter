@@ -20,17 +20,17 @@ package messaging
 
 import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"time"
 )
 
 const (
-	componentName                              = "ga" /*should not use longer names as subscription name has a limited
-	 					            length of 50 and case-insensitive. Sample unique
-	 			                            subscription name would be ga_41b19c44-f9e0-4b9a-90e3-7599dc1c0545_sub*/
-	subscriptionIdleTimeDuration               = time.Duration(72 * time.Hour)
+	componentName = "ga" /*should not use longer names as subscription name has a limited
+			            length of 50 and case-insensitive. Sample unique
+	                            subscription name would be ga_41b19c44-f9e0-4b9a-90e3-7599dc1c0545_sub*/
+	subscriptionIdleTimeDuration = time.Duration(72 * time.Hour)
 )
 
 // InitiateAndProcessEvents to pass event consumption
@@ -43,7 +43,7 @@ func InitiateAndProcessEvents(config *config.Config) {
 		config.ControlPlane.ASBConnectionParameters.EventListeningEndpoint)
 	subscriptionMetaDataList, err := msg.InitiateBrokerConnectionAndValidate(
 		config.ControlPlane.ASBConnectionParameters.EventListeningEndpoint, componentName, reconnectRetryCount,
-		reconnectInterval * time.Millisecond, subscriptionIdleTimeDuration)
+		reconnectInterval*time.Millisecond, subscriptionIdleTimeDuration)
 	health.SetControlPlaneBrokerStatus(err == nil)
 	if err == nil {
 		logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Initiated broker connection and meta " +
@@ -51,5 +51,6 @@ func InitiateAndProcessEvents(config *config.Config) {
 		msg.InitiateConsumers(subscriptionMetaDataList, reconnectInterval*time.Millisecond)
 		go handleAzureNotification()
 		go handleAzureTokenRevocation()
+		go handleAzureOrganizationPurge()
 	}
 }
