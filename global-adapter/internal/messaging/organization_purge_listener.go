@@ -45,7 +45,7 @@ func handleAzureOrganizationPurge() {
 func parseOrganizationPurgeJSONEvent(data []byte, notification *msg.EventOrganizationPurge) error {
 	unmarshalErr := json.Unmarshal(data, &notification)
 	if unmarshalErr != nil {
-		logger.LoggerMsg.Errorf("Error occurred while unmarshalling revoked token event data %v", unmarshalErr)
+		logger.LoggerMsg.Errorf("Error occurred while unmarshalling organization purge event data %v", unmarshalErr)
 	}
 	return unmarshalErr
 }
