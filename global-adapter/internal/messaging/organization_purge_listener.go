@@ -18,6 +18,7 @@
 package messaging
 
 import (
+	"encoding/json"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
