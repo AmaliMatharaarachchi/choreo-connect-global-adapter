@@ -24,81 +24,40 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
-	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
-
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
-	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
-func handleAzurebillingCycleResetEvents(conf *config.Config) {
+func handleAzureBillingCycleResetEvents(conf *config.Config) {
 	for d := range msg.AzureStepQuotaResetChannel {
 		logger.LoggerMsg.Info("Message received for AzureStepQuotaResetChannel = " + string(d))
 		var resetEvent BillingCycleResetEvent
-		error := parseBillingCycleResetJSONEvent(d, &resetEvent)
-		if error != nil {
-			logger.LoggerMsg.Errorf("Error while processing the billing cycle reset event %v. Hence dropping the event", error)
+		err := parseBillingCycleResetJSONEvent(d, &resetEvent)
+		if err != nil {
+			logger.LoggerMsg.Errorf("Error while processing the billing cycle reset event %v. Hence dropping the event", err)
 			continue
 		}
 		logger.LoggerMsg.Infof("Billing cycle reset event for org ID: %s is received", resetEvent.OrgUUID)
-		upsertQuotaExceededStatus(resetEvent.OrgUUID, false)
+
+		dbErr := upsertQuotaExceededStatus(resetEvent.OrgUUID, false)
+		if dbErr != nil {
+			logger.LoggerMsg.Errorf("Failed to upsert quota exceeded status: %v in DB for org: %s. Error: %v", false, resetEvent.OrgUUID, dbErr)
+			continue
+		}
 
 		// API IDs for org
 		apiIds, err := getAPIIdsForOrg(resetEvent.OrgUUID)
 		if err != nil {
-			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", resetEvent.OrgUUID, error)
+			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", resetEvent.OrgUUID, err)
 			continue
 		}
 
-		// Populate data from configuration file.
-		serviceURL := conf.ControlPlane.ServiceURL
-		username := conf.ControlPlane.Username
-		password := conf.ControlPlane.Password
-		environmentLabels := conf.ControlPlane.EnvironmentLabels
-		skipSSL := conf.ControlPlane.SkipSSLVerification
-		retryInterval := conf.ControlPlane.RetryInterval
-		truststoreLocation := conf.Truststore.Location
-
-		// Create a channel for the byte slice (response from the APIs from control plane).
-		c := make(chan sync.SyncAPIResponse)
-
-		// Fetch APIs from control plane and write to the channel c.
-		adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-			synchronizer.RuntimeMetaDataEndpoint, false, apiIds)
-
-		// Get deployment.json from the channel c.
-		deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
-			username, password, skipSSL, truststoreLocation, retryInterval)
-
+		logger.LoggerMsg.Debugf("Found API IDs: %v for org: %s", apiIds, resetEvent.OrgUUID)
+		apiEvents, err := getAPIEvents(apiIds, conf)
 		if err != nil {
-			logger.LoggerServer.Fatalf("Error occurred while reading API artifacts: %v ", err)
+			logger.LoggerMsg.Errorf("Failed to get API event for org: %s. Error: %v", resetEvent.OrgUUID, err)
 			continue
 		}
-
-		for _, deployment := range deploymentDescriptor.Data.Deployments {
-			// Create a new APIEvent.
-			apiEvent := synchronizer.APIEvent{}
-
-			// File name is in the format `UUID-revisionID`.
-			// UUID and revision id contain 24 characters each.
-			apiEvent.UUID = deployment.APIFile[:24]
-			// Add the revision ID to the api event.
-			apiEvent.RevisionID = deployment.APIFile[25:49]
-			// Organization ID is required for the API struct sent over XDS to the local adapter
-			apiEvent.OrganizationID = deployment.OrganizationID
-			// Read the environments.
-			environments := deployment.Environments
-			for _, env := range environments {
-				// Add the environments as GatewayLabels to the api event.
-				apiEvent.GatewayLabels = append(apiEvent.GatewayLabels, env.Name)
-			}
-
-			// Add context and version of incoming API events to the apiEvent.
-			apiEvent.Context = deployment.APIContext
-			apiEvent.Version = deployment.Version
-
-			apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, "")
-		}
+		apipartition.UpdateCacheForQuotaExceededStatus(apiEvents, "")
 	}
 }
 

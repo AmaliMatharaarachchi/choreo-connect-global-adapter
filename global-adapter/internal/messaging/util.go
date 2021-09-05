@@ -18,28 +18,15 @@
 package messaging
 
 import (
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
+	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
+	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
-// Multiple listeners needs to check whether an organisation is blocked or not when taking actions for the events
-func isQuotaExceededForOrg(orgID string) bool {
-	var isExceeded bool
-	row, err := database.DB.Query(database.QueryIsQuotaExceeded, orgID)
-	if err == nil {
-		if !row.Next() {
-			logger.LoggerMsg.Debugf("Record does not exist for orgId : %s", orgID)
-		} else {
-			row.Scan(&isExceeded)
-			logger.LoggerMsg.Debugf("Step quota limit exceeded : %v for orgId: %s", isExceeded, orgID)
-			return isExceeded
-		}
-	} else {
-		logger.LoggerMsg.Errorf("Error when checking whether organisation's quota exceeded or not for orgId : %s. Error: %v", orgID, err)
-	}
-	return isExceeded
-}
-
+// Get all the API IDs for an organisation
 func getAPIIdsForOrg(orgID string) ([]string, error) {
 	var apiIds []string
 	row, err := database.DB.Query(database.QueryGetAPIsbyOrg, orgID)
@@ -74,4 +61,57 @@ func upsertQuotaExceededStatus(orgID string, status bool) error {
 	}
 	logger.LoggerMsg.Infof("Successfully upserted quota exceeded status into DB for org: %s, status: %v", orgID, status)
 	return nil
+}
+
+func getAPIEvents(apiIDs []string, conf *config.Config) (synchronizer.APIEvent, error) {
+	// Populate data from configuration file.
+	serviceURL := conf.ControlPlane.ServiceURL
+	username := conf.ControlPlane.Username
+	password := conf.ControlPlane.Password
+	environmentLabels := conf.ControlPlane.EnvironmentLabels
+	skipSSL := conf.ControlPlane.SkipSSLVerification
+	retryInterval := conf.ControlPlane.RetryInterval
+	truststoreLocation := conf.Truststore.Location
+
+	// Create a channel for the byte slice (response from the APIs from control plane).
+	c := make(chan sync.SyncAPIResponse)
+
+	// Fetch APIs from control plane and write to the channel c.
+	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
+		synchronizer.RuntimeMetaDataEndpoint, false, apiIDs)
+
+	// Get deployment.json from the channel c.
+	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
+		username, password, skipSSL, truststoreLocation, retryInterval)
+
+	var apiEvent synchronizer.APIEvent
+	if err != nil {
+		logger.LoggerServer.Fatalf("Error occurred while reading API artifacts: %v ", err)
+		return apiEvent, err
+	}
+
+	for _, deployment := range deploymentDescriptor.Data.Deployments {
+		// Create a new APIEvent.
+		apiEvent := synchronizer.APIEvent{}
+
+		// File name is in the format `UUID-revisionID`.
+		// UUID and revision id contain 24 characters each.
+		apiEvent.UUID = deployment.APIFile[:24]
+		// Add the revision ID to the api event.
+		apiEvent.RevisionID = deployment.APIFile[25:49]
+		// Organization ID is required for the API struct sent over XDS to the local adapter
+		apiEvent.OrganizationID = deployment.OrganizationID
+		// Read the environments.
+		environments := deployment.Environments
+		for _, env := range environments {
+			// Add the environments as GatewayLabels to the api event.
+			apiEvent.GatewayLabels = append(apiEvent.GatewayLabels, env.Name)
+		}
+
+		// Add context and version of incoming API events to the apiEvent.
+		apiEvent.Context = deployment.APIContext
+		apiEvent.Version = deployment.Version
+	}
+
+	return apiEvent, nil
 }

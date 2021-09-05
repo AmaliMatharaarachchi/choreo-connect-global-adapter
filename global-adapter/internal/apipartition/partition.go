@@ -34,6 +34,9 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
 )
 
+// RedisBlockedValue Step quota exceeded/reset org's redis value
+const RedisBlockedValue = "blocked"
+
 var configs = config.ReadConfigs()
 var partitionSize = configs.Server.PartitionSize
 var deployAdapterTriggered bool
@@ -82,8 +85,12 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 			label := insertRecord(&apis[ind], strings.ToLower(gatewayLabel), types.APICreate)
 
 			if label != "" {
+				isExceeded := isQuotaExceededForOrg(apis[ind].OrganizationID)
 				cacheKey := getCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
-				cacheValue := getCacheValue(&apis[ind], label)
+				cacheValue := RedisBlockedValue
+				if !isExceeded {
+					cacheValue = getCacheValue(&apis[ind], label)
+				}
 
 				logger.LoggerAPIPartition.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
@@ -132,7 +139,6 @@ func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 	xds.ProcessSingleEvent(laAPIList[0])
 }
 
-// TODO When initial changes are tested, need to check whether org is blocked or not. If true, update redis with value 'blocked' for relevant key
 // insertRecord always return the adapter label for the relevant API
 // If the API is not in database, that will save to the database and return the label
 func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.EventType) string {
@@ -422,6 +428,7 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 			label := getLaLabel(gatewayLabel, *apiID, partitionSize)
 
 			if label != "" {
+				// No need to check if org is blocked
 				cacheKey := getCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
 				if cacheValue == "" {
 					cacheValue = getCacheValue(&apiEvent, label)
@@ -430,6 +437,7 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
 				if cacheKey != "" {
+					logger.LoggerAPIPartition.Debugf("Caching %v -> %v", cacheKey, cacheObj)
 					cacheObj = append(cacheObj, cacheKey)
 					cacheObj = append(cacheObj, cacheValue)
 				}
@@ -449,4 +457,21 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 		}
 		cache.PublishUpdatedAPIKeys(cacheObj, rc)
 	}
+}
+
+func isQuotaExceededForOrg(orgID string) bool {
+	var isExceeded bool
+	row, err := database.DB.Query(database.QueryIsQuotaExceeded, orgID)
+	if err == nil {
+		if !row.Next() {
+			logger.LoggerMsg.Debugf("Record does not exist for orgId : %s", orgID)
+		} else {
+			row.Scan(&isExceeded)
+			logger.LoggerMsg.Debugf("Step quota limit exceeded : %v for orgId: %s", isExceeded, orgID)
+			return isExceeded
+		}
+	} else {
+		logger.LoggerMsg.Errorf("Error when checking whether organisation's quota exceeded or not for orgId : %s. Error: %v", orgID, err)
+	}
+	return false
 }

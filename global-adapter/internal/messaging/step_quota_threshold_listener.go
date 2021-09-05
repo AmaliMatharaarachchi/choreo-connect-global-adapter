@@ -24,85 +24,54 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
-	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
-	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
-func handleAzureStepQuotaExceededEvents(conf *config.Config) {
+// StepThreshold  Step quota exceeded threshold value
+const StepThreshold = 100
+
+// RedisBlockedValue Step quota exceeded/reset org's redis value
+const RedisBlockedValue = "blocked"
+
+func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 	for d := range msg.AzureStepQuotaThresholdChannel {
 		logger.LoggerMsg.Info("Message received for AzureStepQuotaThresholdChannel = " + string(d))
 		var thresholdEvent ThresholdReachedEvent
-		error := parseStepQuotaThresholdJSONEvent(d, &thresholdEvent)
-		if error != nil {
-			logger.LoggerMsg.Errorf("Error while processing the step quota exceeded event %v. Hence dropping the event", error)
+		err := parseStepQuotaThresholdJSONEvent(d, &thresholdEvent)
+		if err != nil {
+			logger.LoggerMsg.Errorf("Error while processing the step quota exceeded event %v. Hence dropping the event", err)
 			continue
 		}
 
-		if thresholdEvent.StepUsage < 100 {
+		if thresholdEvent.StepUsage < StepThreshold {
+			logger.LoggerMsg.Debugf("Step quota threshold not exceeded. Hence ignoring event")
 			continue
 		}
 
-		logger.LoggerMsg.Infof("Step quota exceeded event is received for org ID: %s", thresholdEvent.OrgID)
-		upsertQuotaExceededStatus(thresholdEvent.OrgID, true)
+		logger.LoggerMsg.Debugf("Step quota exceeded event is received for org ID: %s", thresholdEvent.OrgID)
+
+		err = upsertQuotaExceededStatus(thresholdEvent.OrgID, true)
+		if err != nil {
+			logger.LoggerMsg.Errorf("Failed to upsert quota exceeded status: %v in DB for org: %s. Error: %v", true, thresholdEvent.OrgID, err)
+			continue
+		}
 
 		// API IDs for org
 		apiIds, err := getAPIIdsForOrg(thresholdEvent.OrgID)
 		if err != nil {
-			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", thresholdEvent.OrgID, error)
+			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", thresholdEvent.OrgID, err)
 			continue
 		}
 
-		// Populate data from configuration file.
-		serviceURL := conf.ControlPlane.ServiceURL
-		username := conf.ControlPlane.Username
-		password := conf.ControlPlane.Password
-		environmentLabels := conf.ControlPlane.EnvironmentLabels
-		skipSSL := conf.ControlPlane.SkipSSLVerification
-		retryInterval := conf.ControlPlane.RetryInterval
-		truststoreLocation := conf.Truststore.Location
-
-		// Create a channel for the byte slice (response from the APIs from control plane).
-		c := make(chan sync.SyncAPIResponse)
-
-		// Fetch APIs from control plane and write to the channel c.
-		adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-			synchronizer.RuntimeMetaDataEndpoint, false, apiIds)
-
-		// Get deployment.json from the channel c.
-		deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
-			username, password, skipSSL, truststoreLocation, retryInterval)
-
+		logger.LoggerMsg.Debugf("Found API IDs: %v for org: %s", apiIds, thresholdEvent.OrgID)
+		apiEvents, err := getAPIEvents(apiIds, conf)
 		if err != nil {
-			logger.LoggerServer.Fatalf("Error occurred while reading API artifacts: %v ", err)
+			logger.LoggerMsg.Errorf("Failed to get API event for org: %s. Error: %v", thresholdEvent.OrgID, err)
 			continue
 		}
 
-		for _, deployment := range deploymentDescriptor.Data.Deployments {
-			// Create a new APIEvent.
-			apiEvent := synchronizer.APIEvent{}
-
-			// File name is in the format `UUID-revisionID`.
-			// UUID and revision id contain 24 characters each.
-			apiEvent.UUID = deployment.APIFile[:24]
-			// Add the revision ID to the api event.
-			apiEvent.RevisionID = deployment.APIFile[25:49]
-			// Organization ID is required for the API struct sent over XDS to the local adapter
-			apiEvent.OrganizationID = deployment.OrganizationID
-			// Read the environments.
-			environments := deployment.Environments
-			for _, env := range environments {
-				// Add the environments as GatewayLabels to the api event.
-				apiEvent.GatewayLabels = append(apiEvent.GatewayLabels, env.Name)
-			}
-
-			// Add context and version of incoming API events to the apiEvent.
-			apiEvent.Context = deployment.APIContext
-			apiEvent.Version = deployment.Version
-
-			apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, "blocked")
-		}
+		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s", apiEvents, thresholdEvent.OrgID)
+		apipartition.UpdateCacheForQuotaExceededStatus(apiEvents, RedisBlockedValue)
 	}
 }
 
@@ -111,5 +80,6 @@ func parseStepQuotaThresholdJSONEvent(data []byte, stepQuotaThresholdEvent *Thre
 	if unmarshalErr != nil {
 		logger.LoggerMsg.Errorf("Error occurred while unmarshalling step quota threshold event data %v", unmarshalErr)
 	}
+	logger.LoggerMsg.Debugf("Successfully parsed step quota threshold Json event.")
 	return unmarshalErr
 }

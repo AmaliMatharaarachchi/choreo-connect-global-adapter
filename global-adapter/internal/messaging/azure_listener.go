@@ -51,7 +51,7 @@ func InitiateAndProcessEvents(config *config.Config) {
 		msg.InitiateConsumers(subscriptionMetaDataList, reconnectInterval*time.Millisecond)
 		go handleAzureNotification()
 		go handleAzureTokenRevocation()
-		go handleAzurebillingCycleResetEvents(config)
-		go handleAzureStepQuotaExceededEvents(config)
+		go handleAzureBillingCycleResetEvents(config)
+		go handleAzureStepQuotaThresholdEvents(config)
 	}
 }
