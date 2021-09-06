@@ -21,6 +21,7 @@ package messaging
 import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
+	"encoding/json"
 )
 
 func handleTokenRevocation() {
@@ -30,4 +31,31 @@ func handleTokenRevocation() {
 		delivery.Ack(false)
 	}
 	logger.LoggerMsg.Infof("handle: deliveries channel closed")
+}
+
+func handleAzureTokenRevocation() {
+	for d := range msg.AzureRevokedTokenChannel {
+		logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] message received for " +
+			"RevokedTokenChannel = " + string(d))
+		var notification msg.EventTokenRevocationNotification
+		error := parseRevokedTokenJSONEvent(d, &notification)
+		if error != nil {
+			logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error while processing " +
+				"the token revocation event %v. Hence dropping the event", error)
+			continue
+		}
+		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received",
+			notification.Event.PayloadData.Type)
+		logger.LoggerMsg.Printf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] RevokedToken: %s, " +
+			"Token Type: %s", notification.Event.PayloadData.RevokedToken,
+			notification.Event.PayloadData.Type)
+	}
+}
+
+func parseRevokedTokenJSONEvent(data []byte, notification *msg.EventTokenRevocationNotification) error {
+	unmarshalErr := json.Unmarshal(data, &notification)
+	if unmarshalErr != nil {
+		logger.LoggerMsg.Errorf("Error occurred while unmarshalling revoked token event data %v", unmarshalErr)
+	}
+	return unmarshalErr
 }
