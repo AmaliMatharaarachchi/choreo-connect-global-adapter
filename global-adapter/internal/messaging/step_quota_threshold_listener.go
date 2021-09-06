@@ -71,7 +71,9 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 		}
 
 		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s", apiEvents, thresholdEvent.OrgID)
-		apipartition.UpdateCacheForQuotaExceededStatus(apiEvents, RedisBlockedValue)
+		for _, apiEvent := range apiEvents {
+			apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, RedisBlockedValue)
+		}
 	}
 }
 
@@ -80,6 +82,6 @@ func parseStepQuotaThresholdJSONEvent(data []byte, stepQuotaThresholdEvent *Thre
 	if unmarshalErr != nil {
 		logger.LoggerMsg.Errorf("Error occurred while unmarshalling step quota threshold event data %v", unmarshalErr)
 	}
-	logger.LoggerMsg.Debugf("Successfully parsed step quota threshold Json event.")
+	logger.LoggerMsg.Debugf("Successfully parsed step quota threshold Json event. Data: %v", unmarshalErr)
 	return unmarshalErr
 }

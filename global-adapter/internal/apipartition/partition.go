@@ -91,6 +91,8 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 				if !isExceeded {
 					cacheValue = getCacheValue(&apis[ind], label)
 				}
+				logger.LoggerAPIPartition.Debugf("Found cache key : %v and cache value: %v for organisation: %v",
+					cacheKey, cacheValue, apis[ind].OrganizationID)
 
 				logger.LoggerAPIPartition.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
@@ -428,12 +430,13 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 			label := getLaLabel(gatewayLabel, *apiID, partitionSize)
 
 			if label != "" {
-				// No need to check if org is blocked
+				// No need to check if org is blocked. If yes,func will be called with "blocked" for cacheValue
 				cacheKey := getCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
 				if cacheValue == "" {
 					cacheValue = getCacheValue(&apiEvent, label)
 				}
-				logger.LoggerAPIPartition.Info("Label for : ", apiEvent.UUID, " and Gateway : ", gatewayLabel, " is ", label)
+				logger.LoggerAPIPartition.Infof("Found cache key:%v, cache value:%v, label:%v, for apiEvent:%v",
+					cacheKey, cacheValue, label, apiEvent.UUID)
 
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
 				if cacheKey != "" {

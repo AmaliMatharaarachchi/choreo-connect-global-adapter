@@ -38,7 +38,6 @@ func getAPIIdsForOrg(orgID string) ([]string, error) {
 		}
 
 		logger.LoggerMsg.Debugf("Found %v APIs for org: %v", len(apiIds), orgID)
-		logger.LoggerMsg.Debugf("APIs for org: %v are: %v", orgID, apiIds)
 	} else {
 		logger.LoggerMsg.Errorf("Error when fetching APIs for orgId : %s. Error: %v", orgID, err)
 		return nil, err
@@ -63,7 +62,7 @@ func upsertQuotaExceededStatus(orgID string, status bool) error {
 	return nil
 }
 
-func getAPIEvents(apiIDs []string, conf *config.Config) (synchronizer.APIEvent, error) {
+func getAPIEvents(apiIDs []string, conf *config.Config) ([]synchronizer.APIEvent, error) {
 	// Populate data from configuration file.
 	serviceURL := conf.ControlPlane.ServiceURL
 	username := conf.ControlPlane.Username
@@ -84,10 +83,10 @@ func getAPIEvents(apiIDs []string, conf *config.Config) (synchronizer.APIEvent, 
 	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
 		username, password, skipSSL, truststoreLocation, retryInterval)
 
-	var apiEvent synchronizer.APIEvent
+	var apiEvents []synchronizer.APIEvent
 	if err != nil {
 		logger.LoggerServer.Fatalf("Error occurred while reading API artifacts: %v ", err)
-		return apiEvent, err
+		return apiEvents, err
 	}
 
 	for _, deployment := range deploymentDescriptor.Data.Deployments {
@@ -111,7 +110,9 @@ func getAPIEvents(apiIDs []string, conf *config.Config) (synchronizer.APIEvent, 
 		// Add context and version of incoming API events to the apiEvent.
 		apiEvent.Context = deployment.APIContext
 		apiEvent.Version = deployment.Version
-	}
 
-	return apiEvent, nil
+		apiEvents = append(apiEvents, apiEvent)
+		logger.LoggerMsg.Debugf("Successfully retrieved API Event: %v", apiEvent)
+	}
+	return apiEvents, nil
 }

@@ -36,7 +36,7 @@ func handleAzureBillingCycleResetEvents(conf *config.Config) {
 			logger.LoggerMsg.Errorf("Error while processing the billing cycle reset event %v. Hence dropping the event", err)
 			continue
 		}
-		logger.LoggerMsg.Infof("Billing cycle reset event for org ID: %s is received", resetEvent.OrgUUID)
+		logger.LoggerMsg.Debugf("Billing cycle reset event for org ID: %s is received", resetEvent.OrgUUID)
 
 		dbErr := upsertQuotaExceededStatus(resetEvent.OrgUUID, false)
 		if dbErr != nil {
@@ -57,7 +57,11 @@ func handleAzureBillingCycleResetEvents(conf *config.Config) {
 			logger.LoggerMsg.Errorf("Failed to get API event for org: %s. Error: %v", resetEvent.OrgUUID, err)
 			continue
 		}
-		apipartition.UpdateCacheForQuotaExceededStatus(apiEvents, "")
+
+		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s", apiEvents, resetEvent.OrgUUID)
+		for _, apiEvent := range apiEvents {
+			apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, "")
+		}
 	}
 }
 
@@ -66,5 +70,6 @@ func parseBillingCycleResetJSONEvent(data []byte, billingCycleResetEvent *Billin
 	if unmarshalErr != nil {
 		logger.LoggerMsg.Errorf("Error occurred while unmarshalling billing cycle reset event data %v", unmarshalErr)
 	}
+	logger.LoggerMsg.Debugf("Successfully parsed billing cycle reset Json event. Data: %v", unmarshalErr)
 	return unmarshalErr
 }
