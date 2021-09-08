@@ -20,12 +20,12 @@ package messaging
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
-	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
-	sync "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 	"encoding/json"
+	"github.com/stretchr/testify/assert"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	sync "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
+	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 )
 
 func TestAPIRemoveEventsHandling(t *testing.T) {
@@ -55,7 +55,7 @@ func TestNotificationChannelSubscriptionAndEventFormat(t *testing.T) {
 	go func() {
 		msg.AzureNotificationChannel <- []byte(sampleTestEvent)
 	}()
-	outputData := <- msg.AzureNotificationChannel
+	outputData := <-msg.AzureNotificationChannel
 	logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received from channel", outputData)
 	error := parseNotificationJSONEvent(outputData, &notification)
 	if error != nil {
@@ -80,7 +80,7 @@ func TestTokenRevocationChannelSubscriptionAndEventFormat(t *testing.T) {
 	go func() {
 		msg.AzureRevokedTokenChannel <- []byte(sampleTestEvent)
 	}()
-	outputData := <- msg.AzureRevokedTokenChannel
+	outputData := <-msg.AzureRevokedTokenChannel
 	logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received from channel", outputData)
 	error := parseRevokedTokenJSONEvent(outputData, &notification)
 	if error != nil {
@@ -91,6 +91,51 @@ func TestTokenRevocationChannelSubscriptionAndEventFormat(t *testing.T) {
 			notification.Event.PayloadData.Type)
 		logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Revoked token value is ",
 			notification.Event.PayloadData.RevokedToken)
+	}
+	assert.Equal(t, true, parsedSuccessfully)
+}
+
+func TestBillingCycleResetChannelSubscriptionAndEventFormat(t *testing.T) {
+	logger.LoggerMsg.Infof("Starting test " + "TestBillingCycleResetChannelSubscriptionAndEventFormat")
+
+	sampleTestEvent := "{\"orgUuid\":\"13550d86-1c68-4b3d-b756-eb55efda3eb5\",\"orgHandle\":\"flamboyantfrog\",\"monthOfYear\":10}"
+	var parsedSuccessfully bool
+	var resetEvent BillingCycleResetEvent
+	go func() {
+		msg.AzureStepQuotaResetChannel <- []byte(sampleTestEvent)
+	}()
+	outputData := <-msg.AzureStepQuotaResetChannel
+	logger.LoggerMsg.Infof("Event %s is received from channel", outputData)
+	err := parseBillingCycleResetJSONEvent(outputData, &resetEvent)
+	if err != nil {
+		logger.LoggerMsg.Errorf("Error occurred while parsing BillingCycleResetEvent. Error: %v", err)
+	} else {
+		parsedSuccessfully = true
+		logger.LoggerMsg.Infof("Event is received for the org ID %s for the billing cycle reset month: %v",
+			resetEvent.OrgUUID, resetEvent.MonthOfYear)
+	}
+	assert.Equal(t, true, parsedSuccessfully)
+}
+
+func TestStepQuotaThresholdChannelSubscriptionAndEventFormat(t *testing.T) {
+	logger.LoggerMsg.Infof("Starting test TestStepQuotaThresholdChannelSubscriptionAndEventFormat")
+
+	sampleTestEvent := "{\"orgId\":\"13550d86-1c68-4b3d-b756-eb55efda3eb5\",\"orgHandle\":\"flamboyantfrog\"," +
+		"\"tierName\":\"free-tier\",\"threshold\":100,\"step_usage\":100721}"
+	var parsedSuccessfully bool
+	var thresholdEvent ThresholdReachedEvent
+	go func() {
+		msg.AzureStepQuotaThresholdChannel <- []byte(sampleTestEvent)
+	}()
+	outputData := <-msg.AzureStepQuotaThresholdChannel
+	logger.LoggerMsg.Infof("Event %s is received from channel", outputData)
+	err := parseStepQuotaThresholdJSONEvent(outputData, &thresholdEvent)
+	if err != nil {
+		logger.LoggerMsg.Errorf("Error occurred while parsing ThresholdReachedEvent. Error: %v", err)
+	} else {
+		parsedSuccessfully = true
+		logger.LoggerMsg.Infof("Event is received for the org ID: %s. Step quota usage is: %v", thresholdEvent.OrgID,
+			thresholdEvent.StepUsage)
 	}
 	assert.Equal(t, true, parsedSuccessfully)
 }

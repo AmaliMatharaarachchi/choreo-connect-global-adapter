@@ -23,6 +23,8 @@ package apipartition
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/cache"
@@ -33,6 +35,11 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
 )
+
+// RedisBlockedValue Step quota exceeded/reset org's redis value
+const RedisBlockedValue = "blocked"
+
+const featureStepQuotaLimiting = "FEATURE_STEP_QUOTA_LIMITING"
 
 var configs = config.ReadConfigs()
 var partitionSize = configs.Server.PartitionSize
@@ -82,8 +89,14 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 			label := insertRecord(&apis[ind], strings.ToLower(gatewayLabel), types.APICreate)
 
 			if label != "" {
+				isExceeded := isQuotaExceededForOrg(apis[ind].OrganizationID)
 				cacheKey := getCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
-				cacheValue := getCacheValue(&apis[ind], label)
+				cacheValue := RedisBlockedValue
+				if !isExceeded {
+					cacheValue = getCacheValue(&apis[ind], label)
+				}
+				logger.LoggerAPIPartition.Debugf("Found cache key : %v and cache value: %v for organisation: %v",
+					cacheKey, cacheValue, apis[ind].OrganizationID)
 
 				logger.LoggerAPIPartition.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
@@ -400,4 +413,95 @@ func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int, partit
 			fmt.Sprintf("%.2f", partitionThreshold*100), (incrementalID/partitionSize)+1)
 		deployAdapterTriggered = true
 	}
+}
+
+// UpdateCacheForQuotaExceededStatus Updates redis cache on billing cycle reset or quota exceeded status
+func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValue string) {
+	var cacheObj []string
+	for index := range apiEvent.GatewayLabels {
+		gatewayLabel := apiEvent.GatewayLabels[index]
+
+		// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+		if gatewayLabel == productionSandboxLabel {
+			gatewayLabel = defaultGatewayLabel
+		}
+
+		// It is required to convert the gateway label to lowercase as the partition name is required for deploying k8s
+		// services
+		isExists, apiID := isAPIExists(apiEvent.UUID, gatewayLabel)
+		if isExists {
+			logger.LoggerAPIPartition.Debug("API : ", apiEvent.UUID, " has been already persisted to gateway : ", gatewayLabel)
+			label := getLaLabel(gatewayLabel, *apiID, partitionSize)
+
+			if label != "" {
+				// No need to check if org is blocked. If yes,func will be called with "blocked" for cacheValue
+				cacheKey := getCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
+				if cacheValue == "" {
+					cacheValue = getCacheValue(&apiEvent, label)
+				}
+				logger.LoggerAPIPartition.Infof("Found cache key:%v, cache value:%v, label:%v, for apiEvent:%v",
+					cacheKey, cacheValue, label, apiEvent.UUID)
+
+				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
+				if cacheKey != "" {
+					logger.LoggerAPIPartition.Debugf("Caching %v -> %v", cacheKey, cacheObj)
+					cacheObj = append(cacheObj, cacheKey)
+					cacheObj = append(cacheObj, cacheValue)
+				}
+			} else {
+				logger.LoggerAPIPartition.Errorf("Error while fetching the API label UUID : %v ", apiEvent.UUID)
+			}
+		} else {
+			logger.LoggerAPIPartition.Warnf("Couldn't find API for UUID: %s, gatewayLabel: %s", apiEvent.UUID, gatewayLabel)
+		}
+	}
+
+	if len(cacheObj) >= 2 {
+		rc := cache.GetClient()
+		cachingError := cache.SetCacheKeys(cacheObj, rc)
+		if cachingError != nil {
+			return
+		}
+		cache.PublishUpdatedAPIKeys(cacheObj, rc)
+	}
+}
+
+func isQuotaExceededForOrg(orgID string) bool {
+	var isExceeded bool
+	if IsStepQuotaLimitingEnabled() {
+		logger.LoggerMsg.Debugf("'%s' enabled. Hence checking quota exceeded for org: %s",
+			featureStepQuotaLimiting, orgID)
+		row, err := database.DB.Query(database.QueryIsQuotaExceeded, orgID)
+		if err == nil {
+			if !row.Next() {
+				logger.LoggerMsg.Debugf("Record does not exist for orgId : %s", orgID)
+			} else {
+				row.Scan(&isExceeded)
+				logger.LoggerMsg.Debugf("Step quota limit exceeded : %v for orgId: %s", isExceeded, orgID)
+				return isExceeded
+			}
+		} else {
+			logger.LoggerMsg.Errorf("Error when checking whether organisation's quota exceeded or not for orgId : %s. Error: %v", orgID, err)
+		}
+	} else {
+		logger.LoggerMsg.Debugf("'%s' disabled. Hence not checking quota exceeded for org: %s",
+			featureStepQuotaLimiting, orgID)
+	}
+	return false
+}
+
+// IsStepQuotaLimitingEnabled Check if quota limiting feature is enabled
+func IsStepQuotaLimitingEnabled() bool {
+	featureStepQuotaLimitingEnvValue := os.Getenv(featureStepQuotaLimiting)
+	if featureStepQuotaLimitingEnvValue != "" {
+		enabled, err := strconv.ParseBool(featureStepQuotaLimitingEnvValue)
+		if err == nil {
+			logger.LoggerMsg.Infof("'%s' is enabled.", featureStepQuotaLimiting)
+			return enabled
+		}
+		logger.LoggerMsg.Errorf("Error occurred while parsing %s environment value. Error: %v",
+			featureStepQuotaLimitingEnvValue, err)
+	}
+	// Disabled by default
+	return false
 }
