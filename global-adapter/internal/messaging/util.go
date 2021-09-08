@@ -29,7 +29,7 @@ import (
 // Get all the API IDs for an organisation
 func getAPIIdsForOrg(orgID string) ([]string, error) {
 	var apiIds []string
-	row, err := database.DB.Query(database.QueryGetAPIsbyOrg, orgID)
+	row, err := database.DB.Query(database.QueryGetAPIsByOrg, orgID)
 	if err == nil {
 		for row.Next() {
 			var apiID string

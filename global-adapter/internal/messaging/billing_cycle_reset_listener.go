@@ -30,6 +30,12 @@ import (
 func handleAzureBillingCycleResetEvents(conf *config.Config) {
 	for d := range msg.AzureStepQuotaResetChannel {
 		logger.LoggerMsg.Info("Message received for AzureStepQuotaResetChannel = " + string(d))
+
+		if !apipartition.IsStepQuotaLimitingEnabled() {
+			logger.LoggerMsg.Infof("Step quota limiting feature is disabled. Hence not processing event")
+			continue
+		}
+
 		var resetEvent BillingCycleResetEvent
 		err := parseBillingCycleResetJSONEvent(d, &resetEvent)
 		if err != nil {

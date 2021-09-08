@@ -23,6 +23,8 @@ package apipartition
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/cache"
@@ -36,6 +38,8 @@ import (
 
 // RedisBlockedValue Step quota exceeded/reset org's redis value
 const RedisBlockedValue = "blocked"
+
+const featureStepQuotaLimiting = "FEATURE_STEP_QUOTA_LIMITING"
 
 var configs = config.ReadConfigs()
 var partitionSize = configs.Server.PartitionSize
@@ -464,17 +468,40 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 
 func isQuotaExceededForOrg(orgID string) bool {
 	var isExceeded bool
-	row, err := database.DB.Query(database.QueryIsQuotaExceeded, orgID)
-	if err == nil {
-		if !row.Next() {
-			logger.LoggerMsg.Debugf("Record does not exist for orgId : %s", orgID)
+	if IsStepQuotaLimitingEnabled() {
+		logger.LoggerMsg.Debugf("'%s' enabled. Hence checking quota exceeded for org: %s",
+			featureStepQuotaLimiting, orgID)
+		row, err := database.DB.Query(database.QueryIsQuotaExceeded, orgID)
+		if err == nil {
+			if !row.Next() {
+				logger.LoggerMsg.Debugf("Record does not exist for orgId : %s", orgID)
+			} else {
+				row.Scan(&isExceeded)
+				logger.LoggerMsg.Debugf("Step quota limit exceeded : %v for orgId: %s", isExceeded, orgID)
+				return isExceeded
+			}
 		} else {
-			row.Scan(&isExceeded)
-			logger.LoggerMsg.Debugf("Step quota limit exceeded : %v for orgId: %s", isExceeded, orgID)
-			return isExceeded
+			logger.LoggerMsg.Errorf("Error when checking whether organisation's quota exceeded or not for orgId : %s. Error: %v", orgID, err)
 		}
 	} else {
-		logger.LoggerMsg.Errorf("Error when checking whether organisation's quota exceeded or not for orgId : %s. Error: %v", orgID, err)
+		logger.LoggerMsg.Debugf("'%s' disabled. Hence not checking quota exceeded for org: %s",
+			featureStepQuotaLimiting, orgID)
 	}
+	return false
+}
+
+// IsStepQuotaLimitingEnabled Check if quota limiting feature is enabled
+func IsStepQuotaLimitingEnabled() bool {
+	featureStepQuotaLimitingEnvValue := os.Getenv(featureStepQuotaLimiting)
+	if featureStepQuotaLimitingEnvValue != "" {
+		enabled, err := strconv.ParseBool(featureStepQuotaLimitingEnvValue)
+		if err == nil {
+			logger.LoggerMsg.Infof("'%s' is enabled.", featureStepQuotaLimiting)
+			return enabled
+		}
+		logger.LoggerMsg.Errorf("Error occurred while parsing %s environment value. Error: %v",
+			featureStepQuotaLimitingEnvValue, err)
+	}
+	// Disabled by default
 	return false
 }

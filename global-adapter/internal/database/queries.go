@@ -31,7 +31,7 @@ const (
 										where ga_pt.label_hierarchy = @p1
 									) temp where temp.rowId <> temp.api_id`
 	QueryGetPartitionSize  string = "SELECT parition_size FROM la_partition_size"
-	QueryGetAPIsbyOrg      string = "SELECT api_id, label_hierarchy FROM ga_local_adapter_partition WHERE org_id=@p1"
+	QueryGetAPIsByOrg      string = "SELECT api_id FROM ga_local_adapter_partition WHERE org_id=@p1"
 	QueryIsQuotaExceeded   string = "SELECT is_exceeded FROM ga_org_quota_status WHERE org_id=@p1"
 	QueryUpsertQuotaStatus string = `IF NOT EXISTS (SELECT org_id FROM ga_org_quota_status WHERE org_id= @p1)
     									INSERT INTO ga_org_quota_status(is_exceeded) VALUES(@p2)
