@@ -339,14 +339,14 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 }
 
 // DeleteAPIRecords deletes api records for a certain organization
-func DeleteAPIRecords(org []msg.Organization) bool {
+func DeleteAPIRecords(organizations []msg.Organization) bool {
 	rc := cache.GetClient()
 
 	logger.LoggerAPIPartition.Debug("APIs undeploy event received for organizations")
 	if database.WakeUpConnection() {
 		defer database.CloseDbConnection()
 
-		inClause := prepareInClauseForOrganizationDeletion(org)
+		inClause := prepareInClauseForOrganizationDeletion(organizations)
 		sqlQuery := strings.Replace(database.QueryDeleteAPIsForOrganization, "_ORGANIZATIONS_PLACEHOLDER_", inClause, 1)
 		_, err := database.DB.Exec(sqlQuery)
 
@@ -355,7 +355,7 @@ func DeleteAPIRecords(org []msg.Organization) bool {
 		} else {
 			logger.LoggerAPIPartition.Info("APIs deleted from the database for organizations")
 
-			for _, organization := range org {
+			for _, organization := range organizations {
 				err := cache.RemoveCacheKeysBySubstring(organization.Handle, rc, deleteEvent)
 				if err != nil {
 					logger.LoggerAPIPartition.Error("Error while deleting the APIs from cache for organization : ", organization.Name, " ", err)
