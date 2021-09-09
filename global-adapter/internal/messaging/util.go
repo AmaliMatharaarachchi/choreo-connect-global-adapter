@@ -28,6 +28,9 @@ import (
 
 // Get all the API IDs for an organisation
 func getAPIIdsForOrg(orgID string) ([]string, error) {
+	database.WakeUpConnection()
+	defer database.CloseDbConnection()
+
 	var apiIds []string
 	row, err := database.DB.Query(database.QueryGetAPIsByOrg, orgID)
 	if err == nil {
@@ -47,6 +50,9 @@ func getAPIIdsForOrg(orgID string) ([]string, error) {
 
 // Multiple listeners needs to insert/update organisation's quota exceeded status
 func upsertQuotaExceededStatus(orgID string, status bool) error {
+	database.WakeUpConnection()
+	defer database.CloseDbConnection()
+
 	stmt, err := database.DB.Prepare(database.QueryUpsertQuotaStatus)
 	if err != nil {
 		logger.LoggerMsg.Errorf("Error while preparing quota exceeded query for org: %s. Error: %v", orgID, err)
