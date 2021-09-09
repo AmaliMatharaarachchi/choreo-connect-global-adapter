@@ -39,5 +39,5 @@ const (
     									UPDATE ga_org_quota_status
     									SET is_exceeded=@p2
     									WHERE org_id=@p1`
-	QueryDeleteAPIsForOrganization string = "DELETE FROM ga_local_adapter_partition WHERE org_id = @p1"
+	QueryDeleteAPIsForOrganization string = "DELETE FROM ga_local_adapter_partition WHERE org_id IN _ORGANIZATIONS_PLACEHOLDER_"
 )

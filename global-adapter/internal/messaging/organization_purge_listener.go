@@ -38,7 +38,7 @@ func handleAzureOrganizationPurge() {
 		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received",
 			notification.Event.PayloadData.EventType)
 
-		apipartition.DeleteAPIRecords(notification.Event.PayloadData.Organization, notification.Event.PayloadData.OrganizationHandle)
+		apipartition.DeleteAPIRecords(notification.Event.PayloadData.OrganizationList)
 	}
 }
 

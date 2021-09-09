@@ -23,6 +23,7 @@ package apipartition
 
 import (
 	"fmt"
+	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 	"os"
 	"strconv"
 	"strings"
@@ -338,24 +339,27 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 }
 
 // DeleteAPIRecords deletes api records for a certain organization
-func DeleteAPIRecords(organization string, orgHandle string) bool {
+func DeleteAPIRecords(org []msg.Organization) bool {
 	rc := cache.GetClient()
 
-	logger.LoggerAPIPartition.Debug("APIs undeploy event received for organization: ", organization)
+	logger.LoggerAPIPartition.Debug("APIs undeploy event received for organizations")
 	if database.WakeUpConnection() {
 		defer database.CloseDbConnection()
 
-		stmt, _ := database.DB.Prepare(database.QueryDeleteAPIsForOrganization)
-		_, err := stmt.Exec(organization)
-		if err != nil {
-			logger.LoggerAPIPartition.Error("Error while deleting the APIs from database for organization : ", organization, " ", err)
-		} else {
-			logger.LoggerAPIPartition.Info("APIs deleted from the database for organization: ", organization)
+		inClause := prepareInClauseForOrganizationDeletion(org)
+		sqlQuery := strings.Replace(database.QueryDeleteAPIsForOrganization, "_ORGANIZATIONS_PLACEHOLDER_", inClause, 1)
+		_, err := database.DB.Exec(sqlQuery)
 
-			//updateRedisCache(api, strings.ToLower(gatewayLabel), nil, types.APIDelete)
-			err := cache.RemoveCacheKeysBySubstring(orgHandle, rc, deleteEvent)
-			if err != nil {
-				logger.LoggerAPIPartition.Error("Error while deleting the APIs from cache for organization : ", organization, " ", err)
+		if err != nil {
+			logger.LoggerAPIPartition.Error("Error while deleting the APIs from database for organizations", err)
+		} else {
+			logger.LoggerAPIPartition.Info("APIs deleted from the database for organizations")
+
+			for _, organization := range org {
+				err := cache.RemoveCacheKeysBySubstring(organization.Handle, rc, deleteEvent)
+				if err != nil {
+					logger.LoggerAPIPartition.Error("Error while deleting the APIs from cache for organization : ", organization.Name, " ", err)
+				}
 			}
 
 			conf := config.ReadConfigs()
@@ -365,6 +369,17 @@ func DeleteAPIRecords(organization string, orgHandle string) bool {
 
 	}
 	return false
+}
+
+func prepareInClauseForOrganizationDeletion(organizations []msg.Organization) string {
+	str := ""
+	str += "("
+	for _, organization := range organizations {
+		str += organization.UUID
+		str += ","
+	}
+	str = str[:len(str)-1] + ")"
+	return str
 }
 
 // Cache update for undeploy APIs
