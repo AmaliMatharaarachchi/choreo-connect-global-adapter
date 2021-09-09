@@ -35,7 +35,7 @@ const RedisBlockedValue = "blocked"
 
 func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 	for d := range msg.AzureStepQuotaThresholdChannel {
-		logger.LoggerMsg.Info("Message received for AzureStepQuotaThresholdChannel = " + string(d))
+		logger.LoggerMsg.Info("Message received for AzureStepQuotaThresholdChannel for: " + string(d))
 
 		if !apipartition.IsStepQuotaLimitingEnabled() {
 			logger.LoggerMsg.Infof("Step quota limiting feature is disabled. Hence not processing event")
@@ -80,6 +80,7 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 		for _, apiEvent := range apiEvents {
 			apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, RedisBlockedValue)
 		}
+		logger.LoggerMsg.Info("Successfully handled Azure step quota threshold event for: " + string(d))
 	}
 }
 

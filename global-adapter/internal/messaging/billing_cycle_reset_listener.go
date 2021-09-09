@@ -20,7 +20,6 @@ package messaging
 
 import (
 	"encoding/json"
-
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -29,7 +28,7 @@ import (
 
 func handleAzureBillingCycleResetEvents(conf *config.Config) {
 	for d := range msg.AzureStepQuotaResetChannel {
-		logger.LoggerMsg.Info("Message received for AzureStepQuotaResetChannel = " + string(d))
+		logger.LoggerMsg.Info("Message received for AzureStepQuotaResetChannel for: " + string(d))
 
 		if !apipartition.IsStepQuotaLimitingEnabled() {
 			logger.LoggerMsg.Infof("Step quota limiting feature is disabled. Hence not processing event")
@@ -68,6 +67,7 @@ func handleAzureBillingCycleResetEvents(conf *config.Config) {
 		for _, apiEvent := range apiEvents {
 			apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, "")
 		}
+		logger.LoggerMsg.Info("Successfully handled Azure billing cycle reset event for: " + string(d))
 	}
 }
 
