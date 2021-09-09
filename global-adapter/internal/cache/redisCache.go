@@ -97,6 +97,28 @@ func SetCacheKeys(cacheList []string, client *redis.Client) error {
 	return res.Err()
 }
 
+// RemoveCacheKeysBySubstring removes values in the cache using a key substring
+func RemoveCacheKeysBySubstring(substring string, client *redis.Client, event string) error {
+	iter := client.Scan(0, substring, 0).Iterator()
+	for iter.Next() {
+		logger.LoggerServer.Debug("Deleting the value for key: " + iter.Val())
+		RemoveCacheKey(iter.Val(), client)
+		PublishRedisEvent(iter.Val(), client, event)
+		logger.LoggerServer.Debug("Deleted the value for key: " + iter.Val())
+	}
+
+	if !iter.Next() && iter.Err() == nil {
+		logger.LoggerServer.Info("Values removed fot the key substring" + substring)
+		return nil
+	}
+
+	if err := iter.Err(); err != nil {
+		logger.LoggerServer.Error("Error while deleting values for key substring "+substring, iter.Err().Error())
+	}
+
+	return iter.Err()
+}
+
 // PublishUpdatedAPIKeys - Publish delete event to Redis Server for each API event.
 func PublishUpdatedAPIKeys(cacheList []string, client *redis.Client) {
 	for count := 0; count < len(cacheList); count = count + 2 {
