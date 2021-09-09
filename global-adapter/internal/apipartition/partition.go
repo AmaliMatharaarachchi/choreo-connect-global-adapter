@@ -418,10 +418,6 @@ func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int, partit
 // UpdateCacheForQuotaExceededStatus Updates redis cache on billing cycle reset or quota exceeded status
 func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValue string) {
 	var cacheObj []string
-
-	database.WakeUpConnection()
-	defer database.CloseDbConnection()
-
 	for index := range apiEvent.GatewayLabels {
 		gatewayLabel := apiEvent.GatewayLabels[index]
 

@@ -63,11 +63,11 @@ func handleAzureBillingCycleResetEvents(conf *config.Config) {
 			continue
 		}
 
-		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s", apiEvents, resetEvent.OrgUUID)
-		for _, apiEvent := range apiEvents {
-			apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, "")
-		}
-		logger.LoggerMsg.Info("Successfully handled Azure billing cycle reset event for: " + string(d))
+		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s. Hence updating redis cache",
+			apiEvents, resetEvent.OrgUUID)
+		updateCacheForAPIEvents(apiEvents, "")
+
+		logger.LoggerMsg.Info("Completed handling Azure billing cycle reset event for: " + string(d))
 	}
 }
 
