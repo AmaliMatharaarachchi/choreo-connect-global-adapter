@@ -62,10 +62,3 @@ type LaAPIEvent struct {
 	OrganizationUUID string
 	IsRemoveEvent    bool
 }
-
-type APIDao struct {
-	API_UUID      string
-	API_ID        string
-	LabelHierachy string
-	Organization  string
-}
