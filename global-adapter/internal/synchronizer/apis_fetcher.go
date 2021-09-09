@@ -120,6 +120,7 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, isRe
 	APIDeployAndRemoveEventChannel <- APIEventArray
 }
 
+// FetchAPIsOnStartUp fetches APIs on startup
 func FetchAPIsOnStartUp(conf *config.Config, isReload bool) {
 	// Populate data from configuration file.
 	serviceURL := conf.ControlPlane.ServiceURL

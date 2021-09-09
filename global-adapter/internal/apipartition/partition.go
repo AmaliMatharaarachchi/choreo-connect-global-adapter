@@ -337,7 +337,8 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 	return false
 }
 
-func DeleteApiRecords(organization string, orgHandle string) bool {
+// DeleteAPIRecords deletes api records for a certain organization
+func DeleteAPIRecords(organization string, orgHandle string) bool {
 	rc := cache.GetClient()
 
 	logger.LoggerAPIPartition.Debug("APIs undeploy event received for organization: ", organization)
