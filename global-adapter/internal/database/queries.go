@@ -32,5 +32,4 @@ const (
 									) temp where temp.rowId <> temp.api_id`
 	QueryGetPartitionSize          string = "SELECT parition_size FROM la_partition_size"
 	QueryDeleteAPIsForOrganization string = "DELETE FROM ga_local_adapter_partition WHERE org_id = @p1"
-	QuerySelectAPIsForOrganization string = "SELECT api_uuid, label_hierarchy, api_id FROM ga_local_adapter_partition WHERE org_id = @p1"
 )
