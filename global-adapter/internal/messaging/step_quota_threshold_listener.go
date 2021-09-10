@@ -76,11 +76,11 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 			continue
 		}
 
-		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s", apiEvents, thresholdEvent.OrgID)
-		for _, apiEvent := range apiEvents {
-			apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, RedisBlockedValue)
-		}
-		logger.LoggerMsg.Info("Successfully handled Azure step quota threshold event for: " + string(d))
+		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s. Hence updating redis cache",
+			apiEvents, thresholdEvent.OrgID)
+		updateCacheForAPIEvents(apiEvents, RedisBlockedValue)
+
+		logger.LoggerMsg.Info("Completed handling Azure step quota threshold event for: " + string(d))
 	}
 }
 

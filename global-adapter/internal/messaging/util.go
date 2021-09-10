@@ -18,6 +18,7 @@
 package messaging
 
 import (
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -121,4 +122,13 @@ func getAPIEvents(apiIDs []string, conf *config.Config) ([]synchronizer.APIEvent
 		logger.LoggerMsg.Debugf("Successfully retrieved API Event: %v", apiEvent)
 	}
 	return apiEvents, nil
+}
+
+func updateCacheForAPIEvents(apiEvents []synchronizer.APIEvent, redisValue string) {
+	database.WakeUpConnection()
+	defer database.CloseDbConnection()
+
+	for _, apiEvent := range apiEvents {
+		apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, redisValue)
+	}
 }
