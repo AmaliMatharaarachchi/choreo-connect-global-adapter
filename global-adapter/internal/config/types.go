@@ -44,15 +44,15 @@ type controlPlane struct {
 	RetryInterval           time.Duration `toml:"retryInterval"`
 	SkipSSLVerification     bool          `toml:"skipSSLVerification"`
 	JmsConnectionParameters jmsConnectionParameters
-	ASBConnectionParameters asbConnectionParameters `toml:"asbConnectionParameters"`
+	BrokerConnectionParameters brokerConnectionParameters `toml:"brokerConnectionParameters"`
 }
 
 type jmsConnectionParameters struct {
 	EventListeningEndpoints []string `toml:"eventListeningEndpoints"`
 }
 
-type asbConnectionParameters struct {
-	EventListeningEndpoint string        `toml:"eventListeningEndpoint"`
+type brokerConnectionParameters struct {
+	EventListeningEndpoints []string        `toml:"eventListeningEndpoints"`
 	ReconnectInterval      time.Duration `toml:"reconnectInterval"`
 	ReconnectRetryCount    int           `toml:"reconnectRetryCount"`
 }

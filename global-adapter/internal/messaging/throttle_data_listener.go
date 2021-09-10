@@ -27,7 +27,7 @@ import (
 func handleThrottleData() {
 	for delivery := range msg.ThrottleDataChannel {
 		logger.LoggerMsg.Infof("Throttle Data: %s", string(delivery.Body))
-		writeNonAPIEventToChannel(delivery)
+		writeNonAPIEventToChannel([]byte(string(delivery.Body)))
 		delivery.Ack(false)
 	}
 	logger.LoggerMsg.Infof("handle: deliveries channel closed")
