@@ -84,7 +84,7 @@ func getAPIEvents(apiIDs []string, conf *config.Config) ([]synchronizer.APIEvent
 
 	// Fetch APIs from control plane and write to the channel c.
 	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-		synchronizer.RuntimeMetaDataEndpoint, false, apiIDs)
+		synchronizer.APIArtifactEndpoint, false, apiIDs)
 
 	// Get deployment.json from the channel c.
 	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,

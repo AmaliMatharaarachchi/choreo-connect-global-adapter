@@ -34,6 +34,9 @@ import (
 // RuntimeMetaDataEndpoint represents the endpoint in the control plane
 const RuntimeMetaDataEndpoint = "internal/data/v1/runtime-metadata"
 
+// APIArtifactEndpoint represents the /retrieve-api-artifacts endpoint.
+const APIArtifactEndpoint = "internal/data/v1/retrieve-api-artifacts"
+
 // APIDeployAndRemoveEventChannel represents the channel for writing API events.
 var APIDeployAndRemoveEventChannel chan []APIEvent
 
