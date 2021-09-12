@@ -69,7 +69,7 @@ func upsertQuotaExceededStatus(orgID string, status bool) error {
 	return nil
 }
 
-func getAPIEvents(apiIDs []string, conf *config.Config) ([]synchronizer.APIEvent, error) {
+func getAPIEvents(apiID string, conf *config.Config) ([]synchronizer.APIEvent, error) {
 	// Populate data from configuration file.
 	serviceURL := conf.ControlPlane.ServiceURL
 	username := conf.ControlPlane.Username
@@ -83,8 +83,8 @@ func getAPIEvents(apiIDs []string, conf *config.Config) ([]synchronizer.APIEvent
 	c := make(chan sync.SyncAPIResponse)
 
 	// Fetch APIs from control plane and write to the channel c.
-	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-		synchronizer.APIArtifactEndpoint, false, apiIDs)
+	adapter.GetAPIs(c, &apiID, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
+		synchronizer.RuntimeMetaDataEndpoint, false, nil)
 
 	// Get deployment.json from the channel c.
 	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
@@ -124,11 +124,34 @@ func getAPIEvents(apiIDs []string, conf *config.Config) ([]synchronizer.APIEvent
 	return apiEvents, nil
 }
 
-func updateCacheForAPIEvents(apiEvents []synchronizer.APIEvent, redisValue string) {
+func updateCacheForAPIIds(apiIds []string, redisValue string, conf *config.Config) {
+	var apiEvents []synchronizer.APIEvent
+	var failed bool
+
+	// Retrieve API events from APIM per API Id
+	for _, apiID := range apiIds {
+		eventsForAPIID, err := getAPIEvents(apiID, conf)
+		if err != nil || eventsForAPIID == nil {
+			logger.LoggerMsg.Errorf("Failed to get API event for apiID: %s. Error: %v", apiID, err)
+			failed = true
+			break
+		}
+		for _, event := range eventsForAPIID {
+			apiEvents = append(apiEvents, event)
+		}
+		logger.LoggerMsg.Debugf("Got API Events: %v for apiID: %s", apiEvents, apiID)
+	}
+
+	// If retrieving API events from APIM failed for an apiID, return without continuing for other apiIDs
+	if failed {
+		return
+	}
+
 	database.WakeUpConnection()
 	defer database.CloseDbConnection()
 
 	for _, apiEvent := range apiEvents {
+		logger.LoggerMsg.Debugf("Found API events. Hence updating redis cache for quota exceeded status")
 		apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, redisValue)
 	}
 }

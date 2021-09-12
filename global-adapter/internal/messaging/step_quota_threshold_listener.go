@@ -20,7 +20,6 @@ package messaging
 
 import (
 	"encoding/json"
-
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -70,16 +69,7 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 		}
 
 		logger.LoggerMsg.Debugf("Found API IDs: %v for org: %s", apiIds, thresholdEvent.OrgID)
-		apiEvents, err := getAPIEvents(apiIds, conf)
-		if err != nil {
-			logger.LoggerMsg.Errorf("Failed to get API event for org: %s. Error: %v", thresholdEvent.OrgID, err)
-			continue
-		}
-
-		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s. Hence updating redis cache",
-			apiEvents, thresholdEvent.OrgID)
-		updateCacheForAPIEvents(apiEvents, RedisBlockedValue)
-
+		updateCacheForAPIIds(apiIds, RedisBlockedValue, conf)
 		logger.LoggerMsg.Info("Completed handling Azure step quota threshold event for: " + string(d))
 	}
 }
