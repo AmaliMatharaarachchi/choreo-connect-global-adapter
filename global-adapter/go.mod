@@ -11,6 +11,6 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/streadway/amqp v1.0.0
 	github.com/stretchr/testify v1.6.1
-	github.com/wso2/product-microgateway/adapter v0.0.0-20210901130010-96bbd976c86c
+	github.com/wso2/product-microgateway/adapter v0.0.0-20210913074243-8f44376a6ace
 	google.golang.org/grpc v1.33.2
 )
