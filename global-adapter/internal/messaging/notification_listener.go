@@ -149,7 +149,7 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)
 		return err
 	}
-	sync.AddAPIEventsToChannel(deploymentDescriptor)
+	sync.AddAPIEventsToChannel(deploymentDescriptor, false)
 
 	return nil
 }
