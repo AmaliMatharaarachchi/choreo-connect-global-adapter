@@ -375,7 +375,7 @@ func prepareInClauseForOrganizationDeletion(organizations []msg.Organization) st
 	str := ""
 	str += "("
 	for _, organization := range organizations {
-		str += organization.UUID
+		str += "'" + organization.UUID + "'"
 		str += ","
 	}
 	str = str[:len(str)-1] + ")"
