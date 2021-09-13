@@ -126,25 +126,18 @@ func getAPIEvents(apiID string, conf *config.Config) ([]synchronizer.APIEvent, e
 
 func updateCacheForAPIIds(apiIds []string, redisValue string, conf *config.Config) {
 	var apiEvents []synchronizer.APIEvent
-	var failed bool
 
-	// Retrieve API events from APIM per API Id
+	// Retrieve API events from APIM per API Id. If failed to retrieve an API, continue with other APIs
 	for _, apiID := range apiIds {
 		eventsForAPIID, err := getAPIEvents(apiID, conf)
 		if err != nil || eventsForAPIID == nil {
 			logger.LoggerMsg.Errorf("Failed to get API event for apiID: %s. Error: %v", apiID, err)
-			failed = true
 			break
 		}
 		for _, event := range eventsForAPIID {
 			apiEvents = append(apiEvents, event)
 		}
 		logger.LoggerMsg.Debugf("Got API Events: %v for apiID: %s", apiEvents, apiID)
-	}
-
-	// If retrieving API events from APIM failed for an apiID, return without continuing for other apiIDs
-	if failed {
-		return
 	}
 
 	database.WakeUpConnection()
