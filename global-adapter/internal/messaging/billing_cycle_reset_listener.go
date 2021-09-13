@@ -57,16 +57,7 @@ func handleAzureBillingCycleResetEvents(conf *config.Config) {
 		}
 
 		logger.LoggerMsg.Debugf("Found API IDs: %v for org: %s", apiIds, resetEvent.OrgUUID)
-		apiEvents, err := getAPIEvents(apiIds, conf)
-		if err != nil {
-			logger.LoggerMsg.Errorf("Failed to get API event for org: %s. Error: %v", resetEvent.OrgUUID, err)
-			continue
-		}
-
-		logger.LoggerMsg.Debugf("Got API Events: %v for org: %s. Hence updating redis cache",
-			apiEvents, resetEvent.OrgUUID)
-		updateCacheForAPIEvents(apiEvents, "")
-
+		updateCacheForAPIIds(apiIds, "", conf)
 		logger.LoggerMsg.Info("Completed handling Azure billing cycle reset event for: " + string(d))
 	}
 }
