@@ -53,5 +53,6 @@ func InitiateAndProcessEvents(config *config.Config) {
 		go handleAzureTokenRevocation()
 		go handleAzureBillingCycleResetEvents(config)
 		go handleAzureStepQuotaThresholdEvents(config)
+		go handleAzureOrganizationPurge()
 	}
 }

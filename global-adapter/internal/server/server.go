@@ -33,12 +33,10 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds/callbacks"
-	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 	ga_service "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/service/ga"
 	wso2_server "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/server/v3"
 	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	healthservice "github.com/wso2/product-microgateway/adapter/pkg/health/api/wso2/health/service"
-	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 	"github.com/wso2/product-microgateway/adapter/pkg/tlsutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -87,7 +85,7 @@ func Run(conf *config.Config) {
 	go GetNonAPIDeployAndRemoveEventsFromChannel()
 
 	// Fetch APIs from control plane.
-	fetchAPIsOnStartUp(conf)
+	synchronizer.FetchAPIsOnStartUp(conf, false)
 
 	enforcerAPIDsSrv := wso2_server.NewServer(ctx, xds.GetAPICache(), &callbacks.Callbacks{})
 
@@ -140,34 +138,6 @@ OUTER:
 				break OUTER
 			}
 		}
-	}
-}
-
-func fetchAPIsOnStartUp(conf *config.Config) {
-	// Populate data from configuration file.
-	serviceURL := conf.ControlPlane.ServiceURL
-	username := conf.ControlPlane.Username
-	password := conf.ControlPlane.Password
-	environmentLabels := conf.ControlPlane.EnvironmentLabels
-	skipSSL := conf.ControlPlane.SkipSSLVerification
-	retryInterval := conf.ControlPlane.RetryInterval
-	truststoreLocation := conf.Truststore.Location
-
-	// Create a channel for the byte slice (response from the APIs from control plane).
-	c := make(chan sync.SyncAPIResponse)
-
-	// Fetch APIs from control plane and write to the channel c.
-	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-		synchronizer.RuntimeMetaDataEndpoint, false, nil)
-
-	// Get deployment.json from the channel c.
-	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
-		username, password, skipSSL, truststoreLocation, retryInterval)
-
-	if err != nil {
-		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)
-	} else {
-		synchronizer.AddAPIEventsToChannel(deploymentDescriptor)
 	}
 }
 

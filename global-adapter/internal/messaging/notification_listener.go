@@ -87,7 +87,7 @@ func handleAzureNotification() {
 		var notification msg.EventNotification
 		error := parseNotificationJSONEvent(d, &notification)
 		if error != nil {
-			logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error while processing " +
+			logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error while processing "+
 				"the notification event %v. Hence dropping the event", error)
 			continue
 		}
@@ -163,7 +163,7 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)
 		return err
 	}
-	sync.AddAPIEventsToChannel(deploymentDescriptor)
+	sync.AddAPIEventsToChannel(deploymentDescriptor, false)
 
 	return nil
 }
@@ -171,7 +171,7 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 func parseNotificationJSONEvent(data []byte, notification *msg.EventNotification) error {
 	unmarshalErr := json.Unmarshal(data, &notification)
 	if unmarshalErr != nil {
-		logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error occurred while unmarshalling " +
+		logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error occurred while unmarshalling "+
 			"notification event data %v", unmarshalErr)
 	}
 	return unmarshalErr

@@ -24,8 +24,10 @@ package synchronizer
 
 import (
 	"encoding/json"
+	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 	"time"
 
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
@@ -84,7 +86,7 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 }
 
 // AddAPIEventsToChannel function updates the api event details and add it to the API event array.
-func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor) {
+func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, isReload bool) {
 	// Create an APIEvent array.
 	APIEventArray := []APIEvent{}
 
@@ -110,10 +112,39 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor) {
 		// Add context and version of incoming API events to the apiEvent.
 		apiEvent.Context = deployment.APIContext
 		apiEvent.Version = deployment.Version
-
+		apiEvent.IsReload = isReload
 		// Add API Event to array.
 		APIEventArray = append(APIEventArray, apiEvent)
 	}
 	logger.LoggerSync.Debugf("Write API Events %v to the APIDeployAndRemoveEventChannel ", APIEventArray)
 	APIDeployAndRemoveEventChannel <- APIEventArray
+}
+
+// FetchAPIsOnStartUp fetches APIs on startup
+func FetchAPIsOnStartUp(conf *config.Config, isReload bool) {
+	// Populate data from configuration file.
+	serviceURL := conf.ControlPlane.ServiceURL
+	username := conf.ControlPlane.Username
+	password := conf.ControlPlane.Password
+	environmentLabels := conf.ControlPlane.EnvironmentLabels
+	skipSSL := conf.ControlPlane.SkipSSLVerification
+	retryInterval := conf.ControlPlane.RetryInterval
+	truststoreLocation := conf.Truststore.Location
+
+	// Create a channel for the byte slice (response from the APIs from control plane).
+	c := make(chan sync.SyncAPIResponse)
+
+	// Fetch APIs from control plane and write to the channel c.
+	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
+		RuntimeMetaDataEndpoint, false, nil)
+
+	// Get deployment.json from the channel c.
+	deploymentDescriptor, err := GetArtifactDetailsFromChannel(c, serviceURL,
+		username, password, skipSSL, truststoreLocation, retryInterval)
+
+	if err != nil {
+		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)
+	} else {
+		AddAPIEventsToChannel(deploymentDescriptor, isReload)
+	}
 }
