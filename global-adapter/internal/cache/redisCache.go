@@ -108,7 +108,7 @@ func RemoveCacheKeysBySubstring(substring string, client *redis.Client, event st
 	}
 
 	if !iter.Next() && iter.Err() == nil {
-		logger.LoggerServer.Info("Values removed fot the key substring" + substring)
+		logger.LoggerServer.Info("Values removed for the key substring" + substring)
 		return nil
 	}
 
