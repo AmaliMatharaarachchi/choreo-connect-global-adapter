@@ -41,11 +41,13 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"strconv"
+	"strings"
 )
 
 // TODO: (VirajSalaka) check this is streams per connections or total number of concurrent streams.
 const grpcMaxConcurrentStreams = 1000000
 const featureFlagReplaceEventHub = "FEATURE_FLAG_REPLACE_EVENT_HUB"
+const amqpProtocol = "amqp"
 
 // Run functions starts the XDS Server.
 func Run(conf *config.Config) {
@@ -74,11 +76,17 @@ func Run(conf *config.Config) {
 
 	if isAzureEventingFeatureFlagEnabled {
 		logger.LoggerServer.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Starting to integrate with azure service bus")
-		messaging.InitiateAndProcessEvents(conf)
+		var connectionURLList = conf.ControlPlane.BrokerConnectionParameters.EventListeningEndpoints
+		if strings.Contains(connectionURLList[0], amqpProtocol) {
+			go messaging.ProcessEvents(conf)
+		} else {
+			messaging.InitiateAndProcessEvents(conf)
+		}
+	} else {
+		// Process incoming events.
+		go messaging.ProcessEvents(conf)
 	}
 
-	// Process incoming events.
-	go messaging.ProcessEvents(conf)
 	// Consume API events from channel.
 	go apipartition.ProcessEventsInDatabase()
 	// Consume non API events from channel.

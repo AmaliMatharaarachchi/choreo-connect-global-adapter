@@ -36,20 +36,16 @@ const (
 // InitiateAndProcessEvents to pass event consumption
 func InitiateAndProcessEvents(config *config.Config) {
 	var err error
-	var reconnectRetryCount = config.ControlPlane.ASBConnectionParameters.ReconnectRetryCount
-	var reconnectInterval = config.ControlPlane.ASBConnectionParameters.ReconnectInterval
-	logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Starting InitiateAndProcessEvents method")
-	logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] EventListeningEndpoint is ",
-		config.ControlPlane.ASBConnectionParameters.EventListeningEndpoint)
+	var reconnectRetryCount = config.ControlPlane.BrokerConnectionParameters.ReconnectRetryCount
+	var reconnectInterval = config.ControlPlane.BrokerConnectionParameters.ReconnectInterval
 	subscriptionMetaDataList, err := msg.InitiateBrokerConnectionAndValidate(
-		config.ControlPlane.ASBConnectionParameters.EventListeningEndpoint, componentName, reconnectRetryCount,
+		config.ControlPlane.BrokerConnectionParameters.EventListeningEndpoints[0], componentName, reconnectRetryCount,
 		reconnectInterval*time.Millisecond, subscriptionIdleTimeDuration)
 	health.SetControlPlaneBrokerStatus(err == nil)
 	if err == nil {
-		logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Initiated broker connection and meta " +
-			"data creation successfully ")
+		logger.LoggerMsg.Info("Service bus meta data successfully initialized.")
 		msg.InitiateConsumers(subscriptionMetaDataList, reconnectInterval*time.Millisecond)
-		go handleAzureNotification()
+		go handleAzureNotification(config)
 		go handleAzureTokenRevocation()
 		go handleAzureBillingCycleResetEvents(config)
 		go handleAzureStepQuotaThresholdEvents(config)

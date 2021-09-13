@@ -19,7 +19,6 @@
 package messaging
 
 import (
-	"github.com/streadway/amqp"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 )
@@ -28,14 +27,13 @@ import (
 func handleKMConfiguration() {
 	for delivery := range msg.KeyManagerChannel {
 		logger.LoggerMsg.Infof("Key Manager Event %s is received", string(delivery.Body))
-		writeNonAPIEventToChannel(delivery)
+		writeNonAPIEventToChannel([]byte(string(delivery.Body)))
 		delivery.Ack(false)
 	}
 	logger.LoggerMsg.Info("handle: deliveries channel closed")
 }
 
-func writeNonAPIEventToChannel(data amqp.Delivery) {
-	nonAPIEvent := []byte(string(data.Body))
+func writeNonAPIEventToChannel(nonAPIEvent []byte) {
 	logger.LoggerMsg.Debugf("Write non API Event %s to the NonAPIDeployAndRemoveEventChannel", &nonAPIEvent)
 	NonAPIDeployAndRemoveEventChannel <- nonAPIEvent
 }

@@ -51,48 +51,34 @@ func init() {
 func handleNotification(config *config.Config) {
 	for delivery := range msg.NotificationChannel {
 		var notification msg.EventNotification
-		var eventType string
-		notificationErr := json.Unmarshal([]byte(string(delivery.Body)), &notification)
+		notificationErr := parseNotificationJSONEvent([]byte(string(delivery.Body)), &notification)
 		if notificationErr != nil {
-			logger.LoggerMsg.Errorf("Error occurred while unmarshalling event data %v", notificationErr)
 			continue
 		}
 		logger.LoggerMsg.Infof("Event %s is received", notification.Event.PayloadData.EventType)
-		var decodedByte, err = base64.StdEncoding.DecodeString(notification.Event.PayloadData.Event)
+		err := processNotificationEvent(config, &notification)
 		if err != nil {
-			if _, ok := err.(base64.CorruptInputError); ok {
-				logger.LoggerMsg.Error("\nbase64 input is corrupt, check the provided key")
-			}
-			logger.LoggerMsg.Errorf("Error occurred while decoding the notification event %v", err)
 			continue
-		}
-		logger.LoggerMsg.Debugf("\n\n[%s]", decodedByte)
-		eventType = notification.Event.PayloadData.EventType
-		if strings.Contains(eventType, apiEventType) && !(strings.Contains(eventType, apiLifeCycleChange)) {
-			handleAPIDeployAndRemoveEvents(decodedByte, eventType, config)
-		} else {
-			logger.LoggerMsg.Debugf("Write non API Event %s to the NonAPIDeployAndRemoveEventChannel", decodedByte)
-			// Write non API Event to the NonAPIDeployAndRemoveEventChannel
-			NonAPIDeployAndRemoveEventChannel <- decodedByte
 		}
 		delivery.Ack(false)
 	}
 	logger.LoggerMsg.Infof("handle: deliveries channel closed")
 }
 
-func handleAzureNotification() {
+func handleAzureNotification(config *config.Config) {
 	for d := range msg.AzureNotificationChannel {
 		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] message received for " +
 			"NotificationChannel = " + string(d))
 		var notification msg.EventNotification
 		error := parseNotificationJSONEvent(d, &notification)
 		if error != nil {
-			logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error while processing "+
-				"the notification event %v. Hence dropping the event", error)
 			continue
 		}
-		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received",
-			notification.Event.PayloadData.EventType)
+		logger.LoggerMsg.Infof("Event %s is received", notification.Event.PayloadData.EventType)
+		err := processNotificationEvent(config, &notification)
+		if err != nil {
+			continue
+		}
 	}
 }
 
@@ -171,8 +157,31 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 func parseNotificationJSONEvent(data []byte, notification *msg.EventNotification) error {
 	unmarshalErr := json.Unmarshal(data, &notification)
 	if unmarshalErr != nil {
-		logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error occurred while unmarshalling "+
-			"notification event data %v", unmarshalErr)
+		logger.LoggerMsg.Errorf("Error occurred while unmarshalling " +
+			"notification event data %v. Hence dropping the event", unmarshalErr)
 	}
 	return unmarshalErr
+}
+
+func processNotificationEvent (conf *config.Config, notification *msg.EventNotification) error {
+	var eventType string
+	var decodedByte, err = base64.StdEncoding.DecodeString(notification.Event.PayloadData.Event)
+	if err != nil {
+		if _, ok := err.(base64.CorruptInputError); ok {
+			logger.LoggerMsg.Errorf("\nbase64 input is corrupt, check the provided key")
+		}
+		logger.LoggerMsg.Errorf("Error occurred while decoding the notification event %v. " +
+			"Hence dropping the event", err)
+		return err
+	}
+	logger.LoggerMsg.Debugf("\n\n[%s]", decodedByte)
+	eventType = notification.Event.PayloadData.EventType
+	if strings.Contains(eventType, apiEventType) && !(strings.Contains(eventType, apiLifeCycleChange)) {
+		handleAPIDeployAndRemoveEvents(decodedByte, eventType, conf)
+	} else {
+		logger.LoggerMsg.Debugf("Write non API Event %s to the NonAPIDeployAndRemoveEventChannel", decodedByte)
+		// Write non API Event to the NonAPIDeployAndRemoveEventChannel
+		NonAPIDeployAndRemoveEventChannel <- decodedByte
+	}
+	return nil
 }

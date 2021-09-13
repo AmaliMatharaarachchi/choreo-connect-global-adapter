@@ -139,3 +139,11 @@ func TestStepQuotaThresholdChannelSubscriptionAndEventFormat(t *testing.T) {
 	}
 	assert.Equal(t, true, parsedSuccessfully)
 }
+
+func parseRevokedTokenJSONEvent(data []byte, notification *msg.EventTokenRevocationNotification) error {
+	unmarshalErr := json.Unmarshal(data, &notification)
+	if unmarshalErr != nil {
+		logger.LoggerMsg.Errorf("Error occurred while unmarshalling revoked token event data %v", unmarshalErr)
+	}
+	return unmarshalErr
+}
