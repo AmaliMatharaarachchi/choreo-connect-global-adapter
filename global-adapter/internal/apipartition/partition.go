@@ -543,7 +543,7 @@ func IsStepQuotaLimitingEnabled() bool {
 	if featureStepQuotaLimitingEnvValue != "" {
 		enabled, err := strconv.ParseBool(featureStepQuotaLimitingEnvValue)
 		if err == nil {
-			logger.LoggerMsg.Infof("'%s' is enabled.", featureStepQuotaLimiting)
+			logger.LoggerMsg.Debugf("'%s' is enabled.", featureStepQuotaLimiting)
 			return enabled
 		}
 		logger.LoggerMsg.Errorf("Error occurred while parsing %s environment value. Error: %v",
