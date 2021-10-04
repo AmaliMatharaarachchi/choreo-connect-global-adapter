@@ -40,13 +40,11 @@ import (
 	"github.com/wso2/product-microgateway/adapter/pkg/tlsutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"strconv"
 	"strings"
 )
 
 // TODO: (VirajSalaka) check this is streams per connections or total number of concurrent streams.
 const grpcMaxConcurrentStreams = 1000000
-const featureFlagReplaceEventHub = "FEATURE_FLAG_REPLACE_EVENT_HUB"
 const amqpProtocol = "amqp"
 
 // Run functions starts the XDS Server.
@@ -62,29 +60,11 @@ func Run(conf *config.Config) {
 	// Checks control plane health and Waits for Control plane
 	go health.WaitForControlPlane()
 
-	// TODO: (dnwick) remove env variable once the feature is complete
-	featureFlagReplaceEventHubEnvValue := os.Getenv(featureFlagReplaceEventHub)
-	var isAzureEventingFeatureFlagEnabled bool
-	var err error
-	if featureFlagReplaceEventHubEnvValue != "" {
-		isAzureEventingFeatureFlagEnabled, err = strconv.ParseBool(featureFlagReplaceEventHubEnvValue)
-		if err != nil {
-			logger.LoggerServer.Error("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error occurred while parsing "+
-				"FEATURE_FLAG_REPLACE_EVENT_HUB environment value.", err)
-		}
-	}
-
-	if isAzureEventingFeatureFlagEnabled {
-		logger.LoggerServer.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Starting to integrate with azure service bus")
-		var connectionURLList = conf.ControlPlane.BrokerConnectionParameters.EventListeningEndpoints
-		if strings.Contains(connectionURLList[0], amqpProtocol) {
-			go messaging.ProcessEvents(conf)
-		} else {
-			messaging.InitiateAndProcessEvents(conf)
-		}
-	} else {
-		// Process incoming events.
+	var connectionURLList = conf.ControlPlane.BrokerConnectionParameters.EventListeningEndpoints
+	if strings.Contains(connectionURLList[0], amqpProtocol) {
 		go messaging.ProcessEvents(conf)
+	} else {
+		messaging.InitiateAndProcessEvents(conf)
 	}
 
 	// Consume API events from channel.
