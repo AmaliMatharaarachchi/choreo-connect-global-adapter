@@ -38,4 +38,7 @@ func TestReadConfigs(t *testing.T) {
 		"Environment labels should be the same")
 	assert.Equal(t, controlPlane.RetryInterval, time.Duration(5), "RetryInterval should be the same")
 	assert.Equal(t, controlPlane.SkipSSLVerification, true, "SkipSSLVerification value should be the same")
+	assert.Equal(t, controlPlane.BrokerConnectionParameters.EventListeningEndpoints,
+		[]string{"amqp://admin:admin@apim:5672?retries='10'&connectdelay='30'"},
+		"EventListeningEndpoints should be the same")
 }
