@@ -43,7 +43,6 @@ type controlPlane struct {
 	EnvironmentLabels       []string      `toml:"environmentLabels"`
 	RetryInterval           time.Duration `toml:"retryInterval"`
 	SkipSSLVerification     bool          `toml:"skipSSLVerification"`
-	JmsConnectionParameters jmsConnectionParameters
 	BrokerConnectionParameters brokerConnectionParameters `toml:"brokerConnectionParameters"`
 }
 
@@ -51,10 +50,6 @@ type brokerConnectionParameters struct {
 	EventListeningEndpoints []string        `toml:"eventListeningEndpoints"`
 	ReconnectInterval      time.Duration `toml:"reconnectInterval"`
 	ReconnectRetryCount    int           `toml:"reconnectRetryCount"`
-}
-
-type jmsConnectionParameters struct {
-	EventListeningEndpoints []string `toml:"eventListeningEndpoints"`
 }
 
 type truststore struct {
