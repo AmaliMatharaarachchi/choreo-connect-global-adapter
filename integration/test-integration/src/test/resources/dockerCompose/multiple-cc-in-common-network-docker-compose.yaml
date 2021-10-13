@@ -7,7 +7,7 @@ networks:
       name: apim_and_cc
 services:
   router1:
-    image: wso2/choreo-connect-router:0.9.1-SNAPSHOT
+    image: wso2/choreo-connect-router:1.0.0-m3-SNAPSHOT
     logging:
       options:
         max-size: "20m"
@@ -35,7 +35,7 @@ services:
       - cc_internal
     mem_limit: 512m
   router2:
-    image: wso2/choreo-connect-router:0.9.1-SNAPSHOT
+    image: wso2/choreo-connect-router:1.0.0-m3-SNAPSHOT
     logging:
       options:
         max-size: "20m"
@@ -63,7 +63,7 @@ services:
       - cc_internal
     mem_limit: 512m
   adapter1:
-    image: wso2/choreo-connect-adapter:0.9.1-SNAPSHOT
+    image: wso2/choreo-connect-adapter:1.0.0-m3-SNAPSHOT
     networks:
       - cc_internal
       - apim_and_cc
@@ -85,7 +85,7 @@ services:
       - "9843:9843"
     mem_limit: 256m
   adapter2:
-    image: wso2/choreo-connect-adapter:0.9.1-SNAPSHOT
+    image: wso2/choreo-connect-adapter:1.0.0-m3-SNAPSHOT
     networks:
       - cc_internal
       - apim_and_cc
@@ -137,7 +137,7 @@ services:
     ports:
       - "6379:6379"
   enforcer1:
-    image: wso2/choreo-connect-enforcer:0.9.1-SNAPSHOT
+    image: wso2/choreo-connect-enforcer:1.0.0-m3-SNAPSHOT
     logging:
       options:
         max-size: "20m"
@@ -170,7 +170,7 @@ services:
       - "8081:8081"
     mem_limit: 512m
   enforcer2:
-    image: wso2/choreo-connect-enforcer:0.9.1-SNAPSHOT
+    image: wso2/choreo-connect-enforcer:1.0.0-m3-SNAPSHOT
     mem_limit: 512m
     logging:
       options:

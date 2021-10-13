@@ -93,7 +93,8 @@ echo $CC_DIR
 if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
   if [ -d "${CC_DIR}" ]; then
     cd gen/choreo-connect/product-microgateway
-    git pull origin feature/global-adapter
+    git checkout choreo
+    git pull origin choreo
     if [ $? -eq 0 ]; then
       echo "Pull operation for choreo-connect is successful"
     else
@@ -106,6 +107,9 @@ if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
     cd choreo-connect
     git clone https://github.com/wso2/product-microgateway
     cd product-microgateway
+    git fetch
+    git checkout choreo
+    git pull origin choreo
     if [ $? -eq 0 ]; then
       echo "Clone operation for choreo-connect is successful"
     else
@@ -117,7 +121,7 @@ else
   cd ${GITHUB_WORKSPACE}/integration/integration-artifacts/scripts/gen/choreo-connect/product-microgateway
 fi
 
-git checkout feature/global-adapter
+git checkout choreo
 mvn clean install -P Release -Dmaven.test.skip -s .maven/settings.xml
 
 if [ $? -eq 0 ]; then
