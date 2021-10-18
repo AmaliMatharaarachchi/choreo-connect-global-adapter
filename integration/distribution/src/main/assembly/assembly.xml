@@ -26,7 +26,7 @@
 
     <fileSets>
         <fileSet>
-            <directory>${project.build.directory}/cc-dist/choreo-connect-0.9.0/docker-compose/resources</directory>
+            <directory>${project.build.directory}/cc-dist/choreo-connect-1.0.0-m2/docker-compose/resources</directory>
             <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/resources</outputDirectory>
         </fileSet>
         <fileSet>
@@ -52,11 +52,11 @@
             <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/conf</outputDirectory>
         </file>
         <file>
-            <source>${project.build.directory}/cc-dist/choreo-connect-0.9.0/docker-compose/choreo-connect/conf/log_config.toml</source>
+            <source>${project.build.directory}/cc-dist/choreo-connect-1.0.0-m2/docker-compose/choreo-connect/conf/log_config.toml</source>
             <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/conf</outputDirectory>
         </file>
         <file>
-            <source>${project.build.directory}/cc-dist/choreo-connect-0.9.0/docker-compose/choreo-connect/conf/log4j2.properties</source>
+            <source>${project.build.directory}/cc-dist/choreo-connect-1.0.0-m2/docker-compose/choreo-connect/conf/log4j2.properties</source>
             <outputDirectory>choreo-connect-ga-${project.version}/docker-compose/choreo-connect/conf</outputDirectory>
         </file>
         <file>
