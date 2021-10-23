@@ -79,4 +79,4 @@ jobs:
         export JAVA_8_HOME="/opt/hostedtoolcache/Java_Adopt_jdk/8.0.292-1/x64"
         export JAVA_11_HOME="/opt/hostedtoolcache/Java_Adopt_jdk/11.0.11-9/x64"
         export PATH="${HOME}/go/bin:${PATH}"
-        mvn clean install -s .maven/settings.xml -P ReleaseWithResourcesGen
+        mvn clean install -s .maven/settings.xml
