@@ -105,7 +105,7 @@
         <awaitility.version>3.1.2</awaitility.version>
         <analytics.publisher.client.version>1.0.0</analytics.publisher.client.version>
         <jedis.version>3.6.3</jedis.version>
-        <choreo.connect.version>0.9.1-SNAPSHOT</choreo.connect.version>
+        <choreo.connect.version>1.0.0-alpha-SNAPSHOT</choreo.connect.version>
         <maven.surefire.plugin.version>2.22.2</maven.surefire.plugin.version>
         <grpc.netty.shaded.version>1.32.1</grpc.netty.shaded.version>
     </properties>

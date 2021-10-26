@@ -45,7 +45,7 @@
                         </goals>
                         <configuration>
                             <url>
-                                https://github.com/wso2/product-microgateway/releases/download/v0.9.0-rc/choreo-connect-0.9.0-rc.zip
+                                https://github.com/wso2/product-microgateway/releases/download/v1.0.0-m3/choreo-connect-1.0.0-m3.zip
                             </url>
                             <outputDirectory>${project.build.directory}</outputDirectory>
                         </configuration>
@@ -61,7 +61,7 @@
                         <phase>generate-resources</phase>
                         <configuration>
                             <target>
-                                <unzip src="${project.build.directory}/choreo-connect-0.9.0-rc.zip" dest="${project.build.directory}/cc-dist"/>
+                                <unzip src="${project.build.directory}/choreo-connect-1.0.0-m3.zip" dest="${project.build.directory}/cc-dist"/>
                             </target>
                         </configuration>
                         <goals>
@@ -75,7 +75,7 @@
                         </goals>
                         <configuration>
                             <target>
-                                <delete file="${project.build.directory}/choreo-connect-0.9.0-rc.zip"/>
+                                <delete file="${project.build.directory}/choreo-connect-1.0.0-m3.zip"/>
                                 <delete dir="${project.build.directory}/cc-dist" includeemptydirs="true" />-->
                             </target>
                         </configuration>
