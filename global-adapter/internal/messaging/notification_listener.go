@@ -67,8 +67,7 @@ func handleNotification(config *config.Config) {
 
 func handleAzureNotification(config *config.Config) {
 	for d := range msg.AzureNotificationChannel {
-		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] message received for " +
-			"NotificationChannel = " + string(d))
+		logger.LoggerMsg.Infof("message received for NotificationChannel = " + string(d))
 		var notification msg.EventNotification
 		error := parseNotificationJSONEvent(d, &notification)
 		if error != nil {

@@ -26,17 +26,14 @@ import (
 
 func handleAzureOrganizationPurge() {
 	for d := range msg.AzureOrganizationPurgeChannel {
-		logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] message received for " +
-			"OrganizationPurge = " + string(d))
+		logger.LoggerMsg.Info("message received for OrganizationPurge = " + string(d))
 		var notification msg.EventOrganizationPurge
 		error := parseOrganizationPurgeJSONEvent(d, &notification)
 		if error != nil {
-			logger.LoggerMsg.Errorf("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error while processing "+
-				"the organization purge event %v. Hence dropping the event", error)
+			logger.LoggerMsg.Errorf("Error while processing the organization purge event %v. Hence dropping the event", error)
 			continue
 		}
-		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received",
-			notification.Event.PayloadData.EventType)
+		logger.LoggerMsg.Infof("Event %s is received", notification.Event.PayloadData.EventType)
 
 		apipartition.DeleteAPIRecords(notification.Event.PayloadData.OrganizationList)
 	}

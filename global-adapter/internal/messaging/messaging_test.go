@@ -40,7 +40,7 @@ func TestAPIRemoveEventsHandling(t *testing.T) {
 }
 
 func TestNotificationChannelSubscriptionAndEventFormat(t *testing.T) {
-	logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] starting test " +
+	logger.LoggerMsg.Infof("starting test " +
 		"TestNotificationChannelSubscriptionAndEventFormat")
 
 	sampleTestEvent := "{\"event\":{\"payloadData\":{\"eventType\":\"API_CREATE\",\"timestamp\":1628490908147," +
@@ -56,20 +56,19 @@ func TestNotificationChannelSubscriptionAndEventFormat(t *testing.T) {
 		msg.AzureNotificationChannel <- []byte(sampleTestEvent)
 	}()
 	outputData := <-msg.AzureNotificationChannel
-	logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received from channel", outputData)
+	logger.LoggerMsg.Infof("Event %s is received from channel", outputData)
 	error := parseNotificationJSONEvent(outputData, &notification)
 	if error != nil {
-		logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error occurred", error)
+		logger.LoggerMsg.Info("Error occurred", error)
 	} else {
 		parsedSuccessfully = true
-		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received",
-			notification.Event.PayloadData.EventType)
+		logger.LoggerMsg.Infof("Event %s is received", notification.Event.PayloadData.EventType)
 	}
 	assert.Equal(t, true, parsedSuccessfully)
 }
 
 func TestTokenRevocationChannelSubscriptionAndEventFormat(t *testing.T) {
-	logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] starting test " +
+	logger.LoggerMsg.Infof("starting test " +
 		"TestTokenRevocationChannelSubscriptionAndEventFormat")
 
 	sampleTestEvent := "{\"event\":{\"payloadData\":{\"eventId\":\"444d2f9b-57d8-4245-bef2-3f8d824741c3\"," +
@@ -81,16 +80,14 @@ func TestTokenRevocationChannelSubscriptionAndEventFormat(t *testing.T) {
 		msg.AzureRevokedTokenChannel <- []byte(sampleTestEvent)
 	}()
 	outputData := <-msg.AzureRevokedTokenChannel
-	logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received from channel", outputData)
+	logger.LoggerMsg.Infof("Event %s is received from channel", outputData)
 	error := parseRevokedTokenJSONEvent(outputData, &notification)
 	if error != nil {
-		logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Error occurred", error)
+		logger.LoggerMsg.Info("Error occurred ", error)
 	} else {
 		parsedSuccessfully = true
-		logger.LoggerMsg.Infof("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Event %s is received",
-			notification.Event.PayloadData.Type)
-		logger.LoggerMsg.Info("[TEST][FEATURE_FLAG_REPLACE_EVENT_HUB] Revoked token value is ",
-			notification.Event.PayloadData.RevokedToken)
+		logger.LoggerMsg.Infof("Event %s is received", notification.Event.PayloadData.Type)
+		logger.LoggerMsg.Info("Revoked token value is ", notification.Event.PayloadData.RevokedToken)
 	}
 	assert.Equal(t, true, parsedSuccessfully)
 }
