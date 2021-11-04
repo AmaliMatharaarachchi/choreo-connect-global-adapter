@@ -26,11 +26,11 @@ import (
 func TestGetCacheKey(t *testing.T) {
 	api := synchronizer.APIEvent{Context: "/shanakama/worldbank/api/dev/v1.0", OrganizationID: "bda17a6c-f50d-49b9-b48a-83913b00b459", Version: "v1.0", GatewayLabels: []string{"dev"}}
 	cacheKey := getCacheKey(&api, api.GatewayLabels[0])
-	assert.Equal(t, cacheKey, "#global-adapter#dev#bda17a6c-f50d-49b9-b48a-83913b00b459#/shanakama/worldbank/api/dev/v1.0", "Invalid cache key")
+	assert.Equal(t, cacheKey, "#global-adapter#dev#bda17a6c-f50d-49b9-b48a-83913b00b459#/worldbank/api/dev/v1.0", "Invalid cache key")
 
 	api2 := synchronizer.APIEvent{Context: "/shanakama/worldbank/api/dev/v1.0.0", OrganizationID: "bda17a6c-f50d-49b9-b48a-83913b00b459", Version: "v1.0.0", GatewayLabels: []string{"prod"}}
 	cacheKey2 := getCacheKey(&api2, api2.GatewayLabels[0])
-	assert.Equal(t, cacheKey2, "#global-adapter#prod#bda17a6c-f50d-49b9-b48a-83913b00b459#/shanakama/worldbank/api/dev/v1.0.0", "Invalid cache key")
+	assert.Equal(t, cacheKey2, "#global-adapter#prod#bda17a6c-f50d-49b9-b48a-83913b00b459#/worldbank/api/dev/v1.0.0", "Invalid cache key")
 }
 
 func TestGetLaLabel(t *testing.T) {

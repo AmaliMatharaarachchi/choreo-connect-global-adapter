@@ -418,13 +418,15 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	// apiId : Incremental ID
 	// Cache Key pattern : #global-adapter#<environment-label>#<organization-id>#<api-context>
+	// api-context should be trimmed out of orgname since organization id is used as the key
 	// Cache Value : Partition Label ID ie: dev-p1, prod-p3
 	// labelHierarchy : gateway label (dev,prod and etc)
 
 	var cacheKey string
 
 	if api.Context != "" && api.OrganizationID != "" {
-		cacheKey = fmt.Sprintf("#%s#%s#%s#%s", clientName, labelHierarchy, api.OrganizationID, api.Context)
+		nonOrgContext := api.Context[strings.Index(api.Context[1:], "/")+1:]
+		cacheKey = fmt.Sprintf("#%s#%s#%s#%s", clientName, labelHierarchy, api.OrganizationID, nonOrgContext)
 	} else {
 		logger.LoggerAPIPartition.Error("Unable to get cache key due to empty API Context : ", api.UUID)
 	}
