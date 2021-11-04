@@ -93,6 +93,10 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 			if label != "" {
 				isExceeded := isQuotaExceededForOrg(apis[ind].OrganizationID)
 				cacheKey := getCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
+
+				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
+				noOrgCacheKey := getNoOrgCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
+
 				cacheValue := RedisBlockedValue
 				if !isExceeded {
 					cacheValue = getCacheValue(&apis[ind], label)
@@ -117,6 +121,11 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 					cacheObj = append(cacheObj, cacheValue)
 				}
 
+				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
+				if noOrgCacheKey != "" {
+					cacheObj = append(cacheObj, noOrgCacheKey)
+					cacheObj = append(cacheObj, cacheValue)
+				}
 			} else {
 				logger.LoggerAPIPartition.Errorf("Error while fetching the API label UUID : %v ", apis[ind].UUID)
 			}
@@ -508,6 +517,10 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 			if label != "" {
 				// No need to check if org is blocked. If yes,func will be called with "blocked" for cacheValue
 				cacheKey := getCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
+
+				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
+				noOrgCacheKey := getNoOrgCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
+
 				if cacheValue == "" {
 					cacheValue = getCacheValue(&apiEvent, label)
 				}
@@ -517,6 +530,13 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
 				if cacheKey != "" {
 					logger.LoggerAPIPartition.Debugf("Caching %v -> %v", cacheKey, cacheObj)
+					cacheObj = append(cacheObj, cacheKey)
+					cacheObj = append(cacheObj, cacheValue)
+				}
+
+				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
+				if noOrgCacheKey != "" {
+					logger.LoggerAPIPartition.Debugf("Caching no organization cache key %v -> %v", cacheKey, cacheObj)
 					cacheObj = append(cacheObj, cacheKey)
 					cacheObj = append(cacheObj, cacheValue)
 				}
