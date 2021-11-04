@@ -23,10 +23,11 @@ package apipartition
 
 import (
 	"fmt"
-	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 	"os"
 	"strconv"
 	"strings"
+
+	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/cache"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
@@ -157,37 +158,37 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.Ev
 	if error != nil {
 		logger.LoggerAPIPartition.Errorf("Error while persist the API info for UUID : %v ", &api.UUID)
 	} else {
-        for {
-            isExists, apiID := isAPIExists(api.UUID, gwLabel)
-            if isExists {
-                logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
-                adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
-                break
-            }
-            availableID, isNewID := getAvailableID(gwLabel)
-            if availableID == -1 { // Return -1 due to an error
-                logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
-                break
-            } else {
-                _, err := stmt.Exec(api.UUID, &gwLabel, availableID, api.OrganizationID)
-                if err != nil {
-                    if strings.Contains(err.Error(), "duplicate key") {
-                        logger.LoggerAPIPartition.Debug(" ID already exists ", err)
-                        continue
-                    } else {
-                        logger.LoggerAPIPartition.Error("Error while writing partition information ", err)
-                    }
-                } else {
-                    adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
-                    logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
-                    // Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
-                    if isNewID {
-                        triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionThreshold)
-                    }
-                    break
-                }
-            }
-        }
+		for {
+			isExists, apiID := isAPIExists(api.UUID, gwLabel)
+			if isExists {
+				logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
+				adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
+				break
+			}
+			availableID, isNewID := getAvailableID(gwLabel)
+			if availableID == -1 { // Return -1 due to an error
+				logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
+				break
+			} else {
+				_, err := stmt.Exec(api.UUID, &gwLabel, availableID, api.OrganizationID)
+				if err != nil {
+					if strings.Contains(err.Error(), "duplicate key") {
+						logger.LoggerAPIPartition.Debug(" ID already exists ", err)
+						continue
+					} else {
+						logger.LoggerAPIPartition.Error("Error while writing partition information ", err)
+					}
+				} else {
+					adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
+					logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
+					// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
+					if isNewID {
+						triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionThreshold)
+					}
+					break
+				}
+			}
+		}
 		stmt.Close()
 	}
 
@@ -387,6 +388,10 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 
 	rc := cache.GetClient()
 	key := getCacheKey(api, labelHierarchy)
+
+	// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
+	noOrgCacheKey := getNoOrgCacheKey(api, labelHierarchy)
+
 	if key != "" {
 		logger.LoggerAPIPartition.Debug("Redis cache updating ")
 
@@ -394,12 +399,32 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 		case types.APIDelete:
 			go cache.RemoveCacheKey(key, rc)
 			go cache.PublishRedisEvent(key, rc, deleteEvent)
+			go cache.RemoveCacheKey(noOrgCacheKey, rc)
+			go cache.PublishRedisEvent(noOrgCacheKey, rc, deleteEvent)
 		}
 	}
 
 }
 
 func getCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
+	// apiId : Incremental ID
+	// Cache Key pattern : #global-adapter#<environment-label>#<organization-id>#<api-context>
+	// Cache Value : Partition Label ID ie: dev-p1, prod-p3
+	// labelHierarchy : gateway label (dev,prod and etc)
+
+	var cacheKey string
+
+	if api.Context != "" && api.OrganizationID != "" {
+		cacheKey = fmt.Sprintf("#%s#%s#%s#%s", clientName, labelHierarchy, api.OrganizationID, api.Context)
+	} else {
+		logger.LoggerAPIPartition.Error("Unable to get cache key due to empty API Context : ", api.UUID)
+	}
+
+	logger.LoggerAPIPartition.Debug(" Generated cache key : ", cacheKey)
+	return cacheKey
+}
+
+func getNoOrgCacheKey(api *synchronizer.APIEvent, labelHierarchy string) string {
 	// apiId : Incremental ID
 	// Cache Key pattern : #global-adapter#<environment-label>#<api-context>
 	// Cache Value : Partition Label ID ie: dev-p1, prod-p3

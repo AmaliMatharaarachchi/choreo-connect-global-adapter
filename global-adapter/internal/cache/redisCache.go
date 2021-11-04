@@ -85,8 +85,9 @@ func RemoveCacheKey(key string, client *redis.Client) {
 	}
 }
 
-// SetCacheKeys - Insert new cache key-values, updaye existing values.
+// SetCacheKeys - Insert new cache key-values, update existing values.
 func SetCacheKeys(cacheList []string, client *redis.Client) error {
+
 	res := client.MSet(cacheList)
 	if res.Err() != nil {
 		logger.LoggerServer.Error("Error while adding the cache object(s) ", res.Err().Error())
