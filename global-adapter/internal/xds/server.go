@@ -90,9 +90,11 @@ func addSingleAPI(label, apiUUID, revisionUUID, organizationUUID string) {
 		newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
 			nil, nil, nil, nil, nil, apiResources)
 	}
+
 	apiCache.SetSnapshot(label, newSnapshot)
 	introducedLabels[label] = true
-	logger.LoggerXds.Infof("API Snapshot is updated for label %s with the version %d.", label, version)
+	// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
+	logger.LoggerXds.Infof("API Snapshot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResources(typeURL)))
 }
 
 // removeAPI removes the API entry from XDS cache
@@ -122,7 +124,8 @@ func removeAPI(labelHierarchy, apiUUID string) {
 			newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
 				nil, nil, nil, nil, nil, apiResources)
 			apiCache.SetSnapshot(label, newSnapshot)
-			logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
+			// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
+			logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResources(typeURL)))
 			return
 		}
 	}
@@ -170,7 +173,8 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 				nil, nil, nil, nil, nil, apiResources)
 			snapshotMap[label] = &newSnapshot
 		}
-		logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s in startup", label, apiUUID, revisionUUID)
+		// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
+		logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s in startup. Current snapshot size is : %d", label, apiUUID, revisionUUID, len(newSnapshot.GetResources(typeURL)))
 	}
 
 	for label, snapshotEntry := range snapshotMap {
