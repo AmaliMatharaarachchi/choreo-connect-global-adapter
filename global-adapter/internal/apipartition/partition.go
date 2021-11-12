@@ -538,8 +538,8 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 
 				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
 				if noOrgCacheKey != "" {
-					logger.LoggerAPIPartition.Debugf("Caching no organization cache key %v -> %v", cacheKey, cacheObj)
-					cacheObj = append(cacheObj, cacheKey)
+					logger.LoggerAPIPartition.Debugf("Caching no organization cache key %v -> %v", noOrgCacheKey, cacheObj)
+					cacheObj = append(cacheObj, noOrgCacheKey)
 					cacheObj = append(cacheObj, cacheValue)
 				}
 			} else {

@@ -132,7 +132,7 @@ func updateCacheForAPIIds(apiIds []string, redisValue string, conf *config.Confi
 		eventsForAPIID, err := getAPIEvents(apiID, conf)
 		if err != nil || eventsForAPIID == nil {
 			logger.LoggerMsg.Errorf("Failed to get API event for apiID: %s. Error: %v", apiID, err)
-			break
+			continue
 		}
 		for _, event := range eventsForAPIID {
 			apiEvents = append(apiEvents, event)
