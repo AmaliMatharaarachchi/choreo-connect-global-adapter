@@ -16,11 +16,22 @@
 # -----------------------------------------------------------------------
 
 count=1
-napTime=5
-retryCount=5
+napTime=$1
+retryCount=$2
 RedisSubscribedStatusfilePath="/redis/redis-subscribe.txt"
 LOG_LOCATION="/redis"  
 exec >> $LOG_LOCATION/subscribe.log 2>&1
+
+#set default naptime if the argument is not set
+if [ -z "$1" ]
+  then
+    napTime=5
+fi
+#set default retry count if the argument is not set
+if [ -z "$2" ]
+  then
+    retryCount=3
+fi
 
 while [ $count -le $retryCount ]; do
   echo "naptime: $napTime"
