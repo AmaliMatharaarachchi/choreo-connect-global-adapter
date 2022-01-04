@@ -65,8 +65,11 @@ var defaultConfig = &Config{
 		SkipSSLVerification: true,
 		BrokerConnectionParameters: brokerConnectionParameters{
 			EventListeningEndpoints: []string{"amqp://admin:$env{cp_admin_pwd}@apim:5672?retries='10'&connectdelay='30'"},
-			ReconnectInterval:      5000, //in milli seconds
-			ReconnectRetryCount:    60,
+			ReconnectInterval:       5000, //in milli seconds
+			ReconnectRetryCount:     60,
+		},
+		HTTPClient: httpClient{
+			RequestTimeOut: 30, // in seconds
 		},
 	},
 	RedisServer: redisServer{

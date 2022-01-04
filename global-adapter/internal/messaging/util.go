@@ -78,17 +78,18 @@ func getAPIEvents(apiID string, conf *config.Config) ([]synchronizer.APIEvent, e
 	skipSSL := conf.ControlPlane.SkipSSLVerification
 	retryInterval := conf.ControlPlane.RetryInterval
 	truststoreLocation := conf.Truststore.Location
+	requestTimeout := conf.ControlPlane.HTTPClient.RequestTimeOut
 
 	// Create a channel for the byte slice (response from the APIs from control plane).
 	c := make(chan sync.SyncAPIResponse)
 
 	// Fetch APIs from control plane and write to the channel c.
 	adapter.GetAPIs(c, &apiID, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-		synchronizer.RuntimeMetaDataEndpoint, false, nil)
+		synchronizer.RuntimeMetaDataEndpoint, false, nil, requestTimeout)
 
 	// Get deployment.json from the channel c.
 	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
-		username, password, skipSSL, truststoreLocation, retryInterval)
+		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout)
 
 	var apiEvents []synchronizer.APIEvent
 	if err != nil {

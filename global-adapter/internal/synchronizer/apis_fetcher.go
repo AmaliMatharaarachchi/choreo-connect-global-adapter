@@ -24,8 +24,9 @@ package synchronizer
 
 import (
 	"encoding/json"
-	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 	"time"
+
+	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -46,7 +47,7 @@ func init() {
 // GetArtifactDetailsFromChannel retrieve the artifact details from the channel c.
 func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL string, userName string,
 	password string, skipSSL bool, truststoreLocation string,
-	retryInterval time.Duration) (*sync.DeploymentDescriptor, error) {
+	retryInterval time.Duration, requestTimeout time.Duration) (*sync.DeploymentDescriptor, error) {
 
 	for i := 0; i < 1; i++ {
 		// Read the API details from the channel.
@@ -79,7 +80,7 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 			i--
 			logger.LoggerSync.Errorf("Error occurred while fetching data from control plane: %v", data.Err)
 			sync.RetryFetchingAPIs(c, serviceURL, userName, password, skipSSL, truststoreLocation, retryInterval,
-				data, RuntimeMetaDataEndpoint, false)
+				data, RuntimeMetaDataEndpoint, false, requestTimeout)
 		}
 	}
 	return &sync.DeploymentDescriptor{}, nil
@@ -130,17 +131,18 @@ func FetchAPIsOnStartUp(conf *config.Config, isReload bool) {
 	skipSSL := conf.ControlPlane.SkipSSLVerification
 	retryInterval := conf.ControlPlane.RetryInterval
 	truststoreLocation := conf.Truststore.Location
+	requestTimeout := conf.ControlPlane.HTTPClient.RequestTimeOut
 
 	// Create a channel for the byte slice (response from the APIs from control plane).
 	c := make(chan sync.SyncAPIResponse)
 
 	// Fetch APIs from control plane and write to the channel c.
 	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-		RuntimeMetaDataEndpoint, false, nil)
+		RuntimeMetaDataEndpoint, false, nil, conf.ControlPlane.HTTPClient.RequestTimeOut)
 
 	// Get deployment.json from the channel c.
 	deploymentDescriptor, err := GetArtifactDetailsFromChannel(c, serviceURL,
-		username, password, skipSSL, truststoreLocation, retryInterval)
+		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout)
 
 	if err != nil {
 		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)

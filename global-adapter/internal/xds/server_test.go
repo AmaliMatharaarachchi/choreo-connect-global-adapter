@@ -65,12 +65,12 @@ func TestAddMultipleAPIs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, snapshot1)
 	assert.NotEmpty(t, snapshot2)
-	assert.Len(t, snapshot1.GetResources(typeURL), 2)
-	assert.Len(t, snapshot2.GetResources(typeURL), 1)
+	assert.Len(t, snapshot1.GetResourcesAndTTL(typeURL), 2)
+	assert.Len(t, snapshot2.GetResourcesAndTTL(typeURL), 1)
 
-	testResourceContent(t, api1, revision1, snapshot1.GetResources(typeURL))
-	testResourceContent(t, api2, revision1, snapshot2.GetResources(typeURL))
-	testResourceContent(t, api3, revision1, snapshot1.GetResources(typeURL))
+	testResourceContent(t, api1, revision1, snapshot1.GetResourcesAndTTL(typeURL))
+	testResourceContent(t, api2, revision1, snapshot2.GetResourcesAndTTL(typeURL))
+	testResourceContent(t, api3, revision1, snapshot1.GetResourcesAndTTL(typeURL))
 
 	// Tests the addition of a new API
 	apiEvent4 := internal_types.LaAPIEvent{
@@ -80,8 +80,8 @@ func TestAddMultipleAPIs(t *testing.T) {
 	}
 	xds.ProcessSingleEvent(&apiEvent4)
 	snapshot1, _ = xds.GetAPICache().GetSnapshot(label1)
-	assert.Len(t, snapshot1.GetResources(typeURL), 3)
-	testResourceContent(t, api4, revision1, snapshot1.GetResources(typeURL))
+	assert.Len(t, snapshot1.GetResourcesAndTTL(typeURL), 3)
+	testResourceContent(t, api4, revision1, snapshot1.GetResourcesAndTTL(typeURL))
 
 	apiEvent5 := internal_types.LaAPIEvent{
 		APIUUID:      api1,
@@ -90,8 +90,8 @@ func TestAddMultipleAPIs(t *testing.T) {
 	}
 	xds.ProcessSingleEvent(&apiEvent5)
 	snapshot1, _ = xds.GetAPICache().GetSnapshot(label1)
-	assert.Len(t, snapshot1.GetResources(typeURL), 3)
-	testResourceContent(t, api1, revision2, snapshot1.GetResources(typeURL))
+	assert.Len(t, snapshot1.GetResourcesAndTTL(typeURL), 3)
+	testResourceContent(t, api1, revision2, snapshot1.GetResourcesAndTTL(typeURL))
 
 	apiEvent6 := internal_types.LaAPIEvent{
 		APIUUID:       api1,
@@ -100,15 +100,15 @@ func TestAddMultipleAPIs(t *testing.T) {
 	}
 	xds.ProcessSingleEvent(&apiEvent6)
 	snapshot1, _ = xds.GetAPICache().GetSnapshot(label1)
-	assert.Len(t, snapshot1.GetResources(typeURL), 2)
+	assert.Len(t, snapshot1.GetResourcesAndTTL(typeURL), 2)
 	_, resourceFound := snapshot1.GetResources(typeURL)[api1]
 	assert.False(t, resourceFound)
 }
 
-func testResourceContent(t *testing.T, apiUUID, revisionUUID string, resourceMap map[string]types.Resource) {
+func testResourceContent(t *testing.T, apiUUID, revisionUUID string, resourceMap map[string]types.ResourceWithTTL) {
 	res, resFound := resourceMap[apiUUID]
 	assert.True(t, resFound)
-	switch api := res.(type) {
+	switch api := res.Resource.(type) {
 	case *ga_model.Api:
 		assert.Equal(t, apiUUID, api.ApiUUID, "API UUID mismatch")
 		assert.Equal(t, revisionUUID, api.RevisionUUID, "RevisionUUID mismatch")

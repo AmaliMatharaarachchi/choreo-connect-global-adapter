@@ -37,19 +37,20 @@ type Config struct {
 
 // ControlPlane struct contains configurations related to the API Manager
 type controlPlane struct {
-	ServiceURL              string        `toml:"serviceUrl"`
-	Username                string        `toml:"username"`
-	Password                string        `toml:"password"`
-	EnvironmentLabels       []string      `toml:"environmentLabels"`
-	RetryInterval           time.Duration `toml:"retryInterval"`
-	SkipSSLVerification     bool          `toml:"skipSSLVerification"`
+	ServiceURL                 string                     `toml:"serviceUrl"`
+	Username                   string                     `toml:"username"`
+	Password                   string                     `toml:"password"`
+	EnvironmentLabels          []string                   `toml:"environmentLabels"`
+	RetryInterval              time.Duration              `toml:"retryInterval"`
+	SkipSSLVerification        bool                       `toml:"skipSSLVerification"`
 	BrokerConnectionParameters brokerConnectionParameters `toml:"brokerConnectionParameters"`
+	HTTPClient                 httpClient
 }
 
 type brokerConnectionParameters struct {
-	EventListeningEndpoints []string        `toml:"eventListeningEndpoints"`
-	ReconnectInterval      time.Duration `toml:"reconnectInterval"`
-	ReconnectRetryCount    int           `toml:"reconnectRetryCount"`
+	EventListeningEndpoints []string      `toml:"eventListeningEndpoints"`
+	ReconnectInterval       time.Duration `toml:"reconnectInterval"`
+	ReconnectRetryCount     int           `toml:"reconnectRetryCount"`
 }
 
 type truststore struct {
@@ -123,4 +124,8 @@ type redisOptionalMetadata struct {
 type xdsServer struct {
 	Host string
 	Port string
+}
+
+type httpClient struct {
+	RequestTimeOut time.Duration
 }
