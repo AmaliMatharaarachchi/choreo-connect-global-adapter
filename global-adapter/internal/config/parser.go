@@ -67,12 +67,12 @@ func ReadConfigs() *Config {
 			return
 		}
 		// Resolve environment variables.
-		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.Server)).Elem())
-		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.Keystore)).Elem())
-		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.Truststore)).Elem())
-		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.DataBase)).Elem())
-		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.ControlPlane)).Elem())
-		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.RedisServer)).Elem())
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.Server)).Elem(), "Server", true)
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.Keystore)).Elem(), "Keystore", true)
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.Truststore)).Elem(), "Truststore", true)
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.DataBase)).Elem(), "Database", true)
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.ControlPlane)).Elem(), "ControlPlane", true)
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.RedisServer)).Elem(), "RedisServer", true)
 	})
 	return globalAdapterConfig
 }

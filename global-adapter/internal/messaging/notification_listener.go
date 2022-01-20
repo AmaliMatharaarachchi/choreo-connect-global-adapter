@@ -133,16 +133,17 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 	skipSSL := config.ControlPlane.SkipSSLVerification
 	retryInterval := config.ControlPlane.RetryInterval
 	truststoreLocation := config.Truststore.Location
+	requestTimeout := config.ControlPlane.HTTPClient.RequestTimeOut
 
 	// Create a channel for the byte slice (response from the /runtime-metadata endpoint)
 	c := make(chan synchronizer.SyncAPIResponse)
 
 	// Fetch API details from control plane and write API details to the channel c.
 	adapter.GetAPIs(c, &uuid, serviceURL, username, password, gatewayLabels, skipSSL, truststoreLocation,
-		sync.RuntimeMetaDataEndpoint, false, nil)
+		sync.RuntimeMetaDataEndpoint, false, nil, requestTimeout)
 	// Get deployment.json file from channel c.
 	deploymentDescriptor, err := sync.GetArtifactDetailsFromChannel(c, serviceURL,
-		username, password, skipSSL, truststoreLocation, retryInterval)
+		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout)
 
 	if err != nil {
 		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)
@@ -156,20 +157,20 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 func parseNotificationJSONEvent(data []byte, notification *msg.EventNotification) error {
 	unmarshalErr := json.Unmarshal(data, &notification)
 	if unmarshalErr != nil {
-		logger.LoggerMsg.Errorf("Error occurred while unmarshalling " +
+		logger.LoggerMsg.Errorf("Error occurred while unmarshalling "+
 			"notification event data %v. Hence dropping the event", unmarshalErr)
 	}
 	return unmarshalErr
 }
 
-func processNotificationEvent (conf *config.Config, notification *msg.EventNotification) error {
+func processNotificationEvent(conf *config.Config, notification *msg.EventNotification) error {
 	var eventType string
 	var decodedByte, err = base64.StdEncoding.DecodeString(notification.Event.PayloadData.Event)
 	if err != nil {
 		if _, ok := err.(base64.CorruptInputError); ok {
 			logger.LoggerMsg.Errorf("\nbase64 input is corrupt, check the provided key")
 		}
-		logger.LoggerMsg.Errorf("Error occurred while decoding the notification event %v. " +
+		logger.LoggerMsg.Errorf("Error occurred while decoding the notification event %v. "+
 			"Hence dropping the event", err)
 		return err
 	}

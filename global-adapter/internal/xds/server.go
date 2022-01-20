@@ -18,6 +18,7 @@
 package xds
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -29,6 +30,7 @@ import (
 	internal_types "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
 	ga_api "github.com/wso2/product-microgateway/adapter/pkg/discovery/api/wso2/discovery/ga"
 	wso2_cache "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/cache/v3"
+	wso2_resource "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/resource/v3"
 )
 
 var (
@@ -81,17 +83,20 @@ func addSingleAPI(label, apiUUID, revisionUUID, organizationUUID string) {
 
 	// error occurs if no snapshot is under the provided label
 	if err != nil {
-		newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
-			nil, nil, nil, nil, nil, []types.Resource{api})
+		newSnapshot, _ = wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+			wso2_resource.GAAPIType: {api},
+		})
 	} else {
-		resourceMap := currentSnapshot.GetResources(typeURL)
-		resourceMap[apiUUID] = api
+		resourceMap := currentSnapshot.GetResourcesAndTTL(typeURL)
+		resourceMap[apiUUID] = types.ResourceWithTTL{
+			Resource: api,
+		}
 		apiResources := convertResourceMapToArray(resourceMap)
-		newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
-			nil, nil, nil, nil, nil, apiResources)
+		newSnapshot, _ = wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+			wso2_resource.GAAPIType: apiResources,
+		})
 	}
-
-	apiCache.SetSnapshot(label, newSnapshot)
+	apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 	introducedLabels[label] = true
 	// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
 	logger.LoggerXds.Infof("API Snapshot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResources(typeURL)))
@@ -114,16 +119,17 @@ func removeAPI(labelHierarchy, apiUUID string) {
 			continue
 		}
 
-		resourceMap := currentSnapshot.GetResources(typeURL)
+		resourceMap := currentSnapshot.GetResourcesAndTTL(typeURL)
 		_, apiFound := resourceMap[apiUUID]
 		// If the API is found, then the xds cache is updated and returned.
 		if apiFound {
 			logger.LoggerXds.Debugf("API : %s is found within snapshot for label %s", apiUUID, label)
 			delete(resourceMap, apiUUID)
 			apiResources := convertResourceMapToArray(resourceMap)
-			newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
-				nil, nil, nil, nil, nil, apiResources)
-			apiCache.SetSnapshot(label, newSnapshot)
+			newSnapshot, _ = wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+				wso2_resource.GAAPIType: apiResources,
+			})
+			apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 			// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
 			logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResources(typeURL)))
 			return
@@ -160,17 +166,21 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 		snapshotEntry, snapshotFound := snapshotMap[label]
 		var newSnapshot wso2_cache.Snapshot
 		if !snapshotFound {
-			newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
-				nil, nil, nil, nil, nil, []types.Resource{api})
+			newSnapshot, _ = wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+				wso2_resource.GAAPIType: {api},
+			})
 			snapshotEntry = &newSnapshot
 			snapshotMap[label] = &newSnapshot
 		} else {
 			// error occurs if no snapshot is under the provided label
-			resourceMap := snapshotEntry.GetResources(typeURL)
-			resourceMap[apiUUID] = api
+			resourceMap := snapshotEntry.GetResourcesAndTTL(typeURL)
+			resourceMap[apiUUID] = types.ResourceWithTTL{
+				Resource: api,
+			}
 			apiResources := convertResourceMapToArray(resourceMap)
-			newSnapshot = wso2_cache.NewSnapshot(fmt.Sprint(version), nil, nil, nil, nil, nil, nil,
-				nil, nil, nil, nil, nil, apiResources)
+			newSnapshot, _ = wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+				wso2_resource.GAAPIType: apiResources,
+			})
 			snapshotMap[label] = &newSnapshot
 		}
 		// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
@@ -178,16 +188,16 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 	}
 
 	for label, snapshotEntry := range snapshotMap {
-		apiCache.SetSnapshot(label, *snapshotEntry)
+		apiCache.SetSnapshot(context.Background(), label, *snapshotEntry)
 		introducedLabels[label] = true
 		logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d.", label, version)
 	}
 }
 
-func convertResourceMapToArray(resourceMap map[string]types.Resource) []types.Resource {
+func convertResourceMapToArray(resourceMap map[string]types.ResourceWithTTL) []types.Resource {
 	apiResources := []types.Resource{}
 	for _, res := range resourceMap {
-		apiResources = append(apiResources, res)
+		apiResources = append(apiResources, res.Resource)
 	}
 	return apiResources
 }
