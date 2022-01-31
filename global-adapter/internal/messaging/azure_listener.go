@@ -19,11 +19,12 @@
 package messaging
 
 import (
+	"time"
+
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2/product-microgateway/adapter/pkg/health"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
-	"time"
 )
 
 const (
@@ -38,13 +39,13 @@ func InitiateAndProcessEvents(config *config.Config) {
 	var err error
 	var reconnectRetryCount = config.ControlPlane.BrokerConnectionParameters.ReconnectRetryCount
 	var reconnectInterval = config.ControlPlane.BrokerConnectionParameters.ReconnectInterval
-	subscriptionMetaDataList, err := msg.InitiateBrokerConnectionAndValidate(
-		config.ControlPlane.BrokerConnectionParameters.EventListeningEndpoints[0], componentName, reconnectRetryCount,
-		reconnectInterval*time.Millisecond, subscriptionIdleTimeDuration)
+	connectionString := config.ControlPlane.BrokerConnectionParameters.EventListeningEndpoints[0]
+	subscriptionMetaDataList, err := msg.InitiateBrokerConnectionAndValidate(connectionString, componentName,
+		reconnectRetryCount, reconnectInterval*time.Millisecond, subscriptionIdleTimeDuration)
 	health.SetControlPlaneBrokerStatus(err == nil)
 	if err == nil {
 		logger.LoggerMsg.Info("Service bus meta data successfully initialized.")
-		msg.InitiateConsumers(subscriptionMetaDataList, reconnectInterval*time.Millisecond)
+		msg.InitiateConsumers(connectionString, subscriptionMetaDataList, reconnectInterval*time.Millisecond)
 		go handleAzureNotification(config)
 		go handleAzureTokenRevocation()
 		go handleAzureBillingCycleResetEvents(config)

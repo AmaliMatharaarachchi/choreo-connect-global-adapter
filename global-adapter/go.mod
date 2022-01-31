@@ -1,6 +1,6 @@
 module github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter
 
-go 1.15
+go 1.16
 
 require (
 	github.com/denisenkom/go-mssqldb v0.10.0
@@ -10,6 +10,6 @@ require (
 	github.com/pelletier/go-toml v1.8.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0
-	github.com/wso2/product-microgateway/adapter v0.0.0-20211222040919-170e208196d8
+	github.com/wso2/product-microgateway/adapter v0.0.0-20220124094414-085ebe203341
 	google.golang.org/grpc v1.36.0
 )

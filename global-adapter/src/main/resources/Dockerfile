@@ -51,6 +51,9 @@ COPY maven/security security
 COPY maven/global-adapter-linux global-adapter
 COPY check_health.sh .
 
+# DEBUG_LEVEL is for debugging go-amqp library.
+ENV DEBUG_LEVEL=0
+
 ENV LOG_CONFIG_PATH="${MG_USER_HOME}/conf/log_config.toml"
 
 ENV MGW_HOME="${MG_USER_HOME}"
