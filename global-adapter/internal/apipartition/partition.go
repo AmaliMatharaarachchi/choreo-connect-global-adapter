@@ -396,8 +396,6 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 		case types.APIDelete:
 			go cache.RemoveCacheKey(key, rc)
 			go cache.PublishRedisEvent(key, rc, deleteEvent)
-			go cache.RemoveCacheKey(noOrgCacheKey, rc)
-			go cache.PublishRedisEvent(noOrgCacheKey, rc, deleteEvent)
 		}
 	}
 
