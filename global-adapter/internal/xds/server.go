@@ -98,8 +98,6 @@ func addSingleAPI(label, apiUUID, revisionUUID, organizationUUID string) {
 	}
 	apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 	introducedLabels[label] = true
-	// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
-	logger.LoggerXds.Infof("API Snapshot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResources(typeURL)))
 }
 
 // removeAPI removes the API entry from XDS cache
@@ -130,8 +128,6 @@ func removeAPI(labelHierarchy, apiUUID string) {
 				wso2_resource.GAAPIType: apiResources,
 			})
 			apiCache.SetSnapshot(context.Background(), label, newSnapshot)
-			// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
-			logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResources(typeURL)))
 			return
 		}
 	}
@@ -183,8 +179,6 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 			})
 			snapshotMap[label] = &newSnapshot
 		}
-		// To do:- (mpmunasinghe) Remove snapshot size from the log when the GA to LA XDs chache issue is identified
-		logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s in startup. Current snapshot size is : %d", label, apiUUID, revisionUUID, len(newSnapshot.GetResources(typeURL)))
 	}
 
 	for label, snapshotEntry := range snapshotMap {

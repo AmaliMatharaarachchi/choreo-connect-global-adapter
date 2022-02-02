@@ -94,9 +94,6 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 				isExceeded := isQuotaExceededForOrg(apis[ind].OrganizationID)
 				cacheKey := getCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
 
-				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
-				noOrgCacheKey := getNoOrgCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
-
 				cacheValue := RedisBlockedValue
 				if !isExceeded {
 					cacheValue = getCacheValue(&apis[ind], label)
@@ -118,12 +115,6 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
 				if cacheKey != "" {
 					cacheObj = append(cacheObj, cacheKey)
-					cacheObj = append(cacheObj, cacheValue)
-				}
-
-				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
-				if noOrgCacheKey != "" {
-					cacheObj = append(cacheObj, noOrgCacheKey)
 					cacheObj = append(cacheObj, cacheValue)
 				}
 			} else {
@@ -398,9 +389,6 @@ func updateRedisCache(api *synchronizer.APIEvent, labelHierarchy string, adapter
 	rc := cache.GetClient()
 	key := getCacheKey(api, labelHierarchy)
 
-	// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
-	noOrgCacheKey := getNoOrgCacheKey(api, labelHierarchy)
-
 	if key != "" {
 		logger.LoggerAPIPartition.Debug("Redis cache updating ")
 
@@ -520,9 +508,6 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 				// No need to check if org is blocked. If yes,func will be called with "blocked" for cacheValue
 				cacheKey := getCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
 
-				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
-				noOrgCacheKey := getNoOrgCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
-
 				if cacheValue == "" {
 					cacheValue = getCacheValue(&apiEvent, label)
 				}
@@ -533,13 +518,6 @@ func UpdateCacheForQuotaExceededStatus(apiEvent synchronizer.APIEvent, cacheValu
 				if cacheKey != "" {
 					logger.LoggerAPIPartition.Debugf("Caching %v -> %v", cacheKey, cacheObj)
 					cacheObj = append(cacheObj, cacheKey)
-					cacheObj = append(cacheObj, cacheValue)
-				}
-
-				// To Do (mpmunasinghe) :- Remove the backward compatible cachekey when all APIs are migrated to new cache key
-				if noOrgCacheKey != "" {
-					logger.LoggerAPIPartition.Debugf("Caching no organization cache key %v -> %v", noOrgCacheKey, cacheObj)
-					cacheObj = append(cacheObj, noOrgCacheKey)
 					cacheObj = append(cacheObj, cacheValue)
 				}
 			} else {
