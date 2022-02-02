@@ -98,6 +98,7 @@ func addSingleAPI(label, apiUUID, revisionUUID, organizationUUID string) {
 	}
 	apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 	introducedLabels[label] = true
+	logger.LoggerXds.Infof("API Snapshot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResourcesAndTTL(typeURL)))
 }
 
 // removeAPI removes the API entry from XDS cache
@@ -128,6 +129,7 @@ func removeAPI(labelHierarchy, apiUUID string) {
 				wso2_resource.GAAPIType: apiResources,
 			})
 			apiCache.SetSnapshot(context.Background(), label, newSnapshot)
+			logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResourcesAndTTL(typeURL)))
 			return
 		}
 	}
@@ -179,6 +181,7 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 			})
 			snapshotMap[label] = &newSnapshot
 		}
+		logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s in startup. Current snapshot size is : %d", label, apiUUID, revisionUUID, len(newSnapshot.GetResourcesAndTTL(typeURL)))
 	}
 
 	for label, snapshotEntry := range snapshotMap {
