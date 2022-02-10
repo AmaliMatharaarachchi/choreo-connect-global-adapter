@@ -14,7 +14,7 @@ PROJECT_NAME := choreo-connect-global-adapter
 PROJECT_PKG := github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter
 BUILD_DIRECTORY := build
 BUILD_ROOT := $(PROJECT_ROOT)/$(BUILD_DIRECTORY)
-GO_FILES		= $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_FILES = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 GIT_REVISION := $(shell git rev-parse --verify HEAD)
 
 .PHONY: test
