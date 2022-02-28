@@ -29,11 +29,8 @@ import (
 
 // Get all the API IDs for an organisation
 func getAPIIdsForOrg(orgID string) ([]string, error) {
-	database.WakeUpConnection()
-	defer database.CloseDbConnection()
-
 	var apiIds []string
-	row, err := database.DB.Query(database.QueryGetAPIsByOrg, orgID)
+	row, err := database.ExecDBQuery(database.QueryGetAPIsByOrg, orgID)
 	if err == nil {
 		for row.Next() {
 			var apiID string

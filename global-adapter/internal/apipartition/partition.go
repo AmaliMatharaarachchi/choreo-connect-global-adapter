@@ -73,7 +73,6 @@ const (
 func PopulateAPIData(apis []synchronizer.APIEvent) {
 	var laAPIList []*types.LaAPIEvent
 	var cacheObj []string
-
 	database.WakeUpConnection()
 	defer database.CloseDbConnection()
 
@@ -153,53 +152,46 @@ func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 // If the API is not in database, that will save to the database and return the label
 func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.EventType) string {
 	var adapterLabel string
-	stmt, error := database.DB.Prepare(database.QueryInsertAPI)
 
-	if error != nil {
-		logger.LoggerAPIPartition.Errorf("Error while persist the API info for UUID : %v ", &api.UUID)
-	} else {
-		for {
-			isExists, apiID := isAPIExists(api.UUID, gwLabel)
-			if isExists {
-				logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
-				adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
-				break
-			}
-			availableID, isNewID := getAvailableID(gwLabel)
-			if availableID == -1 { // Return -1 due to an error
-				logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
-				break
-			} else {
-				_, err := stmt.Exec(api.UUID, &gwLabel, availableID, api.OrganizationID)
-				if err != nil {
-					if strings.Contains(err.Error(), "duplicate key") {
-						logger.LoggerAPIPartition.Debug(" ID already exists ", err)
-						continue
-					} else {
-						logger.LoggerAPIPartition.Error("Error while writing partition information ", err)
-					}
+	for {
+		isExists, apiID := isAPIExists(api.UUID, gwLabel)
+		if isExists {
+			logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
+			adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
+			break
+		}
+		availableID, isNewID := getAvailableID(gwLabel)
+		if availableID == -1 { // Return -1 due to an error
+			logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
+			break
+		} else {
+			_, err := database.ExecPreparedStatement(database.QueryInsertAPI, api.UUID, &gwLabel, availableID, api.OrganizationID)
+
+			if err != nil {
+				if strings.Contains(err.Error(), "duplicate key") {
+					logger.LoggerAPIPartition.Debug(" ID already exists ", err)
+					continue
 				} else {
-					adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
-					logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
-					// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
-					if isNewID {
-						triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionThreshold)
-					}
-					break
+					logger.LoggerAPIPartition.Error("Error while writing partition information ", err)
 				}
+			} else {
+				adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
+				logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
+				// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
+				if isNewID {
+					triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionThreshold)
+				}
+				break
 			}
 		}
-		stmt.Close()
 	}
-
 	return adapterLabel
 }
 
 // Return a boolean for API existance , int for incremental ID if the API already exists
 func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
-
 	var apiID int
-	row, err := database.DB.Query(database.QueryIsAPIExists, uuid, labelHierarchy)
+	row, err := database.ExecDBQuery(database.QueryIsAPIExists, uuid, labelHierarchy)
 	if err == nil {
 		if !row.Next() {
 			logger.LoggerAPIPartition.Debug("Record does not exist for labelHierarchy : ", labelHierarchy, " and uuid : ", uuid)
@@ -236,7 +228,7 @@ func getAvailableID(hierarchyID string) (int, bool) {
 // Observing emptied incremental ID
 func getEmptiedID(hierarchyID string) int {
 	var emptiedID int
-	stmt, error := database.DB.Query(database.QueryGetEmptiedID, hierarchyID)
+	stmt, error := database.ExecDBQuery(database.QueryGetEmptiedID, hierarchyID)
 	if error == nil {
 		stmt.Next()
 		stmt.Scan(&emptiedID)
@@ -252,7 +244,7 @@ func getEmptiedID(hierarchyID string) int {
 func getNextIncrementalID(hierarchyID string) int {
 	var highestID int
 	var nextIncrementalID int
-	stmt, error := database.DB.Query(database.QueryGetNextIncID, hierarchyID)
+	stmt, error := database.ExecDBQuery(database.QueryGetNextIncID, hierarchyID)
 	if error == nil {
 		stmt.Next()
 		stmt.Scan(&highestID)
@@ -541,7 +533,7 @@ func isQuotaExceededForOrg(orgID string) bool {
 	if IsStepQuotaLimitingEnabled() {
 		logger.LoggerMsg.Debugf("'%s' enabled. Hence checking quota exceeded for org: %s",
 			featureStepQuotaLimiting, orgID)
-		row, err := database.DB.Query(database.QueryIsQuotaExceeded, orgID)
+		row, err := database.ExecDBQuery(database.QueryIsQuotaExceeded, orgID)
 		if err == nil {
 			if !row.Next() {
 				logger.LoggerMsg.Debugf("Record does not exist for orgId : %s", orgID)
