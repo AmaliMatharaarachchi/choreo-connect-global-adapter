@@ -85,42 +85,53 @@ func IsAliveConnection() (isAlive bool) {
 
 // ExecDBQuery Execute db queries after checking/waking up the db connection
 func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
-	var err error
-	var row *sql.Rows
-	for {
-		if WakeUpConnection() {
-			row, err = DB.Query(query, args...)
-			if err != nil && !IsAliveConnection() {
-				// seems like the db connection has dropped. hence retry executing
-				continue
+	row, err := DB.Query(query, args...)
+	if err != nil && !IsAliveConnection() {
+		for {
+			if WakeUpConnection() {
+				row, err = DB.Query(query, args...)
+				if err != nil && !IsAliveConnection() {
+					// seems like the db connection has dropped. hence retry executing
+					continue
+				}
+				break
 			}
-			break
 		}
 	}
 	return row, err
 }
 
+// CreatePreparedStatement create prepared statement after checking/waking up the db connection
+func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
+	stmt, err := DB.Prepare(statement)
+	if err != nil && !IsAliveConnection() {
+		for {
+			if WakeUpConnection() {
+				stmt, err = DB.Prepare(statement)
+				if err != nil && !IsAliveConnection() {
+					// seems like the db connection has dropped. hence retry executing
+					continue
+				}
+				break
+			}
+		}
+	}
+	return stmt, err
+}
+
 // ExecPreparedStatement Execute prepared statement after checking/waking up the db connection
-func ExecPreparedStatement(statement string, args ...interface{}) (sql.Result, error) {
-	var result sql.Result
-	var err error
-	var stmt *sql.Stmt
-	for {
-		if WakeUpConnection() {
-			stmt, err = DB.Prepare(statement)
-			if err != nil && !IsAliveConnection() {
-				// seems like the db connection has dropped. hence retry executing
-				continue
+func ExecPreparedStatement(stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
+	result, err := stmt.Exec(args...)
+	if err != nil && !IsAliveConnection() {
+		for {
+			if WakeUpConnection() {
+				result, err = stmt.Exec(args...)
+				if err != nil && !IsAliveConnection() {
+					// seems like the db connection has dropped. hence retry executing
+					continue
+				}
+				break
 			}
-			result, err = stmt.Exec(args...)
-			if err != nil && !IsAliveConnection() {
-				// seems like the db connection has dropped. hence retry executing
-				continue
-			}
-			if err == nil {
-				stmt.Close()
-			}
-			break
 		}
 	}
 	return result, err

@@ -152,38 +152,44 @@ func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 // If the API is not in database, that will save to the database and return the label
 func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.EventType) string {
 	var adapterLabel string
+	stmt, error := database.CreatePreparedStatement(database.QueryInsertAPI)
 
-	for {
-		isExists, apiID := isAPIExists(api.UUID, gwLabel)
-		if isExists {
-			logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
-			adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
-			break
-		}
-		availableID, isNewID := getAvailableID(gwLabel)
-		if availableID == -1 { // Return -1 due to an error
-			logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
-			break
-		} else {
-			_, err := database.ExecPreparedStatement(database.QueryInsertAPI, api.UUID, &gwLabel, availableID, api.OrganizationID)
-
-			if err != nil {
-				if strings.Contains(err.Error(), "duplicate key") {
-					logger.LoggerAPIPartition.Debug(" ID already exists ", err)
-					continue
-				} else {
-					logger.LoggerAPIPartition.Error("Error while writing partition information ", err)
-				}
-			} else {
-				adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
-				logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
-				// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
-				if isNewID {
-					triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionThreshold)
-				}
+	if error != nil {
+		logger.LoggerAPIPartition.Errorf("Error while persist the API info for UUID : %v ", &api.UUID)
+	} else {
+		for {
+			isExists, apiID := isAPIExists(api.UUID, gwLabel)
+			if isExists {
+				logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
+				adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
 				break
 			}
+			availableID, isNewID := getAvailableID(gwLabel)
+			if availableID == -1 { // Return -1 due to an error
+				logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
+				break
+			} else {
+				_, err := database.ExecPreparedStatement(stmt, api.UUID, &gwLabel, availableID, api.OrganizationID)
+				if err != nil {
+					if strings.Contains(err.Error(), "duplicate key") {
+						logger.LoggerAPIPartition.Debug(" ID already exists ", err)
+						continue
+					} else {
+						logger.LoggerAPIPartition.Error("Error while writing partition information ", err)
+						break
+					}
+				} else {
+					adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
+					logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
+					// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
+					if isNewID {
+						triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionThreshold)
+					}
+					break
+				}
+			}
 		}
+		stmt.Close()
 	}
 	return adapterLabel
 }
