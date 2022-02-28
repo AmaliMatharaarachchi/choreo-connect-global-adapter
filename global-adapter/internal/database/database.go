@@ -45,58 +45,42 @@ func ConnectToDb() {
 }
 
 // WakeUpConnection - checking whether the databace connection is still alive , if not alive then reconnect to the DB
-func WakeUpConnection() (isPing bool) {
+func WakeUpConnection() (isAlive bool) {
 	conf := config.ReadConfigs()
-	isPing = false
 	maxAttempts := conf.DataBase.OptionalMetadata.MaxRetryAttempts
 	var (
 		retryInterval time.Duration = 5
 		attempt       int
 	)
-	defer func() {
-		// to handle the panic error while db ping in defer func
-		if recover() != nil {
-			health.SetDatabaseConnectionStatus(false)
-		}
-	}()
-	defer func() {
-		// to handle the panic error while db ping. panic might be related to https://github.com/denisenkom/go-mssqldb/issues/536
-		if recover() != nil {
-			logger.LoggerServer.Errorf("Panic while DB ping.")
-			ConnectToDb()
-			isPing = DB.Ping() == nil
-			health.SetDatabaseConnectionStatus(isPing)
-		}
-	}()
-	pingError := DB.Ping()
-	if pingError == nil {
-		isPing = true
-	} else {
+	isAlive = IsAliveConnection()
+	if !isAlive {
 		for attempt = 1; attempt <= maxAttempts; attempt++ {
-			logger.LoggerServer.Infof("Error while initiating the database %v. Retrying to connect to database. "+
-				"Attempt %d", pingError, attempt)
+			logger.LoggerServer.Infof("Error while connecting to the database. Retrying to connect to database. "+
+				"Attempt %d", attempt)
 			ConnectToDb()
-			pingError = DB.Ping()
-			if pingError == nil {
-				isPing = true
+			isAlive = IsAliveConnection()
+			if isAlive {
 				break
-			} else {
-				time.Sleep(retryInterval * time.Second)
 			}
+			time.Sleep(retryInterval * time.Second)
 		}
 	}
-	health.SetDatabaseConnectionStatus(isPing)
-	return isPing
+	health.SetDatabaseConnectionStatus(isAlive)
+	return isAlive
 }
 
 // IsAliveConnection check if the db connection is alive
-func IsAliveConnection() (islive bool) {
+func IsAliveConnection() (isAlive bool) {
 	defer func() {
 		// to handle the panic error while db ping. panic might be related to https://github.com/denisenkom/go-mssqldb/issues/536
 		recover()
 	}()
-	islive = DB.Ping() == nil
-	return islive
+	pingError := DB.Ping()
+	if pingError == nil {
+		return true
+	}
+	logger.LoggerServer.Error("Error while connecting to the database", pingError)
+	return isAlive
 }
 
 // ExecDBQuery Execute db queries after checking/waking up the db connection
