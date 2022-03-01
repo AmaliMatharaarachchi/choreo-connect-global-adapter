@@ -64,6 +64,7 @@ func WakeUpConnection() (isAlive bool) {
 			}
 			time.Sleep(retryInterval * time.Second)
 		}
+		logger.LoggerServer.Infof("DB connection liveness is %v", isAlive)
 	}
 	health.SetDatabaseConnectionStatus(isAlive)
 	return isAlive
@@ -87,6 +88,7 @@ func IsAliveConnection() (isAlive bool) {
 func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 	row, err := DB.Query(query, args...)
 	if err != nil && !IsAliveConnection() {
+		logger.LoggerServer.Error("Error while executing DB query", err)
 		for {
 			if WakeUpConnection() {
 				row, err = DB.Query(query, args...)
@@ -105,6 +107,7 @@ func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 	stmt, err := DB.Prepare(statement)
 	if err != nil && !IsAliveConnection() {
+		logger.LoggerServer.Error("Error while creating prepared statement", err)
 		for {
 			if WakeUpConnection() {
 				stmt, err = DB.Prepare(statement)
@@ -123,6 +126,7 @@ func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 func ExecPreparedStatement(stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
 	result, err := stmt.Exec(args...)
 	if err != nil && !IsAliveConnection() {
+		logger.LoggerServer.Error("Error while executing prepared statement", err)
 		for {
 			if WakeUpConnection() {
 				result, err = stmt.Exec(args...)
