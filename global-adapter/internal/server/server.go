@@ -22,8 +22,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
+
+	// enable profiling endpoints
+	_ "net/http/pprof"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
@@ -40,7 +45,6 @@ import (
 	"github.com/wso2/product-microgateway/adapter/pkg/tlsutils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"strings"
 )
 
 // TODO: (VirajSalaka) check this is streams per connections or total number of concurrent streams.
@@ -102,9 +106,16 @@ func Run(conf *config.Config) {
 	port := conf.XdsServer.Port
 	// TODO: (VirajSalaka) Bind host to the listener
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%s", port))
+
 	if err != nil {
 		logger.LoggerServer.Fatalf("Error while listening on port: %s", port)
 	}
+
+	//to enable pprof endpoint
+	go func() {
+		logger.LoggerServer.Debug("Opening port 6060 for pprof")
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 
 	// register health service
 	healthservice.RegisterHealthServer(grpcServer, &health.Server{})
