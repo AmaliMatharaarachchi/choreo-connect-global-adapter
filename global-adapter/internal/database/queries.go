@@ -23,7 +23,6 @@ const (
 	QueryIsAPIExists  string = "SELECT api_id FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
 	QueryGetAllLabels string = "SELECT api_uuid, label_hierarchy, api_id FROM ga_local_adapter_partition"
 	QueryDeleteAPI    string = "DELETE FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
-	// QueryGetNextIncID returns row id of the highest api id for the label hierarchy.
 	QueryGetNextIncID string = "SELECT TOP 1 api_id from ga_local_adapter_partition WHERE label_hierarchy = @p1 ORDER BY api_id DESC"
 	QueryGetEmptiedID string = `SELECT TOP 1 temp.rowId from (
 										SELECT 
