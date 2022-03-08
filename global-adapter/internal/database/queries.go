@@ -21,6 +21,7 @@ const (
 	QueryTableExists  string = "SELECT name FROM sys.tables WHERE name=@p1"
 	QueryInsertAPI    string = "INSERT INTO ga_local_adapter_partition(api_uuid, label_hierarchy, api_id, org_id) VALUES(@p1, @p2, @p3, @p4)"
 	QueryIsAPIExists  string = "SELECT api_id FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
+	QueryGetAllLabels string = "SELECT api_uuid, label_hierarchy, api_id FROM ga_local_adapter_partition"
 	QueryDeleteAPI    string = "DELETE FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
 	QueryGetNextIncID string = "SELECT TOP 1 api_id from ga_local_adapter_partition WHERE label_hierarchy = @p1 ORDER BY api_id DESC"
 	QueryGetEmptiedID string = `SELECT TOP 1 temp.rowId from (
