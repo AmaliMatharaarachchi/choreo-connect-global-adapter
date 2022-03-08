@@ -81,7 +81,7 @@ func PopulateAPIData(apis []synchronizer.APIEvent, laLabels map[string]map[strin
 			gatewayLabel := strings.ToLower(apis[ind].GatewayLabels[index])
 
 			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
-			if gatewayLabel == productionSandboxLabel {
+			if gatewayLabel == strings.ToLower(productionSandboxLabel) {
 				gatewayLabel = defaultGatewayLabel
 			}
 			apiID, found := laLabels[gatewayLabel][apis[ind].UUID]
@@ -175,13 +175,17 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, stmt *sql.Stmt) in
 					logger.LoggerAPIPartition.Debugf("API : %v in gateway : %v is already exists %v", api.UUID, gwLabel, err.Error())
 					continue
 				} else {
-					logger.LoggerAPIPartition.Errorf("Error while writing partition information for API : %v in gateway : %v , %v", api.UUID, gwLabel, err.Error())
+					logger.LoggerAPIPartition.Errorf("Error while writing partition information for API : %v in gateway : %v , %v",
+						api.UUID, gwLabel, err.Error())
 					apiID = -1
 				}
-			} else if isNewID {
-				logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", apiID)
-				// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
-				triggerNewDeploymentIfRequired(apiID, partitionSize, configs.Server.PartitionThreshold)
+			} else {
+				logger.LoggerAPIPartition.Debugf("New API record persisted UUID : %v gatewayLabel : %v partitionId : %v isNewPartition : %v",
+					api.UUID, gwLabel, apiID, isNewID)
+				if isNewID {
+					// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
+					triggerNewDeploymentIfRequired(apiID, partitionSize, configs.Server.PartitionThreshold)
+				}
 			}
 		}
 		break
@@ -342,7 +346,7 @@ func DeleteAPIRecord(api *synchronizer.APIEvent, laLabels map[string]map[string]
 			gatewayLabel := strings.ToLower(api.GatewayLabels[index])
 
 			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
-			if gatewayLabel == productionSandboxLabel {
+			if gatewayLabel == strings.ToLower(productionSandboxLabel) {
 				gatewayLabel = defaultGatewayLabel
 			}
 
