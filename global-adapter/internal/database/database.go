@@ -19,6 +19,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
@@ -87,15 +88,16 @@ func IsAliveConnection() (isAlive bool) {
 // ExecDBQuery Execute db queries after checking/waking up the db connection
 func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 	row, err := DB.Query(query, args...)
-	if err != nil && !IsAliveConnection() {
-		logger.LoggerServer.Error("Error while executing DB query", err)
+	if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+		logger.LoggerServer.Infof("Error while executing DB query hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
 				row, err = DB.Query(query, args...)
-				if err != nil && !IsAliveConnection() {
+				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
 					continue
 				}
+				logger.LoggerServer.Info("Executing DB query has succeeded.")
 				break
 			}
 		}
@@ -106,15 +108,16 @@ func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 // CreatePreparedStatement create prepared statement after checking/waking up the db connection
 func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 	stmt, err := DB.Prepare(statement)
-	if err != nil && !IsAliveConnection() {
-		logger.LoggerServer.Error("Error while creating prepared statement", err)
+	if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+		logger.LoggerServer.Infof("Error while creating DB prepared statement hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
 				stmt, err = DB.Prepare(statement)
-				if err != nil && !IsAliveConnection() {
+				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
 					continue
 				}
+				logger.LoggerServer.Info("Creating DB prepared statement has succeeded.")
 				break
 			}
 		}
@@ -125,15 +128,16 @@ func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 // ExecPreparedStatement Execute prepared statement after checking/waking up the db connection
 func ExecPreparedStatement(stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
 	result, err := stmt.Exec(args...)
-	if err != nil && !IsAliveConnection() {
-		logger.LoggerServer.Error("Error while executing prepared statement", err)
+	if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+		logger.LoggerServer.Infof("Error while executing prepared statement hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
 				result, err = stmt.Exec(args...)
-				if err != nil && !IsAliveConnection() {
+				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
 					continue
 				}
+				logger.LoggerServer.Info("Executing DB prepared statement has succeeded.")
 				break
 			}
 		}
