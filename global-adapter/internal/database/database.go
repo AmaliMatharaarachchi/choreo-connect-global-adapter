@@ -42,7 +42,10 @@ func ConnectToDb() {
 	DB, err = sql.Open(sqlDriver, connString)
 	if err != nil {
 		logger.LoggerServer.Debugf("DB connection error: %v", err)
+		return
 	}
+	DB.SetMaxOpenConns(conf.DataBase.PoolOptions.MaxActive)
+	DB.SetMaxIdleConns(conf.DataBase.PoolOptions.MaxIdle)
 }
 
 // WakeUpConnection - checking whether the databace connection is still alive , if not alive then reconnect to the DB
