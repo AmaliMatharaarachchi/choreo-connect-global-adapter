@@ -155,10 +155,11 @@ func pushToXdsCache(laAPIList []*types.LaAPIEvent, isStartup bool) {
 		logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
 		health.Startup.SetStatus(true)
 		return
-	}
-	if len(laAPIList) > 1 {
-		xds.AddMultipleAPIs(laAPIList)
-		return
+	} else {
+		if len(laAPIList) > 1 {
+			xds.AddMultipleAPIs(laAPIList)
+			return
+		}
 	}
 	xds.ProcessSingleEvent(laAPIList[0])
 }
