@@ -22,6 +22,7 @@
 package apipartition
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"strconv"
@@ -71,29 +72,38 @@ const (
 )
 
 // PopulateAPIData - populating API information to Database and redis cache
-func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag) {
+func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag, laLabels map[string]map[string]int, stmt *sql.Stmt) {
 	apis := apiEventsWithStartupFlag.APIEvents
 	var laAPIList []*types.LaAPIEvent
 	var cacheObj []string
-	database.WakeUpConnection()
-	defer database.CloseDbConnection()
-
 	for ind := range apis {
 		for index := range apis[ind].GatewayLabels {
-			gatewayLabel := apis[ind].GatewayLabels[index]
-
-			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
-			if gatewayLabel == productionSandboxLabel {
-				gatewayLabel = defaultGatewayLabel
-			}
-
 			// It is required to convert the gateway label to lowercase as the partition name is required for deploying k8s
 			// services
-			label := insertRecord(&apis[ind], strings.ToLower(gatewayLabel), types.APICreate)
+			gatewayLabel := strings.ToLower(apis[ind].GatewayLabels[index])
 
-			if label != "" {
+			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+			if gatewayLabel == strings.ToLower(productionSandboxLabel) {
+				gatewayLabel = defaultGatewayLabel
+			}
+			apiID, found := laLabels[gatewayLabel][apis[ind].UUID]
+			if !found {
+				logger.LoggerAPIPartition.Info("Creating label for api : ", apis[ind].UUID, " and Gateway : ", gatewayLabel)
+				apiID = insertRecord(&apis[ind], gatewayLabel, stmt)
+				if apiID >= 0 {
+					if _, found := laLabels[gatewayLabel]; !found {
+						laLabels[gatewayLabel] = make(map[string]int)
+					}
+					laLabels[gatewayLabel][apis[ind].UUID] = apiID
+				}
+			}
+
+			if apiID >= 0 {
+				label := getLaLabel(gatewayLabel, apiID, partitionSize)
+				logger.LoggerAPIPartition.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
+
 				isExceeded := isQuotaExceededForOrg(apis[ind].OrganizationID)
-				cacheKey := getCacheKey(&apis[ind], strings.ToLower(gatewayLabel))
+				cacheKey := getCacheKey(&apis[ind], gatewayLabel)
 
 				cacheValue := RedisBlockedValue
 				if !isExceeded {
@@ -102,10 +112,8 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 				logger.LoggerAPIPartition.Debugf("Found cache key : %v and cache value: %v for organisation: %v",
 					cacheKey, cacheValue, apis[ind].OrganizationID)
 
-				logger.LoggerAPIPartition.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
-
 				apiState := types.LaAPIEvent{
-					LabelHierarchy:   gatewayLabel,
+					LabelHierarchy:   apis[ind].GatewayLabels[index],
 					Label:            label,
 					RevisionUUID:     apis[ind].RevisionID,
 					APIUUID:          apis[ind].UUID,
@@ -119,7 +127,7 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 					cacheObj = append(cacheObj, cacheValue)
 				}
 			} else {
-				logger.LoggerAPIPartition.Errorf("Error while fetching the API label UUID : %v ", apis[ind].UUID)
+				logger.LoggerAPIPartition.Errorf("Error while fetching the API label UUID : %v in gateway : %v", apis[ind].UUID, gatewayLabel)
 			}
 		}
 	}
@@ -135,7 +143,6 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 	} else {
 		pushToXdsCache(laAPIList, apiEventsWithStartupFlag.IsStartup)
 	}
-
 }
 
 func pushToXdsCache(laAPIList []*types.LaAPIEvent, isStartup bool) {
@@ -157,49 +164,69 @@ func pushToXdsCache(laAPIList []*types.LaAPIEvent, isStartup bool) {
 }
 
 // insertRecord always return the adapter label for the relevant API
-// If the API is not in database, that will save to the database and return the label
-func insertRecord(api *synchronizer.APIEvent, gwLabel string, eventType types.EventType) string {
-	var adapterLabel string
-	stmt, error := database.CreatePreparedStatement(database.QueryInsertAPI)
-
-	if error != nil {
-		logger.LoggerAPIPartition.Errorf("Error while persist the API info for UUID : %v ", &api.UUID)
-	} else {
-		for {
-			isExists, apiID := isAPIExists(api.UUID, gwLabel)
-			if isExists {
-				logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel)
-				adapterLabel = getLaLabel(gwLabel, *apiID, partitionSize)
-				break
-			}
-			availableID, isNewID := getAvailableID(gwLabel)
-			if availableID == -1 { // Return -1 due to an error
-				logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy : %v", gwLabel)
-				break
-			} else {
-				_, err := database.ExecPreparedStatement(stmt, api.UUID, &gwLabel, availableID, api.OrganizationID)
-				if err != nil {
-					if strings.Contains(err.Error(), "duplicate key") {
-						logger.LoggerAPIPartition.Debug(" ID already exists ", err)
-						continue
-					} else {
-						logger.LoggerAPIPartition.Error("Error while writing partition information ", err)
-						break
-					}
+// If the API is not in database, that will save to the database and return the api id
+func insertRecord(api *synchronizer.APIEvent, gwLabel string, stmt *sql.Stmt) int {
+	apiID := -1
+	isNewID := false
+	for {
+		isExists, existingID := isAPIExists(api.UUID, gwLabel)
+		if isExists {
+			apiID = *existingID
+			logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel, " partitionId : ", apiID)
+			break
+		}
+		apiID, isNewID = getAvailableID(gwLabel)
+		if apiID == -1 { // Return -1 due to an error
+			logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy for api : %v in gateway : %v", apiID, gwLabel)
+		} else {
+			_, err := database.ExecPreparedStatement(stmt, api.UUID, &gwLabel, apiID, api.OrganizationID)
+			if err != nil {
+				if strings.Contains(err.Error(), "duplicate key") {
+					logger.LoggerAPIPartition.Debugf("API : %v in gateway : %v is already exists %v", api.UUID, gwLabel, err.Error())
+					continue
 				} else {
-					adapterLabel = getLaLabel(gwLabel, availableID, partitionSize)
-					logger.LoggerAPIPartition.Debug("New API record persisted UUID : ", api.UUID, " gatewayLabel : ", gwLabel, " partitionId : ", availableID)
+					logger.LoggerAPIPartition.Errorf("Error while writing partition information for API : %v in gateway : %v , %v",
+						api.UUID, gwLabel, err.Error())
+					apiID = -1
+				}
+			} else {
+				logger.LoggerAPIPartition.Debugf("New API record persisted UUID : %v gatewayLabel : %v partitionId : %v isNewPartition : %v",
+					api.UUID, gwLabel, apiID, isNewID)
+				if isNewID {
 					// Only if the incremental ID is a new one (instead of occupying avaliable vacant ID), new deployment trigger should happen.
-					if isNewID {
-						triggerNewDeploymentIfRequired(availableID, partitionSize, configs.Server.PartitionThreshold)
-					}
-					break
+					triggerNewDeploymentIfRequired(apiID, partitionSize, configs.Server.PartitionThreshold)
 				}
 			}
 		}
-		stmt.Close()
+		break
 	}
-	return adapterLabel
+	return apiID
+}
+
+func getAPILALabels() map[string]map[string]int {
+	var apiID int
+	var labelHierarchy string
+	var apiUUID string
+	labels := make(map[string]map[string]int) // label hierarchy -> API UUID -> API ID
+	row, err := database.ExecDBQuery(database.QueryGetAllLabels)
+	if err == nil {
+		for {
+			if !row.Next() {
+				logger.LoggerAPIPartition.Debug("No more partition label records does not exist for API partitions in database")
+				break
+			} else {
+				row.Scan(&apiUUID, &labelHierarchy, &apiID)
+				logger.LoggerAPIPartition.Debugf("API %v found in database with label : %v : label : %v ", apiUUID, labelHierarchy, apiID)
+				if _, found := labels[labelHierarchy]; !found {
+					labels[labelHierarchy] = make(map[string]int)
+				}
+				labels[labelHierarchy][apiUUID] = apiID
+			}
+		}
+	} else {
+		logger.LoggerAPIPartition.Error("Error when getting api partition label records from database")
+	}
+	return labels
 }
 
 // Return a boolean for API existance , int for incremental ID if the API already exists
@@ -221,12 +248,11 @@ func isAPIExists(uuid string, labelHierarchy string) (bool, *int) {
 	return false, nil
 }
 
-// Function returns the next available inremental ID. For collect the next available ID , there are 2 helper functions.
+// getAvailableID returns the next available inremental ID. For collect the next available ID , there are 2 helper functions.
 // 1. getEmptiedId() -  Return if there any emptied ID. Return smallest first ID.If no emptied IDs available , then returns 0.
 // 2. getNextIncrementalId() - If getEmptiedId return 0 , then this function returns next incremental ID.
 // The second return value is false if the helper method 1 determines the ID. true otherwise.
 func getAvailableID(hierarchyID string) (int, bool) {
-
 	var nextAvailableID int = getEmptiedID(hierarchyID)
 	newIDAssigned := false
 	if nextAvailableID == 0 {
@@ -239,7 +265,7 @@ func getAvailableID(hierarchyID string) (int, bool) {
 	return nextAvailableID, newIDAssigned
 }
 
-// Observing emptied incremental ID
+// getEmptiedID observing emptied incremental ID
 func getEmptiedID(hierarchyID string) int {
 	var emptiedID int
 	stmt, error := database.ExecDBQuery(database.QueryGetEmptiedID, hierarchyID)
@@ -277,19 +303,36 @@ func getNextIncrementalID(hierarchyID string) int {
 // and will be processed as delete record or insert record based on the event type. The outcome would be another event, which
 // represents the partitionID for a given API.
 func ProcessEventsInDatabase() {
+	database.WakeUpConnection()
+	defer database.CloseDbConnection()
+	laLabels := getAPILALabels()
+	// creating the prepared statement for inserting labels
+	insertStmt, error := database.CreatePreparedStatement(database.QueryInsertAPI)
+	if error != nil {
+		logger.LoggerAPIPartition.Error("Error while creating prepared stmt for inserting record.")
+		return
+	}
+	defer insertStmt.Close()
+	deleteStmt, error := database.CreatePreparedStatement(database.QueryDeleteAPI)
+	if error != nil {
+		logger.LoggerAPIPartition.Error("Error while creating prepared stmt for deleting record.")
+		insertStmt.Close()
+		return
+	}
+	defer deleteStmt.Close()
 	for d := range synchronizer.APIDeployAndRemoveEventChannel {
-		updateFromEvents(d)
+		updateFromEvents(d, laLabels, insertStmt, deleteStmt)
 	}
 }
 
 // for update the DB for JMS event
 // TODO : if event is for undeploy or remove task , then API should delete from the DB
-func updateFromEvents(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag) {
+func updateFromEvents(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag, laLabels map[string]map[string]int, insertStmt *sql.Stmt, deleteStmt *sql.Stmt) {
 	apis := apiEventsWithStartupFlag.APIEvents
 	// When multiple APIs (> 1) are present, it corresponding to the startup scenario. Hence the IsRemoveEvent flag is not
 	// considered.
 	if len(apis) > 1 {
-		PopulateAPIData(apiEventsWithStartupFlag)
+		PopulateAPIData(apiEventsWithStartupFlag, laLabels, insertStmt)
 		return
 	}
 	if len(apis) == 0 {
@@ -297,53 +340,51 @@ func updateFromEvents(apiEventsWithStartupFlag synchronizer.APIEventsWithStartup
 	}
 	isRemoveEvent := apis[0].IsRemoveEvent
 	if isRemoveEvent {
-		DeleteAPIRecord(&apis[0])
+		DeleteAPIRecord(&apis[0], laLabels, deleteStmt)
 		return
 	}
-	PopulateAPIData(apiEventsWithStartupFlag)
+	PopulateAPIData(apiEventsWithStartupFlag, laLabels, insertStmt)
 }
 
 // DeleteAPIRecord Funtion accept API uuid as the argument
 // When receive an Undeploy event, the API record will delete from the database
 // If gwLabels are empty , don`t delete the reord (since it is an "API Update event")
-func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
+func DeleteAPIRecord(api *synchronizer.APIEvent, laLabels map[string]map[string]int, deleteStmt *sql.Stmt) {
 	if len(api.GatewayLabels) > 0 {
 		logger.LoggerAPIPartition.Debug("API undeploy event received : ", api.UUID)
 
-		if database.WakeUpConnection() {
-			defer database.CloseDbConnection()
+		for index := range api.GatewayLabels {
+			gatewayLabel := strings.ToLower(api.GatewayLabels[index])
 
-			stmt, _ := database.DB.Prepare(database.QueryDeleteAPI)
+			// when gateway label is "Production and Sandbox" , then gateway label set as "default"
+			if gatewayLabel == strings.ToLower(productionSandboxLabel) {
+				gatewayLabel = defaultGatewayLabel
+			}
 
-			for index := range api.GatewayLabels {
-				gatewayLabel := api.GatewayLabels[index]
+			// we delete the record from the local in-memory map regardless of a db err while deleting record
+			// since the other GA may have succeeded deleting the record from db
+			if _, found := laLabels[gatewayLabel]; found {
+				delete(laLabels[gatewayLabel], api.UUID)
+			}
 
-				// when gateway label is "Production and Sandbox" , then gateway label set as "default"
-				if gatewayLabel == productionSandboxLabel {
-					gatewayLabel = defaultGatewayLabel
-				}
-				_, error := stmt.Exec(api.UUID, gatewayLabel)
-				if error != nil {
-					logger.LoggerAPIPartition.Error("Error while deleting the API UUID : ", api.UUID, " ", error)
-					// break
-				} else {
-					logger.LoggerAPIPartition.Info("API deleted from the database : ", api.UUID)
-					updateRedisCache(api, strings.ToLower(gatewayLabel), nil, types.APIDelete)
-					pushToXdsCache([]*types.LaAPIEvent{{
-						APIUUID:          api.UUID,
-						IsRemoveEvent:    true,
-						OrganizationUUID: api.OrganizationID,
-						LabelHierarchy:   strings.ToLower(gatewayLabel),
-					}}, false)
-					return true
-				}
+			_, error := database.ExecPreparedStatement(deleteStmt, api.UUID, gatewayLabel)
+			if error != nil {
+				logger.LoggerAPIPartition.Errorf("Error while deleting the API UUID : %v in gateway: %v , %v", api.UUID, gatewayLabel, error.Error())
+				// break
+			} else {
+				logger.LoggerAPIPartition.Infof("API deleted from the database : %v in gateway : %v", api.UUID, gatewayLabel)
+				updateRedisCache(api, gatewayLabel, nil, types.APIDelete)
+				pushToXdsCache([]*types.LaAPIEvent{{
+					APIUUID:          api.UUID,
+					IsRemoveEvent:    true,
+					OrganizationUUID: api.OrganizationID,
+					LabelHierarchy:   gatewayLabel,
+				}}, false)
 			}
 		}
 	} else {
 		logger.LoggerAPIPartition.Debug("API update event received : ", api.UUID)
 	}
-
-	return false
 }
 
 // DeleteAPIRecords deletes api records for a certain organization

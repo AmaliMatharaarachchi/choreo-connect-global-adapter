@@ -10,6 +10,6 @@ require (
 	github.com/pelletier/go-toml v1.8.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0
-	github.com/wso2/product-microgateway/adapter v0.0.0-20220124094414-085ebe203341
+	github.com/wso2/product-microgateway/adapter v0.0.0-20220311082636-f40c9727ab66
 	google.golang.org/grpc v1.36.0
 )
