@@ -97,8 +97,11 @@ type database struct {
 }
 
 type dbPool struct {
-	MaxActive int
-	MaxIdle   int
+	MaxActive          int
+	MaxWait            int
+	TestOnBorrow       bool
+	ValidationInterval int
+	DefaultAutoCommit  bool
 }
 
 type redisServer struct {

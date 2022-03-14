@@ -46,8 +46,11 @@ var defaultConfig = &Config{
 		Port:            1433,
 		ValidationQuery: "select 1",
 		PoolOptions: dbPool{
-			MaxActive: 50,
-			MaxIdle:   3,
+			MaxActive:          50,
+			MaxWait:            60000,
+			TestOnBorrow:       true,
+			ValidationInterval: 30000,
+			DefaultAutoCommit:  true,
 		},
 		OptionalMetadata: databaseOptionalMetadata{
 			MaxRetryAttempts: 10,
