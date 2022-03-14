@@ -115,7 +115,7 @@ func handleAPIDeployAndRemoveEvents(data []byte, eventType string, config *confi
 		removeEvent.IsRemoveEvent = true
 		if removeEvent.GatewayLabels != nil {
 			APIEventArray = append(APIEventArray, removeEvent)
-			sync.APIDeployAndRemoveEventChannel <- APIEventArray
+			sync.APIDeployAndRemoveEventChannel <- sync.APIEventsWithStartupFlag{APIEvents: APIEventArray, IsStartup: false}
 		}
 	}
 }
@@ -149,7 +149,7 @@ func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, 
 		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)
 		return err
 	}
-	sync.AddAPIEventsToChannel(deploymentDescriptor, false)
+	sync.AddAPIEventsToChannel(deploymentDescriptor, false, false)
 
 	return nil
 }

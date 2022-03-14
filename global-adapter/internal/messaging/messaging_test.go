@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"encoding/json"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -34,7 +35,7 @@ func TestAPIRemoveEventsHandling(t *testing.T) {
 	eventByteArray := []byte(string(apiRemoveEvent))
 	go handleAPIDeployAndRemoveEvents(eventByteArray, "REMOVE_API_FROM_GATEWAY", conf)
 	event := <-sync.APIDeployAndRemoveEventChannel
-	removeEvent, _ := json.Marshal(event)
+	removeEvent, _ := json.Marshal(event.APIEvents)
 	actualRemoveEvent := `[{"UUID":"60d2fe0f1702d40469718ba2","RevisionID":"","Context":"/hello/1.0.0","Version":"1.0.0","GatewayLabels":["Prod"],"OrganizationID":"WSO2","IsRemoveEvent":true,"IsReload":false}]`
 	assert.Equal(t, actualRemoveEvent, string(removeEvent), "REMOVE_API_FROM_GATEWAY event is not correctly received")
 }

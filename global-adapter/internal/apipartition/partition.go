@@ -32,6 +32,7 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/cache"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
@@ -70,7 +71,8 @@ const (
 )
 
 // PopulateAPIData - populating API information to Database and redis cache
-func PopulateAPIData(apis []synchronizer.APIEvent) {
+func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag) {
+	apis := apiEventsWithStartupFlag.APIEvents
 	var laAPIList []*types.LaAPIEvent
 	var cacheObj []string
 	database.WakeUpConnection()
@@ -129,16 +131,22 @@ func PopulateAPIData(apis []synchronizer.APIEvent) {
 			return
 		}
 		cache.PublishUpdatedAPIKeys(cacheObj, rc)
-		pushToXdsCache(laAPIList)
+		pushToXdsCache(laAPIList, apiEventsWithStartupFlag.IsStartup)
 	} else {
-		pushToXdsCache(laAPIList)
+		pushToXdsCache(laAPIList, apiEventsWithStartupFlag.IsStartup)
 	}
 
 }
 
-func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
+func pushToXdsCache(laAPIList []*types.LaAPIEvent, isStartup bool) {
 	logger.LoggerAPIPartition.Debug("API List : ", len(laAPIList))
 	if len(laAPIList) == 0 {
+		return
+	}
+	if isStartup {
+		xds.AddMultipleAPIs(laAPIList)
+		logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
+		health.Startup.SetStatus(true)
 		return
 	}
 	if len(laAPIList) > 1 {
@@ -276,11 +284,12 @@ func ProcessEventsInDatabase() {
 
 // for update the DB for JMS event
 // TODO : if event is for undeploy or remove task , then API should delete from the DB
-func updateFromEvents(apis []synchronizer.APIEvent) {
+func updateFromEvents(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag) {
+	apis := apiEventsWithStartupFlag.APIEvents
 	// When multiple APIs (> 1) are present, it corresponding to the startup scenario. Hence the IsRemoveEvent flag is not
 	// considered.
 	if len(apis) > 1 {
-		PopulateAPIData(apis)
+		PopulateAPIData(apiEventsWithStartupFlag)
 		return
 	}
 	if len(apis) == 0 {
@@ -291,7 +300,7 @@ func updateFromEvents(apis []synchronizer.APIEvent) {
 		DeleteAPIRecord(&apis[0])
 		return
 	}
-	PopulateAPIData(apis)
+	PopulateAPIData(apiEventsWithStartupFlag)
 }
 
 // DeleteAPIRecord Funtion accept API uuid as the argument
@@ -325,7 +334,7 @@ func DeleteAPIRecord(api *synchronizer.APIEvent) bool {
 						IsRemoveEvent:    true,
 						OrganizationUUID: api.OrganizationID,
 						LabelHierarchy:   strings.ToLower(gatewayLabel),
-					}})
+					}}, false)
 					return true
 				}
 			}

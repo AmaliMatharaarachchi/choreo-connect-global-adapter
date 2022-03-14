@@ -118,13 +118,13 @@ func Run(conf *config.Config) {
 	}()
 
 	// register health service
-	healthservice.RegisterHealthServer(grpcServer, &health.Server{})
+	healthservice.RegisterHealthServer(grpcServer, &healthGA.Server{})
 	logger.LoggerServer.Info("XDS server is starting.")
 	// Set the Grpc server health status
-	healthGA.SetGrpcServerStatus(true)
+	healthGA.GRPCService.SetStatus(true)
 	if err = grpcServer.Serve(listener); err != nil {
 		// Set the Grpc server health status to false
-		healthGA.SetGrpcServerStatus(false)
+		healthGA.GRPCService.SetStatus(false)
 		logger.LoggerServer.Fatal("Error while starting gRPC server.")
 	}
 

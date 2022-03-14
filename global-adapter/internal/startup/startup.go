@@ -53,7 +53,7 @@ func Initialize() {
 			return
 		}
 	} else {
-		health.SetDatabaseConnectionStatus(false)
+		health.DBConnection.SetStatus(false)
 		logger.LoggerServer.Fatal("Error while initiating the database")
 	}
 }
