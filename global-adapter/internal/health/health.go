@@ -58,9 +58,6 @@ type Server struct {
 
 // Check responds the health check client with health status of the Adapter
 func (s Server) Check(ctx context.Context, request *healthservice.HealthCheckRequest) (*healthservice.HealthCheckResponse, error) {
-	logger.LoggerHealth.Debugf("Querying health state for Global Adapter.. service:%q", request.Service)
-	logger.LoggerHealth.Debugf("Internal health state map: %v", serviceHealthStatus)
-
 	if request.Service == "" {
 		// overall health of the server
 		isHealthy := true
@@ -88,16 +85,14 @@ func (s Server) Check(ctx context.Context, request *healthservice.HealthCheckReq
 	}
 
 	if request.Service == "liveness" {
-		if st1, ok1 := serviceHealthStatus[string(DBConnection)]; ok1 {
-			if st2, ok2 := serviceHealthStatus[string(GRPCService)]; ok2 {
-				if st1 && st2 {
-					logger.LoggerHealth.Debugf("Responding health state of GA service \"%s\" as HEALTHY", request.Service)
-					return &healthservice.HealthCheckResponse{Status: healthservice.HealthCheckResponse_SERVING}, nil
-				}
-				logger.LoggerHealth.Debugf("Responding health state of GA service \"%s\" as NOT_HEALTHY", request.Service)
-				return &healthservice.HealthCheckResponse{Status: healthservice.HealthCheckResponse_NOT_SERVING}, nil
-			}
+		st1, ok1 := serviceHealthStatus[string(DBConnection)]
+		st2, ok2 := serviceHealthStatus[string(GRPCService)]
+		if st1 && st2 && ok1 && ok2 {
+			logger.LoggerHealth.Debugf("Responding health state of GA service \"%s\" as HEALTHY", request.Service)
+			return &healthservice.HealthCheckResponse{Status: healthservice.HealthCheckResponse_SERVING}, nil
 		}
+		logger.LoggerHealth.Debugf("Responding health state of GA service \"%s\" as NOT_HEALTHY", request.Service)
+		return &healthservice.HealthCheckResponse{Status: healthservice.HealthCheckResponse_NOT_SERVING}, nil
 	}
 
 	// no component found

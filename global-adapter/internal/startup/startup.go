@@ -32,15 +32,12 @@ const (
 
 // Initialize for initialize all startup functions
 func Initialize() {
-	// Checks database connection health and Waits for database connection
-	go health.WaitForDatabaseConnection()
-	// Checks redis cache connection health and Waits for redis cache connection
-	go health.WaitForRedisCacheConnection()
 	database.ConnectToDb()
 	defer database.CloseDbConnection()
 	isDbConnectionAlive := database.WakeUpConnection()
-
+	//should add db connection health check here
 	if isDbConnectionAlive {
+		health.DBConnection.SetStatus(true)
 		if database.IsTableExists(partitionSizeTable) {
 			triggerDeploymentAgent()
 		} else {

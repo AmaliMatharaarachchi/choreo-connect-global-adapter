@@ -122,8 +122,8 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, isRe
 	APIDeployAndRemoveEventChannel <- APIEventsWithStartupFlag{APIEvents: APIEventArray, IsStartup: isStartup}
 }
 
-// FetchAPIsOnStartUp fetches APIs on startup
-func FetchAPIsOnStartUp(conf *config.Config, isReload bool) {
+// FetchAllApis fetches all apis from control plane
+func FetchAllApis(conf *config.Config, isReload bool, isStartup bool) {
 	// Populate data from configuration file.
 	serviceURL := conf.ControlPlane.ServiceURL
 	username := conf.ControlPlane.Username
@@ -148,6 +148,6 @@ func FetchAPIsOnStartUp(conf *config.Config, isReload bool) {
 	if err != nil {
 		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)
 	} else {
-		AddAPIEventsToChannel(deploymentDescriptor, isReload, true)
+		AddAPIEventsToChannel(deploymentDescriptor, isReload, isStartup)
 	}
 }

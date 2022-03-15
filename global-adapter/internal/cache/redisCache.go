@@ -20,9 +20,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 
 	"github.com/go-redis/redis"
@@ -36,17 +37,43 @@ func ConnectToRedisServer() *redis.Client {
 	clientOptions := getRedisClientOptions(conf)
 	rdb := redis.NewClient(clientOptions)
 	var isConnected bool = false
-	pong, err := rdb.Ping().Result()
+	ping, err := rdb.Ping().Result()
 	// Check the connection error and Retry
 	if err != nil {
-		redisClient, isConnected = health.RedisCacheConnectRetry(clientOptions)
+		redisClient, isConnected = redisCacheConnectRetry(clientOptions)
 	} else {
-		logger.LoggerServer.Info("Connected to the redis cluster ", pong)
+		logger.LoggerServer.Info("Connected to the redis cluster ", ping)
 		isConnected = true
 		redisClient = rdb
 	}
-	health.SetRedisCacheConnectionStatus(isConnected)
-	return rdb
+	if isConnected {
+		return rdb
+	}
+	return nil
+}
+
+// redisCacheConnectRetry retries to connect to the redis cache if there is a connection error
+func redisCacheConnectRetry(clientOptions *redis.Options) (*redis.Client, bool) {
+	conf := config.ReadConfigs()
+	maxAttempts := conf.RedisServer.OptionalMetadata.MaxRetryAttempts
+	var (
+		retryInterval time.Duration = 5
+		attempt       int
+	)
+	for attempt = 1; attempt <= maxAttempts; attempt++ {
+		rdb := redis.NewClient(clientOptions)
+		_, err := rdb.Ping().Result()
+		if err != nil {
+			if strings.Contains(err.Error(), "timeout") {
+				time.Sleep(retryInterval * time.Second)
+			} else {
+				return nil, false
+			}
+		} else {
+			return rdb, true
+		}
+	}
+	return nil, false
 }
 
 func getRedisClientOptions(conf *config.Config) *redis.Options {

@@ -148,6 +148,9 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 func pushToXdsCache(laAPIList []*types.LaAPIEvent, isStartup bool) {
 	logger.LoggerAPIPartition.Debug("API List : ", len(laAPIList))
 	if len(laAPIList) == 0 {
+		if isStartup {
+			health.Startup.SetStatus(true)
+		}
 		return
 	}
 	if isStartup {
@@ -155,11 +158,10 @@ func pushToXdsCache(laAPIList []*types.LaAPIEvent, isStartup bool) {
 		logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
 		health.Startup.SetStatus(true)
 		return
-	} else {
-		if len(laAPIList) > 1 {
-			xds.AddMultipleAPIs(laAPIList)
-			return
-		}
+	}
+	if len(laAPIList) > 1 {
+		xds.AddMultipleAPIs(laAPIList)
+		return
 	}
 	xds.ProcessSingleEvent(laAPIList[0])
 }
@@ -413,7 +415,7 @@ func DeleteAPIRecords(organizations []msg.Organization) bool {
 			}
 
 			conf := config.ReadConfigs()
-			synchronizer.FetchAPIsOnStartUp(conf, true)
+			synchronizer.FetchAllApis(conf, true, false)
 
 		}
 
