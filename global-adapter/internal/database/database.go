@@ -81,7 +81,7 @@ func IsAliveConnection() (isAlive bool) {
 	if pingError == nil {
 		return true
 	}
-	logger.LoggerServer.Error("Error while connecting to the database", pingError)
+	logger.LoggerServer.Error("Error while connecting to the database ", pingError)
 	return isAlive
 }
 
@@ -95,6 +95,7 @@ func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 				row, err = DB.Query(query, args...)
 				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
+					logger.LoggerServer.Debugf("Error while executing db query again hence retrying ... : %v", err.Error())
 					continue
 				}
 				logger.LoggerServer.Info("Executing DB query has succeeded.")
@@ -115,6 +116,7 @@ func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 				stmt, err = DB.Prepare(statement)
 				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
+					logger.LoggerServer.Debugf("Error while creating prepared statement again hence retrying ... : %v", err.Error())
 					continue
 				}
 				logger.LoggerServer.Info("Creating DB prepared statement has succeeded.")
@@ -126,15 +128,29 @@ func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 }
 
 // ExecPreparedStatement Execute prepared statement after checking/waking up the db connection
-func ExecPreparedStatement(stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
+func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
 	result, err := stmt.Exec(args...)
 	if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
 		logger.LoggerServer.Infof("Error while executing prepared statement hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
 				result, err = stmt.Exec(args...)
+				// adding this due an issue in lib
+				// todo(amali) remove it once this is fixed in db lib
+				if err != nil && strings.Contains(err.Error(), "database is closed") {
+					logger.LoggerServer.Debugf("Closing and creating the prepared statement again ... : %v", stmtString)
+					stmt.Close()
+					stmt, err = CreatePreparedStatement(stmtString)
+					if err != nil {
+						logger.LoggerServer.Debugf("Error while creating the prepared statement again ... : %v ", err.Error())
+						continue
+					}
+					logger.LoggerServer.Debugf("Created the prepared statement again ... : %v ", stmtString)
+					result, err = stmt.Exec(args...)
+				}
 				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
+					logger.LoggerServer.Debugf("Error while executing prepared statement again hence retrying ... : %v", err.Error())
 					continue
 				}
 				logger.LoggerServer.Info("Executing DB prepared statement has succeeded.")

@@ -171,7 +171,7 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, stmt *sql.Stmt) in
 		if apiID == -1 { // Return -1 due to an error
 			logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy for api : %v in gateway : %v", apiID, gwLabel)
 		} else {
-			_, err := database.ExecPreparedStatement(stmt, api.UUID, &gwLabel, apiID, api.OrganizationID)
+			_, err := database.ExecPreparedStatement(database.QueryInsertAPI, stmt, api.UUID, &gwLabel, apiID, api.OrganizationID)
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {
 					logger.LoggerAPIPartition.Debugf("API : %v in gateway : %v is already exists %v", api.UUID, gwLabel, err.Error())
@@ -358,7 +358,7 @@ func DeleteAPIRecord(api *synchronizer.APIEvent, laLabels map[string]map[string]
 				delete(laLabels[gatewayLabel], api.UUID)
 			}
 
-			_, error := database.ExecPreparedStatement(deleteStmt, api.UUID, gatewayLabel)
+			_, error := database.ExecPreparedStatement(database.QueryDeleteAPI, deleteStmt, api.UUID, gatewayLabel)
 			if error != nil {
 				logger.LoggerAPIPartition.Errorf("Error while deleting the API UUID : %v in gateway: %v , %v", api.UUID, gatewayLabel, error.Error())
 				// break
