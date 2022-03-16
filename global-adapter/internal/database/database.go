@@ -145,7 +145,7 @@ func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{
 						logger.LoggerServer.Debugf("Error while creating the prepared statement again ... : %v ", err.Error())
 						continue
 					}
-					logger.LoggerServer.Infof("Created the prepared statement again ... : %v ", stmtString)
+					logger.LoggerServer.Debugf("Created the prepared statement again ... : %v ", stmtString)
 					result, err = stmt.Exec(args...)
 				}
 				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
