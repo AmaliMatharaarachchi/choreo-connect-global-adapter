@@ -169,7 +169,7 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, stmt *sql.Stmt) in
 		}
 		apiID, isNewID = getAvailableID(gwLabel)
 		if apiID < 0 { // Return -1 due to an error
-			logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy for api : %v in gateway : %v, apiId : %v", api.UUID, apiID, gwLabel)
+			logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy for api : %v in gateway : %v, apiId : %v", api.UUID, gwLabel, apiID)
 		} else {
 			_, err := database.ExecPreparedStatement(database.QueryInsertAPI, stmt, api.UUID, &gwLabel, apiID, api.OrganizationID)
 			if err != nil {
