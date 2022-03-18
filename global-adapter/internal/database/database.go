@@ -88,12 +88,12 @@ func IsAliveConnection() (isAlive bool) {
 // ExecDBQuery Execute db queries after checking/waking up the db connection
 func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 	row, err := DB.Query(query, args...)
-	if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+	if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") || !IsAliveConnection()) {
 		logger.LoggerServer.Infof("Error while executing DB query hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
 				row, err = DB.Query(query, args...)
-				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
 					logger.LoggerServer.Debugf("Error while executing db query again hence retrying ... : %v", err.Error())
 					continue
@@ -109,12 +109,12 @@ func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 // CreatePreparedStatement create prepared statement after checking/waking up the db connection
 func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 	stmt, err := DB.Prepare(statement)
-	if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+	if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") || !IsAliveConnection()) {
 		logger.LoggerServer.Infof("Error while creating DB prepared statement hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
 				stmt, err = DB.Prepare(statement)
-				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
 					logger.LoggerServer.Debugf("Error while creating prepared statement again hence retrying ... : %v", err.Error())
 					continue
@@ -130,14 +130,12 @@ func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 // ExecPreparedStatement Execute prepared statement after checking/waking up the db connection
 func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
 	result, err := stmt.Exec(args...)
-	if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+	if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") || !IsAliveConnection()) {
 		logger.LoggerServer.Infof("Error while executing prepared statement hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
 				result, err = stmt.Exec(args...)
-				// adding this due an issue in lib
-				// todo(amali) remove it once this is fixed in db lib
-				if err != nil && strings.Contains(err.Error(), "database is closed") {
+				if err != nil && strings.Contains(err.Error(), "is closed") {
 					logger.LoggerServer.Debugf("Closing and creating the prepared statement again ... : %v", stmtString)
 					stmt.Close()
 					stmt, err = CreatePreparedStatement(stmtString)
@@ -148,7 +146,7 @@ func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{
 					logger.LoggerServer.Debugf("Created the prepared statement again ... : %v ", stmtString)
 					result, err = stmt.Exec(args...)
 				}
-				if err != nil && (strings.Contains(err.Error(), "database is closed") || !IsAliveConnection()) {
+				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
 					logger.LoggerServer.Debugf("Error while executing prepared statement again hence retrying ... : %v", err.Error())
 					continue
