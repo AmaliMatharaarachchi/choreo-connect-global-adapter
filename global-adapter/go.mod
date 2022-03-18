@@ -3,7 +3,7 @@ module github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter
 go 1.16
 
 require (
-	github.com/denisenkom/go-mssqldb v0.10.0
+	github.com/denisenkom/go-mssqldb v0.12.0
 	github.com/envoyproxy/go-control-plane v0.10.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/onsi/gomega v1.14.0 // indirect
