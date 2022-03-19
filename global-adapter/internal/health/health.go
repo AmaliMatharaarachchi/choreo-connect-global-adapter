@@ -47,7 +47,7 @@ type criteria string
 func (c criteria) SetStatus(isHealthy bool) {
 	mutexForHealthUpdate.Lock()
 	defer mutexForHealthUpdate.Unlock()
-	logger.LoggerHealth.Infof("Update health status of service \"%s\" as %s", c, healthStatuses[isHealthy])
+	logger.LoggerHealth.Infof("Update health status of criteria \"%s\" as %s", c, healthStatuses[isHealthy])
 	serviceHealthStatus[string(c)] = isHealthy
 }
 

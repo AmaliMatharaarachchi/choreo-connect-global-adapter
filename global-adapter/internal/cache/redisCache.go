@@ -40,6 +40,7 @@ func ConnectToRedisServer() *redis.Client {
 	ping, err := rdb.Ping().Result()
 	// Check the connection error and Retry
 	if err != nil {
+		logger.LoggerServer.Errorf("Error connecting to redis server : %v", err.Error())
 		redisClient, isConnected = redisCacheConnectRetry(clientOptions)
 	} else {
 		logger.LoggerServer.Info("Connected to the redis cluster ", ping)
