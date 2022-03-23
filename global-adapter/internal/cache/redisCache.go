@@ -40,7 +40,9 @@ func ConnectToRedisServer() *redis.Client {
 	pong, err := rdb.Ping().Result()
 	// Check the connection error and Retry
 	if err != nil {
+		logger.LoggerServer.Debugf("Failed to connect redis server error: %s", err.Error())
 		for {
+			logger.LoggerServer.Debug("Start reconnecting to redis server")
 			if redisClient, isConnected = redisCacheConnectRetry(clientOptions); isConnected {
 				logger.LoggerServer.Info("Successfully connected to the redis cluster")
 				return redisClient
@@ -51,10 +53,7 @@ func ConnectToRedisServer() *redis.Client {
 		isConnected = true
 		redisClient = rdb
 	}
-	if isConnected {
-		return rdb
-	}
-	return nil
+	return rdb
 }
 
 // redisCacheConnectRetry retries to connect to the redis cache if there is a connection error
@@ -70,12 +69,14 @@ func redisCacheConnectRetry(clientOptions *redis.Options) (*redis.Client, bool) 
 		rdb := redis.NewClient(clientOptions)
 		_, err := rdb.Ping().Result()
 		if err != nil {
+			logger.LoggerServer.Debugf("Reconnecting to redis server, attempt : %d failed, error: %s", attempt, err.Error())
 			if strings.Contains(err.Error(), "timeout") {
 				time.Sleep(retryInterval * time.Second)
 			} else {
 				return nil, false
 			}
 		} else {
+			logger.LoggerServer.Debug("Reconnecting to redis server is successful")
 			return rdb, true
 		}
 	}

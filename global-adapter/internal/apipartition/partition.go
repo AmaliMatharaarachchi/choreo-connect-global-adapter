@@ -149,23 +149,35 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 
 func pushToXdsCache(laAPIList []*types.LaAPIEvent, isStartup bool) {
 	logger.LoggerAPIPartition.Debug("API List : ", len(laAPIList))
-	if len(laAPIList) == 0 {
-		if isStartup {
-			health.Startup.SetStatus(true)
-		}
-		return
-	}
 	if isStartup {
-		xds.AddMultipleAPIs(laAPIList)
-		logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
-		health.Startup.SetStatus(true)
-		return
+		switch n := len(laAPIList); {
+		case n == 0:
+			logger.LoggerAPIPartition.Info("No artifacts has been loaded to XDS cache in the startup. Anyway marking readiness as true")
+			health.Startup.SetStatus(true)
+			return
+		case n == 1:
+			xds.ProcessSingleEvent(laAPIList[0])
+			logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
+			health.Startup.SetStatus(true)
+			return
+		default:
+			xds.AddMultipleAPIs(laAPIList)
+			logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
+			health.Startup.SetStatus(true)
+			return
+		}
+	} else {
+		switch n := len(laAPIList); {
+		case n == 0:
+			return
+		case n == 1:
+			xds.ProcessSingleEvent(laAPIList[0])
+			return
+		default:
+			xds.AddMultipleAPIs(laAPIList)
+			return
+		}
 	}
-	if len(laAPIList) > 1 {
-		xds.AddMultipleAPIs(laAPIList)
-		return
-	}
-	xds.ProcessSingleEvent(laAPIList[0])
 }
 
 // insertRecord always return the adapter label for the relevant API
