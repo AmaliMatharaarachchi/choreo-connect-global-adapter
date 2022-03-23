@@ -136,8 +136,10 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 		rc := cache.GetClient()
 		cachingError := cache.SetCacheKeys(cacheObj, rc)
 		if cachingError != nil {
+			logger.LoggerAPIPartition.Errorf("Error setting cache keys in redis cache error: %s", cachingError.Error())
 			return
 		}
+		logger.LoggerAPIPartition.Infof("Cache keys were successfully updated into redis cache at the startup(y/n) : %v", apiEventsWithStartupFlag.IsStartup)
 		cache.PublishUpdatedAPIKeys(cacheObj, rc)
 		pushToXdsCache(laAPIList, apiEventsWithStartupFlag.IsStartup)
 	} else {
