@@ -113,6 +113,7 @@ type redisServer struct {
 
 type databaseOptionalMetadata struct {
 	MaxRetryAttempts int
+	QueryTimeout     int
 }
 
 type redisOptionalMetadata struct {

@@ -26,9 +26,7 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	sync "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
-	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 	msg "github.com/wso2/product-microgateway/adapter/pkg/messaging"
-	"github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
 const (
@@ -98,7 +96,7 @@ func handleAPIDeployAndRemoveEvents(data []byte, eventType string, config *confi
 	// Get runtime artifacts for api deploy events.
 	if apiEvent.Event.Type == deployAPI {
 		// Get runtime artifacts reladed to UUID and GatewayLabels  of the api event.
-		apiEventErr = getArtifactsAndAddToChannel(&apiEvent, config, APIEventArray)
+		apiEventErr = sync.GetArtifactsAndAddToChannel(&apiEvent.UUID, apiEvent.GatewayLabels, config, false, false)
 		if apiEventErr != nil {
 			logger.LoggerMsg.Errorf("Error occurred while getting runtime artifacts %v", apiEventErr)
 			return
@@ -118,40 +116,6 @@ func handleAPIDeployAndRemoveEvents(data []byte, eventType string, config *confi
 			sync.APIDeployAndRemoveEventChannel <- sync.APIEventsWithStartupFlag{APIEvents: APIEventArray, IsStartup: false}
 		}
 	}
-}
-
-// Download the artifacts related to the UUId and GatewayLabels of the api event.
-func getArtifactsAndAddToChannel(apiEvent *msg.APIEvent, config *config.Config, APIEventArray []sync.APIEvent) error {
-	// Get the UUID and GatewayLabels from api event.
-	uuid := apiEvent.UUID
-	gatewayLabels := apiEvent.GatewayLabels
-
-	// Populate data from config.
-	serviceURL := config.ControlPlane.ServiceURL
-	username := config.ControlPlane.Username
-	password := config.ControlPlane.Password
-	skipSSL := config.ControlPlane.SkipSSLVerification
-	retryInterval := config.ControlPlane.RetryInterval
-	truststoreLocation := config.Truststore.Location
-	requestTimeout := config.ControlPlane.HTTPClient.RequestTimeOut
-
-	// Create a channel for the byte slice (response from the /runtime-metadata endpoint)
-	c := make(chan synchronizer.SyncAPIResponse)
-
-	// Fetch API details from control plane and write API details to the channel c.
-	adapter.GetAPIs(c, &uuid, serviceURL, username, password, gatewayLabels, skipSSL, truststoreLocation,
-		sync.RuntimeMetaDataEndpoint, false, nil, requestTimeout)
-	// Get deployment.json file from channel c.
-	deploymentDescriptor, err := sync.GetArtifactDetailsFromChannel(c, serviceURL,
-		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout)
-
-	if err != nil {
-		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)
-		return err
-	}
-	sync.AddAPIEventsToChannel(deploymentDescriptor, false, false)
-
-	return nil
 }
 
 func parseNotificationJSONEvent(data []byte, notification *msg.EventNotification) error {

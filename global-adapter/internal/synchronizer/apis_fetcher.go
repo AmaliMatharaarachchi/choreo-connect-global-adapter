@@ -122,32 +122,43 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, isRe
 	APIDeployAndRemoveEventChannel <- APIEventsWithStartupFlag{APIEvents: APIEventArray, IsStartup: isStartup}
 }
 
-// FetchAllApis fetches all apis from control plane
+// FetchAllApis fetches APIs on startup
 func FetchAllApis(conf *config.Config, isReload bool, isStartup bool) {
-	// Populate data from configuration file.
-	serviceURL := conf.ControlPlane.ServiceURL
-	username := conf.ControlPlane.Username
-	password := conf.ControlPlane.Password
 	environmentLabels := conf.ControlPlane.EnvironmentLabels
-	skipSSL := conf.ControlPlane.SkipSSLVerification
-	retryInterval := conf.ControlPlane.RetryInterval
-	truststoreLocation := conf.Truststore.Location
-	requestTimeout := conf.ControlPlane.HTTPClient.RequestTimeOut
+	err := GetArtifactsAndAddToChannel(nil, environmentLabels, conf, isReload, isStartup)
+	if err != nil {
+		logger.LoggerServer.Fatalf("Error occurred while reading api artifacts at the startup: %v ", err)
+	}
+	logger.LoggerSync.Debugf("Successfully fetched all api artifacts for gateway labels : %v and added to the channel", environmentLabels)
+}
 
-	// Create a channel for the byte slice (response from the APIs from control plane).
+// GetArtifactsAndAddToChannel Download the artifacts related to the UUID and GatewayLabels of the api event.
+func GetArtifactsAndAddToChannel(uuid *string, gatewayLabels []string, config *config.Config, isReload bool, isStartup bool) error {
+	// Populate data from config.
+	serviceURL := config.ControlPlane.ServiceURL
+	username := config.ControlPlane.Username
+	password := config.ControlPlane.Password
+	skipSSL := config.ControlPlane.SkipSSLVerification
+	retryInterval := config.ControlPlane.RetryInterval
+	truststoreLocation := config.Truststore.Location
+	requestTimeout := config.ControlPlane.HTTPClient.RequestTimeOut
+
+	// Create a channel for the byte slice (response from the /runtime-metadata endpoint)
 	c := make(chan sync.SyncAPIResponse)
 
-	// Fetch APIs from control plane and write to the channel c.
-	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-		RuntimeMetaDataEndpoint, false, nil, conf.ControlPlane.HTTPClient.RequestTimeOut)
+	logger.LoggerMsg.Debug("Fetching API details from control plane")
+	// Fetch API details from control plane and write API details to the channel c.
+	adapter.GetAPIs(c, uuid, serviceURL, username, password, gatewayLabels, skipSSL, truststoreLocation,
+		RuntimeMetaDataEndpoint, false, nil, requestTimeout)
 
-	// Get deployment.json from the channel c.
+	// Get deployment.json file from channel c.
 	deploymentDescriptor, err := GetArtifactDetailsFromChannel(c, serviceURL,
 		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout)
 
 	if err != nil {
-		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)
-	} else {
-		AddAPIEventsToChannel(deploymentDescriptor, isReload, isStartup)
+		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)
+		return err
 	}
+	AddAPIEventsToChannel(deploymentDescriptor, isReload, isStartup)
+	return nil
 }
