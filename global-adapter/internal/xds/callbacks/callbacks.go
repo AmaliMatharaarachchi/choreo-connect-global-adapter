@@ -20,14 +20,23 @@ package callbacks
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
+	"strings"
 
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
+	wso2_cache "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/cache/v3"
+	wso2_resource "github.com/wso2/product-microgateway/adapter/pkg/discovery/protocol/resource/v3"
 )
 
 // Callbacks is used to debug the xds server related communication.
 type Callbacks struct {
 }
+
+const maxRandomInt int = 999999999
 
 // Report logs the fetches and requests.
 func (cb *Callbacks) Report() {}
@@ -50,6 +59,22 @@ func (cb *Callbacks) OnStreamRequest(id int64, request *discovery.DiscoveryReque
 	if request.ErrorDetail != nil {
 		logger.LoggerXdsCallbacks.Errorf("Stream request for type %s on stream id: %d Error: %s", request.GetTypeUrl(), id, request.ErrorDetail.Message)
 	}
+	version := rand.Intn(maxRandomInt)
+	snap, err := xds.GetAPICache().GetSnapshot(request.GetNode().Id)
+	if err != nil {
+		if strings.Contains(err.Error(), "no snapshot found for node") {
+			newSnapshot, err := wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+				wso2_resource.GAAPIType: {},
+			})
+			if err != nil {
+				logger.LoggerXdsCallbacks.Errorf("Error creating empty snapshot. error: %v", err.Error())
+				return nil
+			}
+			xds.GetAPICache().SetSnapshot(context.Background(), request.GetNode().Id, newSnapshot)
+			logger.LoggerXdsCallbacks.Infof("Updated empty snapshot into cache as there is no apis for the label : %v", request.GetNode().Id)
+		}
+	}
+	logger.LoggerXdsCallbacks.Debugf("Snapshot info ... !!! snap : %v error: %v", snap, err)
 	return nil
 }
 
