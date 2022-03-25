@@ -89,18 +89,13 @@ func IsAliveConnection() (isAlive bool) {
 
 // ExecDBQuery Execute db queries after checking/waking up the db connection
 func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
-	timeout := time.Duration(config.ReadConfigs().DataBase.OptionalMetadata.QueryTimeout)
-	cont, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
-	defer cancel()
-	row, err := DB.QueryContext(cont, query, args...)
+	row, err := execDBQueryWithcontext(query, args...)
 	if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "timeout") ||
 		strings.Contains(err.Error(), "failed to send RPC") || !IsAliveConnection()) {
 		logger.LoggerServer.Infof("Error while executing DB query hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
-				contL, cancelL := context.WithTimeout(context.Background(), timeout*time.Second)
-				row, err = DB.QueryContext(contL, query, args...)
-				cancelL()
+				row, err = execDBQueryWithcontext(query, args...)
 				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") ||
 					strings.Contains(err.Error(), "timeout") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
@@ -115,20 +110,22 @@ func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 	return row, err
 }
 
-// CreatePreparedStatement create prepared statement after checking/waking up the db connection
-func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
+func execDBQueryWithcontext(query string, args ...interface{}) (*sql.Rows, error) {
 	timeout := time.Duration(config.ReadConfigs().DataBase.OptionalMetadata.QueryTimeout)
 	cont, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
 	defer cancel()
-	stmt, err := DB.PrepareContext(cont, statement)
+	return DB.QueryContext(cont, query, args...)
+}
+
+// CreatePreparedStatement create prepared statement after checking/waking up the db connection
+func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
+	stmt, err := createPreparedStatementWithContext(statement)
 	if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") ||
 		strings.Contains(err.Error(), "timeout") || !IsAliveConnection()) {
 		logger.LoggerServer.Infof("Error while creating DB prepared statement hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
-				contL, cancelL := context.WithTimeout(context.Background(), timeout*time.Second)
-				stmt, err = DB.PrepareContext(contL, statement)
-				cancelL()
+				stmt, err = createPreparedStatementWithContext(statement)
 				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") ||
 					strings.Contains(err.Error(), "timeout") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
@@ -143,32 +140,33 @@ func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 	return stmt, err
 }
 
-// ExecPreparedStatement Execute prepared statement after checking/waking up the db connection
-func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
+func createPreparedStatementWithContext(statement string) (*sql.Stmt, error) {
 	timeout := time.Duration(config.ReadConfigs().DataBase.OptionalMetadata.QueryTimeout)
 	cont, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
 	defer cancel()
-	result, err := stmt.ExecContext(cont, args...)
+	return DB.PrepareContext(cont, statement)
+}
+
+// ExecPreparedStatement Execute prepared statement after checking/waking up the db connection
+func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
+	result, err := execPreparedStatementWithContext(stmt, args...)
 	if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") ||
 		strings.Contains(err.Error(), "timeout") || !IsAliveConnection()) {
 		logger.LoggerServer.Infof("Error while executing prepared statement hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
-				contL, cancelL := context.WithTimeout(context.Background(), timeout*time.Second)
-				result, err = stmt.ExecContext(contL, args...)
+				result, err = execPreparedStatementWithContext(stmt, args...)
 				if err != nil && strings.Contains(err.Error(), "is closed") {
 					logger.LoggerServer.Debugf("Closing and creating the prepared statement again ... : %v", stmtString)
 					stmt.Close()
 					stmt, err = CreatePreparedStatement(stmtString)
 					if err != nil {
-						cancelL()
 						logger.LoggerServer.Debugf("Error while creating the prepared statement again ... : %v ", err.Error())
 						continue
 					}
 					logger.LoggerServer.Debugf("Created the prepared statement again ... : %v ", stmtString)
-					result, err = stmt.ExecContext(contL, args...)
+					result, err = execPreparedStatementWithContext(stmt, args...)
 				}
-				cancelL()
 				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") ||
 					strings.Contains(err.Error(), "timeout") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
@@ -181,6 +179,13 @@ func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{
 		}
 	}
 	return result, err
+}
+
+func execPreparedStatementWithContext(stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
+	timeout := time.Duration(config.ReadConfigs().DataBase.OptionalMetadata.QueryTimeout)
+	cont, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
+	defer cancel()
+	return stmt.ExecContext(cont, args...)
 }
 
 // IsTableExists return true if find the searched table
