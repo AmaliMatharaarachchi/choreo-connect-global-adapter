@@ -98,9 +98,9 @@ func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 		logger.LoggerServer.Infof("Error while executing DB query hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
-				contL, cancelL := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancelL()
+				contL, cancelL := context.WithTimeout(context.Background(), timeout*time.Second)
 				row, err = DB.QueryContext(contL, query, args...)
+				cancelL()
 				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") ||
 					strings.Contains(err.Error(), "timeout") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
@@ -127,8 +127,8 @@ func CreatePreparedStatement(statement string) (*sql.Stmt, error) {
 		for {
 			if WakeUpConnection() {
 				contL, cancelL := context.WithTimeout(context.Background(), timeout*time.Second)
-				defer cancelL()
 				stmt, err = DB.PrepareContext(contL, statement)
+				cancelL()
 				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") ||
 					strings.Contains(err.Error(), "timeout") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
@@ -155,19 +155,20 @@ func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{
 		for {
 			if WakeUpConnection() {
 				contL, cancelL := context.WithTimeout(context.Background(), timeout*time.Second)
-				defer cancelL()
 				result, err = stmt.ExecContext(contL, args...)
 				if err != nil && strings.Contains(err.Error(), "is closed") {
 					logger.LoggerServer.Debugf("Closing and creating the prepared statement again ... : %v", stmtString)
 					stmt.Close()
 					stmt, err = CreatePreparedStatement(stmtString)
 					if err != nil {
+						cancelL()
 						logger.LoggerServer.Debugf("Error while creating the prepared statement again ... : %v ", err.Error())
 						continue
 					}
 					logger.LoggerServer.Debugf("Created the prepared statement again ... : %v ", stmtString)
 					result, err = stmt.ExecContext(contL, args...)
 				}
+				cancelL()
 				if err != nil && (strings.Contains(err.Error(), "is closed") || strings.Contains(err.Error(), "failed to send RPC") ||
 					strings.Contains(err.Error(), "timeout") || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing

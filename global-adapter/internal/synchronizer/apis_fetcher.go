@@ -122,7 +122,7 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, isRe
 	APIDeployAndRemoveEventChannel <- APIEventsWithStartupFlag{APIEvents: APIEventArray, IsStartup: isStartup}
 }
 
-// FetchAllApis fetches APIs on startup
+// FetchAllApis fetches all apis from control plane
 func FetchAllApis(conf *config.Config, isReload bool, isStartup bool) {
 	environmentLabels := conf.ControlPlane.EnvironmentLabels
 	err := GetArtifactsAndAddToChannel(nil, environmentLabels, conf, isReload, isStartup)
@@ -146,7 +146,7 @@ func GetArtifactsAndAddToChannel(uuid *string, gatewayLabels []string, config *c
 	// Create a channel for the byte slice (response from the /runtime-metadata endpoint)
 	c := make(chan sync.SyncAPIResponse)
 
-	logger.LoggerMsg.Debug("Fetching API details from control plane")
+	logger.LoggerMsg.Debugf("Fetching API details from control plane for gateways : %v, api uuid: %v", gatewayLabels, uuid)
 	// Fetch API details from control plane and write API details to the channel c.
 	adapter.GetAPIs(c, uuid, serviceURL, username, password, gatewayLabels, skipSSL, truststoreLocation,
 		RuntimeMetaDataEndpoint, false, nil, requestTimeout)
@@ -156,7 +156,7 @@ func GetArtifactsAndAddToChannel(uuid *string, gatewayLabels []string, config *c
 		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout)
 
 	if err != nil {
-		logger.LoggerMsg.Errorf("Error occurred while reading artifacts: %v ", err)
+		logger.LoggerMsg.Errorf("Error occurred while reading artifacts for gateways : %v, api uuid: %v , %v", gatewayLabels, uuid, err.Error())
 		return err
 	}
 	AddAPIEventsToChannel(deploymentDescriptor, isReload, isStartup)
