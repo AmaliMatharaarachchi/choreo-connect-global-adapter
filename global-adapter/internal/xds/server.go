@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -38,6 +39,7 @@ var (
 	// The labels with partition IDs are stored here. <LabelHirerarchy>-P:<partition_ID>
 	// TODO: (VirajSalaka) change the implementation of the snapshot library to provide the same information.
 	introducedLabels map[string]bool
+	mutex            sync.Mutex
 )
 
 const (
@@ -197,4 +199,23 @@ func convertResourceMapToArray(resourceMap map[string]types.ResourceWithTTL) []t
 		apiResources = append(apiResources, res.Resource)
 	}
 	return apiResources
+}
+
+// SetEmptySnapshot sets an empty snapshot into the apiCache for the given label
+// this is used to set empty snapshot when there are no APIs available for a label
+func SetEmptySnapshot(label string) {
+	version := rand.Intn(maxRandomInt)
+	newSnapshot, err := wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+		wso2_resource.GAAPIType: {},
+	})
+	if err != nil {
+		logger.LoggerXds.Errorf("Error creating empty snapshot. error: %v", err.Error())
+		return
+	}
+	mutex.Lock()
+	defer mutex.Unlock()
+	errSetSnap := apiCache.SetSnapshot(context.Background(), label, newSnapshot)
+	if errSetSnap != nil {
+		logger.LoggerXds.Errorf("Error setting empty snapshot to apiCache. error : %v", errSetSnap.Error())
+	}
 }
