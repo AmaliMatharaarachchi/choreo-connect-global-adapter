@@ -60,21 +60,18 @@ func (cb *Callbacks) OnStreamRequest(id int64, request *discovery.DiscoveryReque
 		logger.LoggerXdsCallbacks.Errorf("Stream request for type %s on stream id: %d Error: %s", request.GetTypeUrl(), id, request.ErrorDetail.Message)
 	}
 	version := rand.Intn(maxRandomInt)
-	snap, err := xds.GetAPICache().GetSnapshot(request.GetNode().Id)
-	if err != nil {
-		if strings.Contains(err.Error(), "no snapshot found for node") {
-			newSnapshot, err := wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
-				wso2_resource.GAAPIType: {},
-			})
-			if err != nil {
-				logger.LoggerXdsCallbacks.Errorf("Error creating empty snapshot. error: %v", err.Error())
-				return nil
-			}
-			xds.GetAPICache().SetSnapshot(context.Background(), request.GetNode().Id, newSnapshot)
-			logger.LoggerXdsCallbacks.Infof("Updated empty snapshot into cache as there is no apis for the label : %v", request.GetNode().Id)
+	_, err := xds.GetAPICache().GetSnapshot(request.GetNode().Id)
+	if err != nil && strings.Contains(err.Error(), "no snapshot found for node") {
+		newSnapshot, err := wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+			wso2_resource.GAAPIType: {},
+		})
+		if err != nil {
+			logger.LoggerXdsCallbacks.Errorf("Error creating empty snapshot. error: %v", err.Error())
+			return nil
 		}
+		xds.GetAPICache().SetSnapshot(context.Background(), request.GetNode().Id, newSnapshot)
+		logger.LoggerXdsCallbacks.Infof("Updated empty snapshot into cache as there is no apis for the label : %v", request.GetNode().Id)
 	}
-	logger.LoggerXdsCallbacks.Debugf("Snapshot info ... !!! snap : %v error: %v", snap, err)
 	return nil
 }
 
