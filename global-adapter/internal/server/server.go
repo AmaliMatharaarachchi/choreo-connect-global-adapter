@@ -54,8 +54,6 @@ const amqpProtocol = "amqp"
 // Run functions starts the XDS Server.
 func Run(conf *config.Config) {
 	logger.LoggerServer.Info("Starting global adapter ....")
-	// Checks grpc server health and Waits for grpc server
-	go healthGA.WaitForGrpcServer()
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 
@@ -77,7 +75,7 @@ func Run(conf *config.Config) {
 	go GetNonAPIDeployAndRemoveEventsFromChannel()
 
 	// Fetch APIs from control plane.
-	synchronizer.FetchAPIsOnStartUp(conf, false)
+	synchronizer.FetchAllApis(conf, false, true)
 
 	enforcerAPIDsSrv := wso2_server.NewServer(ctx, xds.GetAPICache(), &callbacks.Callbacks{})
 
@@ -118,13 +116,13 @@ func Run(conf *config.Config) {
 	}()
 
 	// register health service
-	healthservice.RegisterHealthServer(grpcServer, &health.Server{})
+	healthservice.RegisterHealthServer(grpcServer, &healthGA.Server{})
 	logger.LoggerServer.Info("XDS server is starting.")
-	// Set the Grpc server health status
-	healthGA.SetGrpcServerStatus(true)
+	// Set the Grpc server health status as true
+	healthGA.GRPCService.SetStatus(true)
 	if err = grpcServer.Serve(listener); err != nil {
 		// Set the Grpc server health status to false
-		healthGA.SetGrpcServerStatus(false)
+		healthGA.GRPCService.SetStatus(false)
 		logger.LoggerServer.Fatal("Error while starting gRPC server.")
 	}
 

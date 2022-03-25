@@ -16,6 +16,12 @@
 
 package synchronizer
 
+// APIEventsWithStartupFlag is the structure to keep the APIEvents with the IsStartup flag
+type APIEventsWithStartupFlag struct {
+	APIEvents []APIEvent
+	IsStartup bool
+}
+
 // APIEvent is the structure of an API event in GA.
 type APIEvent struct {
 	UUID           string

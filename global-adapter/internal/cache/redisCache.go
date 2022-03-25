@@ -20,9 +20,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 
 	"github.com/go-redis/redis"
@@ -39,14 +40,47 @@ func ConnectToRedisServer() *redis.Client {
 	pong, err := rdb.Ping().Result()
 	// Check the connection error and Retry
 	if err != nil {
-		redisClient, isConnected = health.RedisCacheConnectRetry(clientOptions)
+		logger.LoggerServer.Debugf("Failed to connect redis server error: %s", err.Error())
+		for {
+			logger.LoggerServer.Debug("Start reconnecting to redis server")
+			if redisClient, isConnected = redisCacheConnectRetry(clientOptions); isConnected {
+				logger.LoggerServer.Info("Successfully connected to the redis cluster")
+				return redisClient
+			}
+		}
 	} else {
-		logger.LoggerServer.Info("Connected to the redis cluster ", pong)
+		logger.LoggerServer.Info("Successfully connected to the redis cluster ", pong)
 		isConnected = true
 		redisClient = rdb
 	}
-	health.SetRedisCacheConnectionStatus(isConnected)
 	return rdb
+}
+
+// redisCacheConnectRetry retries to connect to the redis cache if there is a connection error
+func redisCacheConnectRetry(clientOptions *redis.Options) (*redis.Client, bool) {
+	conf := config.ReadConfigs()
+	maxAttempts := conf.RedisServer.OptionalMetadata.MaxRetryAttempts
+	var (
+		retryInterval time.Duration = 5
+		attempt       int
+	)
+	for attempt = 1; attempt <= maxAttempts; attempt++ {
+		logger.LoggerServer.Debugf("Reconnecting to redis server, attempt : %d", attempt)
+		rdb := redis.NewClient(clientOptions)
+		_, err := rdb.Ping().Result()
+		if err != nil {
+			logger.LoggerServer.Debugf("Reconnecting to redis server, attempt : %d failed, error: %s", attempt, err.Error())
+			if strings.Contains(err.Error(), "timeout") {
+				time.Sleep(retryInterval * time.Second)
+			} else {
+				return nil, false
+			}
+		} else {
+			logger.LoggerServer.Debug("Reconnecting to redis server is successful")
+			return rdb, true
+		}
+	}
+	return nil, false
 }
 
 func getRedisClientOptions(conf *config.Config) *redis.Options {

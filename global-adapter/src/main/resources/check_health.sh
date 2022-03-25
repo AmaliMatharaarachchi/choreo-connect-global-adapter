@@ -23,4 +23,5 @@ grpc_health_probe -addr "localhost:${ADAPTER_XDS_PORT}" \
     -tls-client-cert "${ADAPTER_PUBLIC_CERT_PATH}" \
     -tls-client-key "${ADAPTER_PRIVATE_KEY_PATH}" \
     -tls-server-name "${GLOBAL_ADAPTER_SERVER_NAME}" \
-    -connect-timeout=3s
+    -connect-timeout=3s \
+    -service "$1"

@@ -33,6 +33,7 @@ import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/cache"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/synchronizer"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/types"
@@ -71,7 +72,8 @@ const (
 )
 
 // PopulateAPIData - populating API information to Database and redis cache
-func PopulateAPIData(apis []synchronizer.APIEvent, laLabels map[string]map[string]int, stmt *sql.Stmt) {
+func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag, laLabels map[string]map[string]int, stmt *sql.Stmt) {
+	apis := apiEventsWithStartupFlag.APIEvents
 	var laAPIList []*types.LaAPIEvent
 	var cacheObj []string
 	for ind := range apis {
@@ -134,25 +136,37 @@ func PopulateAPIData(apis []synchronizer.APIEvent, laLabels map[string]map[strin
 		rc := cache.GetClient()
 		cachingError := cache.SetCacheKeys(cacheObj, rc)
 		if cachingError != nil {
+			logger.LoggerAPIPartition.Errorf("Error setting cache keys in redis cache error: %s", cachingError.Error())
 			return
 		}
+		logger.LoggerAPIPartition.Infof("Cache keys were successfully updated into redis cache at the startup(y/n) : %v", apiEventsWithStartupFlag.IsStartup)
 		cache.PublishUpdatedAPIKeys(cacheObj, rc)
 		pushToXdsCache(laAPIList)
+		if apiEventsWithStartupFlag.IsStartup {
+			logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
+			health.Startup.SetStatus(true)
+		}
 	} else {
 		pushToXdsCache(laAPIList)
+		if apiEventsWithStartupFlag.IsStartup {
+			logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
+			health.Startup.SetStatus(true)
+		}
 	}
 }
 
 func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 	logger.LoggerAPIPartition.Debug("API List : ", len(laAPIList))
-	if len(laAPIList) == 0 {
+	switch n := len(laAPIList); {
+	case n == 0:
 		return
-	}
-	if len(laAPIList) > 1 {
+	case n == 1:
+		xds.ProcessSingleEvent(laAPIList[0])
+		return
+	default:
 		xds.AddMultipleAPIs(laAPIList)
 		return
 	}
-	xds.ProcessSingleEvent(laAPIList[0])
 }
 
 // insertRecord always return the adapter label for the relevant API
@@ -319,11 +333,12 @@ func ProcessEventsInDatabase() {
 
 // for update the DB for JMS event
 // TODO : if event is for undeploy or remove task , then API should delete from the DB
-func updateFromEvents(apis []synchronizer.APIEvent, laLabels map[string]map[string]int, insertStmt *sql.Stmt, deleteStmt *sql.Stmt) {
+func updateFromEvents(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag, laLabels map[string]map[string]int, insertStmt *sql.Stmt, deleteStmt *sql.Stmt) {
+	apis := apiEventsWithStartupFlag.APIEvents
 	// When multiple APIs (> 1) are present, it corresponding to the startup scenario. Hence the IsRemoveEvent flag is not
 	// considered.
 	if len(apis) > 1 {
-		PopulateAPIData(apis, laLabels, insertStmt)
+		PopulateAPIData(apiEventsWithStartupFlag, laLabels, insertStmt)
 		return
 	}
 	if len(apis) == 0 {
@@ -334,7 +349,7 @@ func updateFromEvents(apis []synchronizer.APIEvent, laLabels map[string]map[stri
 		DeleteAPIRecord(&apis[0], laLabels, deleteStmt)
 		return
 	}
-	PopulateAPIData(apis, laLabels, insertStmt)
+	PopulateAPIData(apiEventsWithStartupFlag, laLabels, insertStmt)
 }
 
 // DeleteAPIRecord Funtion accept API uuid as the argument
@@ -403,7 +418,7 @@ func DeleteAPIRecords(organizations []msg.Organization) bool {
 			}
 
 			conf := config.ReadConfigs()
-			synchronizer.FetchAPIsOnStartUp(conf, true)
+			synchronizer.FetchAllApis(conf, true, false)
 
 		}
 

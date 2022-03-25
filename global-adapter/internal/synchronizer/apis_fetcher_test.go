@@ -112,27 +112,27 @@ func TestAddAPIEventsToChannel(t *testing.T) {
 			},
 		},
 	}
-	go AddAPIEventsToChannel(&deploymentDescriptor, false)
+	go AddAPIEventsToChannel(&deploymentDescriptor, false, false)
 	// Consume API events from channel.
-	APIEventsArray := <-APIDeployAndRemoveEventChannel
+	APIEvents := <-APIDeployAndRemoveEventChannel
 
 	// Check UUIDs of API events.
-	assert.Equal(t, APIEventsArray[0].UUID, "60d2cda9e9cab41a3214fa91",
+	assert.Equal(t, APIEvents.APIEvents[0].UUID, "60d2cda9e9cab41a3214fa91",
 		"UUID should be the same in received API event.")
-	assert.Equal(t, APIEventsArray[1].UUID, "50d2cda9e9cab41a3244fa91",
+	assert.Equal(t, APIEvents.APIEvents[1].UUID, "50d2cda9e9cab41a3244fa91",
 		"UUID should be the same in received API event.")
 
 	// Check Revision IDs of API events.
-	assert.Equal(t, APIEventsArray[0].RevisionID, "60d2cdade9cab41a3214fa92",
+	assert.Equal(t, APIEvents.APIEvents[0].RevisionID, "60d2cdade9cab41a3214fa92",
 		"RevisionID should be the same in received API event.")
-	assert.Equal(t, APIEventsArray[1].RevisionID, "70d2cdade9cab41a3214fa98",
+	assert.Equal(t, APIEvents.APIEvents[1].RevisionID, "70d2cdade9cab41a3214fa98",
 		"RevisionID should be the same in received API event.")
 
 	// Check gateway labels of API events.
-	assert.Equal(t, APIEventsArray[0].GatewayLabels[0], "Default",
+	assert.Equal(t, APIEvents.APIEvents[0].GatewayLabels[0], "Default",
 		"GatewayLabels should be the same in received API event.")
-	assert.Equal(t, APIEventsArray[0].GatewayLabels[1], "Prod",
+	assert.Equal(t, APIEvents.APIEvents[0].GatewayLabels[1], "Prod",
 		"GatewayLabels should be the same in received API event.")
-	assert.Equal(t, APIEventsArray[1].GatewayLabels[0], "Default",
+	assert.Equal(t, APIEvents.APIEvents[1].GatewayLabels[0], "Default",
 		"GatewayLabels should be the same in received API event.")
 }

@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
-	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 )
 
@@ -67,7 +66,6 @@ func WakeUpConnection() (isAlive bool) {
 		}
 		logger.LoggerServer.Infof("DB connection liveness is %v", isAlive)
 	}
-	health.SetDatabaseConnectionStatus(isAlive)
 	return isAlive
 }
 

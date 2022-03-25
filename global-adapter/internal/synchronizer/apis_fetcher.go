@@ -38,10 +38,10 @@ import (
 const RuntimeMetaDataEndpoint = "internal/data/v1/runtime-metadata"
 
 // APIDeployAndRemoveEventChannel represents the channel for writing API events.
-var APIDeployAndRemoveEventChannel chan []APIEvent
+var APIDeployAndRemoveEventChannel chan APIEventsWithStartupFlag
 
 func init() {
-	APIDeployAndRemoveEventChannel = make(chan []APIEvent)
+	APIDeployAndRemoveEventChannel = make(chan APIEventsWithStartupFlag)
 }
 
 // GetArtifactDetailsFromChannel retrieve the artifact details from the channel c.
@@ -87,7 +87,7 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 }
 
 // AddAPIEventsToChannel function updates the api event details and add it to the API event array.
-func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, isReload bool) {
+func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, isReload bool, isStartup bool) {
 	// Create an APIEvent array.
 	APIEventArray := []APIEvent{}
 
@@ -118,11 +118,12 @@ func AddAPIEventsToChannel(deploymentDescriptor *sync.DeploymentDescriptor, isRe
 		APIEventArray = append(APIEventArray, apiEvent)
 	}
 	logger.LoggerSync.Debugf("Write API Events %v to the APIDeployAndRemoveEventChannel ", APIEventArray)
-	APIDeployAndRemoveEventChannel <- APIEventArray
+	// add the flag from here
+	APIDeployAndRemoveEventChannel <- APIEventsWithStartupFlag{APIEvents: APIEventArray, IsStartup: isStartup}
 }
 
-// FetchAPIsOnStartUp fetches APIs on startup
-func FetchAPIsOnStartUp(conf *config.Config, isReload bool) {
+// FetchAllApis fetches all apis from control plane
+func FetchAllApis(conf *config.Config, isReload bool, isStartup bool) {
 	// Populate data from configuration file.
 	serviceURL := conf.ControlPlane.ServiceURL
 	username := conf.ControlPlane.Username
@@ -147,6 +148,6 @@ func FetchAPIsOnStartUp(conf *config.Config, isReload bool) {
 	if err != nil {
 		logger.LoggerServer.Fatalf("Error occurred while reading artifacts: %v ", err)
 	} else {
-		AddAPIEventsToChannel(deploymentDescriptor, isReload)
+		AddAPIEventsToChannel(deploymentDescriptor, isReload, isStartup)
 	}
 }
