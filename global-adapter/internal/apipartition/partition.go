@@ -141,42 +141,31 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 		}
 		logger.LoggerAPIPartition.Infof("Cache keys were successfully updated into redis cache at the startup(y/n) : %v", apiEventsWithStartupFlag.IsStartup)
 		cache.PublishUpdatedAPIKeys(cacheObj, rc)
-		pushToXdsCache(laAPIList, apiEventsWithStartupFlag.IsStartup)
+		pushToXdsCache(laAPIList)
+		if apiEventsWithStartupFlag.IsStartup {
+			logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
+			health.Startup.SetStatus(true)
+		}
 	} else {
-		pushToXdsCache(laAPIList, apiEventsWithStartupFlag.IsStartup)
+		pushToXdsCache(laAPIList)
+		if apiEventsWithStartupFlag.IsStartup {
+			logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
+			health.Startup.SetStatus(true)
+		}
 	}
 }
 
-func pushToXdsCache(laAPIList []*types.LaAPIEvent, isStartup bool) {
+func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 	logger.LoggerAPIPartition.Debug("API List : ", len(laAPIList))
-	if isStartup {
-		switch n := len(laAPIList); {
-		case n == 0:
-			logger.LoggerAPIPartition.Info("No artifacts has been loaded to XDS cache in the startup. Anyway marking readiness as true")
-			health.Startup.SetStatus(true)
-			return
-		case n == 1:
-			xds.ProcessSingleEvent(laAPIList[0])
-			logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
-			health.Startup.SetStatus(true)
-			return
-		default:
-			xds.AddMultipleAPIs(laAPIList)
-			logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
-			health.Startup.SetStatus(true)
-			return
-		}
-	} else {
-		switch n := len(laAPIList); {
-		case n == 0:
-			return
-		case n == 1:
-			xds.ProcessSingleEvent(laAPIList[0])
-			return
-		default:
-			xds.AddMultipleAPIs(laAPIList)
-			return
-		}
+	switch n := len(laAPIList); {
+	case n == 0:
+		return
+	case n == 1:
+		xds.ProcessSingleEvent(laAPIList[0])
+		return
+	default:
+		xds.AddMultipleAPIs(laAPIList)
+		return
 	}
 }
 
@@ -193,10 +182,10 @@ func insertRecord(api *synchronizer.APIEvent, gwLabel string, stmt *sql.Stmt) in
 			break
 		}
 		apiID, isNewID = getAvailableID(gwLabel)
-		if apiID == -1 { // Return -1 due to an error
-			logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy for api : %v in gateway : %v", apiID, gwLabel)
+		if apiID < 0 { // Return -1 due to an error
+			logger.LoggerAPIPartition.Errorf("Error while getting next available ID | hierarchy for api : %v in gateway : %v, apiId : %v", api.UUID, gwLabel, apiID)
 		} else {
-			_, err := database.ExecPreparedStatement(stmt, api.UUID, &gwLabel, apiID, api.OrganizationID)
+			_, err := database.ExecPreparedStatement(database.QueryInsertAPI, stmt, api.UUID, &gwLabel, apiID, api.OrganizationID)
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {
 					logger.LoggerAPIPartition.Debugf("API : %v in gateway : %v is already exists %v", api.UUID, gwLabel, err.Error())
@@ -384,7 +373,7 @@ func DeleteAPIRecord(api *synchronizer.APIEvent, laLabels map[string]map[string]
 				delete(laLabels[gatewayLabel], api.UUID)
 			}
 
-			_, error := database.ExecPreparedStatement(deleteStmt, api.UUID, gatewayLabel)
+			_, error := database.ExecPreparedStatement(database.QueryDeleteAPI, deleteStmt, api.UUID, gatewayLabel)
 			if error != nil {
 				logger.LoggerAPIPartition.Errorf("Error while deleting the API UUID : %v in gateway: %v , %v", api.UUID, gatewayLabel, error.Error())
 				// break
@@ -396,7 +385,7 @@ func DeleteAPIRecord(api *synchronizer.APIEvent, laLabels map[string]map[string]
 					IsRemoveEvent:    true,
 					OrganizationUUID: api.OrganizationID,
 					LabelHierarchy:   gatewayLabel,
-				}}, false)
+				}})
 			}
 		}
 	} else {
