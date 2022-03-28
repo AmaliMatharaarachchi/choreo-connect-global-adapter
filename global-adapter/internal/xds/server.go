@@ -39,7 +39,7 @@ var (
 	// The labels with partition IDs are stored here. <LabelHirerarchy>-P:<partition_ID>
 	// TODO: (VirajSalaka) change the implementation of the snapshot library to provide the same information.
 	introducedLabels map[string]bool
-	mutex            sync.Mutex
+	apiCacheMutex    sync.Mutex
 )
 
 const (
@@ -98,6 +98,8 @@ func addSingleAPI(label, apiUUID, revisionUUID, organizationUUID string) {
 			wso2_resource.GAAPIType: apiResources,
 		})
 	}
+	apiCacheMutex.Lock()
+	defer apiCacheMutex.Unlock()
 	apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 	introducedLabels[label] = true
 	logger.LoggerXds.Infof("API Snapshot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResourcesAndTTL(typeURL)))
@@ -130,6 +132,8 @@ func removeAPI(labelHierarchy, apiUUID string) {
 			newSnapshot, _ = wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
 				wso2_resource.GAAPIType: apiResources,
 			})
+			apiCacheMutex.Lock()
+			defer apiCacheMutex.Unlock()
 			apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 			logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResourcesAndTTL(typeURL)))
 			return
@@ -186,6 +190,8 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 		logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s in startup. Current snapshot size is : %d", label, apiUUID, revisionUUID, len(newSnapshot.GetResourcesAndTTL(typeURL)))
 	}
 
+	apiCacheMutex.Lock()
+	defer apiCacheMutex.Unlock()
 	for label, snapshotEntry := range snapshotMap {
 		apiCache.SetSnapshot(context.Background(), label, *snapshotEntry)
 		introducedLabels[label] = true
@@ -212,10 +218,14 @@ func SetEmptySnapshot(label string) {
 		logger.LoggerXds.Errorf("Error creating empty snapshot. error: %v", err.Error())
 		return
 	}
-	mutex.Lock()
-	defer mutex.Unlock()
-	errSetSnap := apiCache.SetSnapshot(context.Background(), label, newSnapshot)
-	if errSetSnap != nil {
-		logger.LoggerXds.Errorf("Error setting empty snapshot to apiCache. error : %v", errSetSnap.Error())
+	apiCacheMutex.Lock()
+	defer apiCacheMutex.Unlock()
+	//performing null check again to avoid race conditions
+	_, errSnap := apiCache.GetSnapshot(label)
+	if errSnap != nil && strings.Contains(errSnap.Error(), "no snapshot found for node") {
+		errSetSnap := apiCache.SetSnapshot(context.Background(), label, newSnapshot)
+		if errSetSnap != nil {
+			logger.LoggerXds.Errorf("Error setting empty snapshot to apiCache. error : %v", errSetSnap.Error())
+		}
 	}
 }
