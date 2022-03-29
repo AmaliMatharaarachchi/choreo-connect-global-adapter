@@ -209,14 +209,14 @@ func convertResourceMapToArray(resourceMap map[string]types.ResourceWithTTL) []t
 
 // SetEmptySnapshot sets an empty snapshot into the apiCache for the given label
 // this is used to set empty snapshot when there are no APIs available for a label
-func SetEmptySnapshot(label string) {
+func SetEmptySnapshot(label string) error {
 	version := rand.Intn(maxRandomInt)
 	newSnapshot, err := wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
 		wso2_resource.GAAPIType: {},
 	})
 	if err != nil {
 		logger.LoggerXds.Errorf("Error creating empty snapshot. error: %v", err.Error())
-		return
+		return err
 	}
 	apiCacheMutex.Lock()
 	defer apiCacheMutex.Unlock()
@@ -226,6 +226,8 @@ func SetEmptySnapshot(label string) {
 		errSetSnap := apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 		if errSetSnap != nil {
 			logger.LoggerXds.Errorf("Error setting empty snapshot to apiCache. error : %v", errSetSnap.Error())
+			return errSetSnap
 		}
 	}
+	return nil
 }

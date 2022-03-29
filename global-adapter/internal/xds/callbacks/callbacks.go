@@ -54,7 +54,14 @@ func (cb *Callbacks) OnStreamRequest(id int64, request *discovery.DiscoveryReque
 	}
 	_, err := xds.GetAPICache().GetSnapshot(request.GetNode().Id)
 	if err != nil && strings.Contains(err.Error(), "no snapshot found for node") {
-		xds.SetEmptySnapshot(request.GetNode().Id)
+		// This will be called only after the readiness probe is deployed.
+		// Hence, there is no possibility to set empty snapshot for woking adapter (with APIs)
+		// (i.e setting snapshot before adding APIs to the cache)
+		errSetSnap := xds.SetEmptySnapshot(request.GetNode().Id)
+		if errSetSnap != nil {
+			logger.LoggerXdsCallbacks.Errorf("Error while setting empty snapshot. error : %s", errSetSnap.Error())
+			return errSetSnap
+		}
 		logger.LoggerXdsCallbacks.Infof("Updated empty snapshot into cache as there is no apis for the label : %v", request.GetNode().Id)
 	}
 	return nil
