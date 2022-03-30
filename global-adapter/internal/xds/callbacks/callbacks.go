@@ -60,7 +60,7 @@ func (cb *Callbacks) OnStreamRequest(id int64, request *discovery.DiscoveryReque
 		errSetSnap := xds.SetEmptySnapshot(request.GetNode().Id)
 		if errSetSnap != nil {
 			logger.LoggerXdsCallbacks.Errorf("Error while setting empty snapshot. error : %s", errSetSnap.Error())
-			return errSetSnap
+			return nil
 		}
 		logger.LoggerXdsCallbacks.Infof("Updated empty snapshot into cache as there is no apis for the label : %v", request.GetNode().Id)
 	}
