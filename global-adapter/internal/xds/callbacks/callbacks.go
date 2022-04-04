@@ -20,9 +20,11 @@ package callbacks
 
 import (
 	"context"
+	"strings"
 
 	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/xds"
 )
 
 // Callbacks is used to debug the xds server related communication.
@@ -49,6 +51,18 @@ func (cb *Callbacks) OnStreamRequest(id int64, request *discovery.DiscoveryReque
 		id, request.GetNode(), request.GetVersionInfo(), request.GetTypeUrl())
 	if request.ErrorDetail != nil {
 		logger.LoggerXdsCallbacks.Errorf("Stream request for type %s on stream id: %d Error: %s", request.GetTypeUrl(), id, request.ErrorDetail.Message)
+	}
+	_, err := xds.GetAPICache().GetSnapshot(request.GetNode().Id)
+	if err != nil && strings.Contains(err.Error(), "no snapshot found for node") {
+		// This will be called only after the readiness probe is deployed.
+		// Hence, there is no possibility to set empty snapshot for woking adapter (with APIs)
+		// (i.e setting snapshot before adding APIs to the cache)
+		errSetSnap := xds.SetEmptySnapshot(request.GetNode().Id)
+		if errSetSnap != nil {
+			logger.LoggerXdsCallbacks.Errorf("Error while setting empty snapshot. error : %s", errSetSnap.Error())
+			return nil
+		}
+		logger.LoggerXdsCallbacks.Infof("Updated empty snapshot into cache as there is no apis for the label : %v", request.GetNode().Id)
 	}
 	return nil
 }

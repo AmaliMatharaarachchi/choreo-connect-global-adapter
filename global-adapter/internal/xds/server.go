@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"sync"
 	"time"
 
 	corev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -38,6 +39,7 @@ var (
 	// The labels with partition IDs are stored here. <LabelHirerarchy>-P:<partition_ID>
 	// TODO: (VirajSalaka) change the implementation of the snapshot library to provide the same information.
 	introducedLabels map[string]bool
+	apiCacheMutex    sync.Mutex
 )
 
 const (
@@ -96,6 +98,8 @@ func addSingleAPI(label, apiUUID, revisionUUID, organizationUUID string) {
 			wso2_resource.GAAPIType: apiResources,
 		})
 	}
+	apiCacheMutex.Lock()
+	defer apiCacheMutex.Unlock()
 	apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 	introducedLabels[label] = true
 	logger.LoggerXds.Infof("API Snapshot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResourcesAndTTL(typeURL)))
@@ -128,6 +132,8 @@ func removeAPI(labelHierarchy, apiUUID string) {
 			newSnapshot, _ = wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
 				wso2_resource.GAAPIType: apiResources,
 			})
+			apiCacheMutex.Lock()
+			defer apiCacheMutex.Unlock()
 			apiCache.SetSnapshot(context.Background(), label, newSnapshot)
 			logger.LoggerXds.Infof("API Snaphsot is updated for label %s with the version %d. New snapshot size is %d.", label, version, len(newSnapshot.GetResourcesAndTTL(typeURL)))
 			return
@@ -184,6 +190,8 @@ func AddMultipleAPIs(apiEventArray []*internal_types.LaAPIEvent) {
 		logger.LoggerXds.Infof("Deploy API is triggered for %s:%s under revision: %s in startup. Current snapshot size is : %d", label, apiUUID, revisionUUID, len(newSnapshot.GetResourcesAndTTL(typeURL)))
 	}
 
+	apiCacheMutex.Lock()
+	defer apiCacheMutex.Unlock()
 	for label, snapshotEntry := range snapshotMap {
 		apiCache.SetSnapshot(context.Background(), label, *snapshotEntry)
 		introducedLabels[label] = true
@@ -197,4 +205,29 @@ func convertResourceMapToArray(resourceMap map[string]types.ResourceWithTTL) []t
 		apiResources = append(apiResources, res.Resource)
 	}
 	return apiResources
+}
+
+// SetEmptySnapshot sets an empty snapshot into the apiCache for the given label
+// this is used to set empty snapshot when there are no APIs available for a label
+func SetEmptySnapshot(label string) error {
+	version := rand.Intn(maxRandomInt)
+	newSnapshot, err := wso2_cache.NewSnapshot(fmt.Sprint(version), map[wso2_resource.Type][]types.Resource{
+		wso2_resource.GAAPIType: {},
+	})
+	if err != nil {
+		logger.LoggerXds.Errorf("Error creating empty snapshot. error: %v", err.Error())
+		return err
+	}
+	apiCacheMutex.Lock()
+	defer apiCacheMutex.Unlock()
+	//performing null check again to avoid race conditions
+	_, errSnap := apiCache.GetSnapshot(label)
+	if errSnap != nil && strings.Contains(errSnap.Error(), "no snapshot found for node") {
+		errSetSnap := apiCache.SetSnapshot(context.Background(), label, newSnapshot)
+		if errSetSnap != nil {
+			logger.LoggerXds.Errorf("Error setting empty snapshot to apiCache. error : %v", errSetSnap.Error())
+			return errSetSnap
+		}
+	}
+	return nil
 }
