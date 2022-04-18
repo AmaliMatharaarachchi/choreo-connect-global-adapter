@@ -30,7 +30,7 @@ import (
 const (
 	sqlDriver     string = "sqlserver"
 	dbIsClosed    string = "is closed"
-	dbIsTimeout   string = "timeout"
+	dbIsTimeout   string = "timed out"
 	dbIsFailedRPC string = "failed to send RPC"
 )
 
