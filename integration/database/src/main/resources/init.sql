@@ -3,7 +3,7 @@ GO
 USE GlobalAdapter
 GO
 CREATE TABLE globalAdapter.dbo.la_partition_size (
-		parition_size int NULL
+        parition_size int NULL
 );
 GO
 CREATE TABLE globalAdapter.dbo.ga_local_adapter_partition (
@@ -12,5 +12,11 @@ CREATE TABLE globalAdapter.dbo.ga_local_adapter_partition (
 		api_id int NOT NULL,
 		org_id varchar(150) NULL,
 	CONSTRAINT PK_uuid_hierarchy PRIMARY KEY (api_uuid,label_hierarchy)
+);
+GO
+
+CREATE TABLE globalAdapter.dbo.ga_org_quota_status (
+		org_id varchar(150) NULL,
+		is_exceeded BIT NOT NULL DEFAULT 0,
 );
 GO

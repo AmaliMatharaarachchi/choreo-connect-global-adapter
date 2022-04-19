@@ -20,6 +20,7 @@ package messaging
 
 import (
 	"encoding/json"
+
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -30,7 +31,7 @@ func handleAzureBillingCycleResetEvents(conf *config.Config) {
 	for d := range msg.AzureStepQuotaResetChannel {
 		logger.LoggerMsg.Info("Message received for AzureStepQuotaResetChannel for: " + string(d))
 
-		if !apipartition.IsStepQuotaLimitingEnabled() {
+		if !apipartition.IsStepQuotaLimitingEnabled {
 			logger.LoggerMsg.Infof("Step quota limiting feature is disabled. Hence not processing event")
 			continue
 		}
@@ -49,15 +50,7 @@ func handleAzureBillingCycleResetEvents(conf *config.Config) {
 			continue
 		}
 
-		// API IDs for org
-		apiIds, err := getAPIIdsForOrg(resetEvent.OrgUUID)
-		if err != nil {
-			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", resetEvent.OrgUUID, err)
-			continue
-		}
-
-		logger.LoggerMsg.Debugf("Found API IDs: %v for org: %s", apiIds, resetEvent.OrgUUID)
-		updateCacheForAPIIds(apiIds, "", conf)
+		updateCacheForAPIIds(resetEvent.OrgUUID, "", conf)
 		logger.LoggerMsg.Info("Completed handling Azure billing cycle reset event for: " + string(d))
 	}
 }
@@ -67,6 +60,6 @@ func parseBillingCycleResetJSONEvent(data []byte, billingCycleResetEvent *Billin
 	if unmarshalErr != nil {
 		logger.LoggerMsg.Errorf("Error occurred while unmarshalling billing cycle reset event data %v", unmarshalErr)
 	}
-	logger.LoggerMsg.Debugf("Successfully parsed billing cycle reset Json event. Data: %v", unmarshalErr)
+	logger.LoggerMsg.Debugf("Successfully parsed billing cycle reset Json event. Data: %v", *billingCycleResetEvent)
 	return unmarshalErr
 }

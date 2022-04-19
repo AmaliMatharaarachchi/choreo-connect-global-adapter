@@ -62,6 +62,8 @@ func Run(conf *config.Config) {
 	// Checks control plane health and Waits for Control plane
 	go health.WaitForControlPlane()
 
+	// Read DB and preload data before start consuming events
+	apipartition.GetAPILALabels()
 	var connectionURLList = conf.ControlPlane.BrokerConnectionParameters.EventListeningEndpoints
 	if strings.Contains(connectionURLList[0], amqpProtocol) {
 		go messaging.ProcessEvents(conf)
