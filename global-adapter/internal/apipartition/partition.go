@@ -151,11 +151,6 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 		}
 	}
 
-	pushToXdsCache(laAPIList)
-	if apiEventsWithStartupFlag.IsStartup {
-		logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
-		health.Startup.SetStatus(true)
-	}
 	if len(cacheObj) >= 2 && !apis[0].IsReload {
 		rc := cache.GetClient()
 		cachingError := cache.SetCacheKeys(cacheObj, rc)
@@ -165,6 +160,11 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 		}
 		logger.LoggerAPIPartition.Infof("Cache keys were successfully updated into redis cache at the startup(y/n) : %v", apiEventsWithStartupFlag.IsStartup)
 		cache.PublishUpdatedAPIKeys(cacheObj, rc)
+	}
+	pushToXdsCache(laAPIList)
+	if apiEventsWithStartupFlag.IsStartup {
+		logger.LoggerAPIPartition.Info("All artifacts have been loaded to XDS cache in the startup. Hense marking readiness as true")
+		health.Startup.SetStatus(true)
 	}
 }
 
@@ -187,8 +187,9 @@ func pushToXdsCache(laAPIList []*types.LaAPIEvent) {
 func insertRecord(api *synchronizer.APIEvent, gwLabel string, stmt *sql.Stmt) int {
 	apiID := -1
 	isNewID := false
+	isExists := false
 	for {
-		isExists, apiID := isAPIExists(api.UUID, gwLabel)
+		isExists, apiID = isAPIExists(api.UUID, gwLabel)
 		if isExists {
 			logger.LoggerAPIPartition.Debug("API : ", api.UUID, " has been already persisted to gateway : ", gwLabel, " partitionId : ", apiID)
 			break
@@ -226,7 +227,7 @@ func getAPILALabels() map[string]map[string]int {
 	var apiID int
 	var labelHierarchy string
 	var apiUUID string
-	laLabels := make(map[string]map[string]int)
+	labels := make(map[string]map[string]int) // label hierarchy -> API UUID -> API ID
 	row, err := database.ExecDBQuery(database.QueryGetAllLabels)
 	if err == nil {
 		for {
@@ -236,19 +237,19 @@ func getAPILALabels() map[string]map[string]int {
 			} else {
 				row.Scan(&apiUUID, &labelHierarchy, &apiID)
 				logger.LoggerAPIPartition.Debugf("API %v found in database with label : %v : label : %v ", apiUUID, labelHierarchy, apiID)
-				if _, found := laLabels[labelHierarchy]; !found {
-					laLabels[labelHierarchy] = make(map[string]int)
+				if _, found := labels[labelHierarchy]; !found {
+					labels[labelHierarchy] = make(map[string]int)
 				}
-				laLabels[labelHierarchy][apiUUID] = apiID
+				labels[labelHierarchy][apiUUID] = apiID
 			}
 		}
 	} else {
 		logger.LoggerAPIPartition.Error("Error when getting api partition label records from database")
 	}
-	return laLabels
+	return labels
 }
 
-// getAPILALabels get partition info from db
+// getQuotaStatus get partition info from db
 func getQuotaStatus() map[string]bool {
 	var orgID string
 	var isExceeded bool
