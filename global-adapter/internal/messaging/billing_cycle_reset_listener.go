@@ -42,8 +42,6 @@ func handleAzureBillingCycleResetEvents(conf *config.Config) {
 			logger.LoggerMsg.Errorf("Error while processing the billing cycle reset event %v. Hence dropping the event", err)
 			continue
 		}
-		logger.LoggerMsg.Debugf("Billing cycle reset event for org ID: %s is received", resetEvent.OrgUUID)
-
 		dbErr := upsertQuotaExceededStatus(resetEvent.OrgUUID, false)
 		if dbErr != nil {
 			logger.LoggerMsg.Errorf("Failed to upsert quota exceeded status: %v in DB for org: %s. Error: %v", false, resetEvent.OrgUUID, dbErr)

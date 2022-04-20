@@ -27,27 +27,9 @@ import (
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
-// Get all the API IDs for an organisation
-func getAPIIdsForOrg(orgID string) ([]string, error) {
-	var apiIds []string
-	row, err := database.ExecDBQuery(database.QueryGetAPIsByOrg, orgID)
-	if err == nil {
-		for row.Next() {
-			var apiID string
-			row.Scan(&apiID)
-			apiIds = append(apiIds, apiID)
-		}
-
-		logger.LoggerMsg.Debugf("Found %v APIs for org: %v", len(apiIds), orgID)
-	} else {
-		logger.LoggerMsg.Errorf("Error when fetching APIs for orgId : %s. Error: %v", orgID, err)
-		return nil, err
-	}
-	return apiIds, nil
-}
-
 // Multiple listeners needs to insert/update organisation's quota exceeded status
 func upsertQuotaExceededStatus(orgID string, status bool) error {
+	apipartition.QuotaStatus[orgID] = status
 	_, err := database.ExecDBQuery(database.QueryUpsertQuotaStatus, orgID, status)
 	if err != nil {
 		logger.LoggerMsg.Errorf("Error while upserting quota exceeded status into DB for org: %s, status: %v. Error: %v", orgID, status, err)
@@ -86,7 +68,6 @@ func getAPIEvents(orgUUID string, conf *config.Config) ([]synchronizer.APIEvent,
 	}
 
 	for _, deployment := range deploymentDescriptor.Data.Deployments {
-		//todo(amali) is it ok to justget org id apis from apim not from db?
 		if deployment.OrganizationID == orgUUID {
 			// Create a new APIEvent.
 			apiEvent := synchronizer.APIEvent{}
