@@ -49,12 +49,6 @@ var configs = config.ReadConfigs()
 var partitionSize = configs.Server.PartitionSize
 var deployAdapterTriggered bool
 
-// LALabels map of label hierarchy -> API UUID -> API ID
-var LALabels map[string]map[string]int
-
-// QuotaStatus map of orgId -> isExceeded
-var QuotaStatus map[string]bool
-
 // IsStepQuotaLimitingEnabled step quota limiting is enabled or not
 var IsStepQuotaLimitingEnabled = getStepQuotaLimitingConfig()
 
@@ -80,17 +74,20 @@ const (
 	deleteEvent            string = "delete"
 )
 
-// Init steps before consuming events/partitioning
-func Init() {
-	LALabels = getAPILALabels()
-	QuotaStatus = getQuotaStatus()
-}
-
 // PopulateAPIData - populating API information to Database and redis cache
 func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag, stmt *sql.Stmt) {
 	apis := apiEventsWithStartupFlag.APIEvents
 	var laAPIList []*types.LaAPIEvent
 	var cacheObj []string
+	var laLabels map[string]map[string]int // map of label hierarchy -> API UUID -> API ID
+	var quotaStatus map[string]bool        // map of orgId -> isExceeded
+
+	// load the db data at the startup to speedup the GA startup
+	if apiEventsWithStartupFlag.IsStartup {
+		laLabels = getAPILALabels()
+		quotaStatus = getQuotaStatus()
+	}
+
 	for ind := range apis {
 		for index := range apis[ind].GatewayLabels {
 			// It is required to convert the gateway label to lowercase as the partition name is required for deploying k8s
@@ -101,35 +98,35 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 			if gatewayLabel == strings.ToLower(productionSandboxLabel) {
 				gatewayLabel = defaultGatewayLabel
 			}
-			apiID, found := LALabels[gatewayLabel][apis[ind].UUID]
-			if !found {
-				logger.LoggerAPIPartition.Info("Creating label for api : ", apis[ind].UUID, " and Gateway : ", gatewayLabel)
+			var apiID int
+			if apiEventsWithStartupFlag.IsStartup {
+				apiID, _ = laLabels[gatewayLabel][apis[ind].UUID]
+			} else {
 				apiID = insertRecord(&apis[ind], gatewayLabel, stmt)
-				if apiID >= 0 {
-					if _, found := LALabels[gatewayLabel]; !found {
-						LALabels[gatewayLabel] = make(map[string]int)
-					}
-					LALabels[gatewayLabel][apis[ind].UUID] = apiID
-				}
 			}
 
 			if apiID >= 0 {
 				label := getLaLabel(gatewayLabel, apiID, partitionSize)
 				logger.LoggerAPIPartition.Info("Label for : ", apis[ind].UUID, " and Gateway : ", gatewayLabel, " is ", label)
 
-				isExceeded, found := QuotaStatus[apis[ind].OrganizationID]
-				if !found {
+				isExceeded := false
+				if apiEventsWithStartupFlag.IsStartup {
+					isExceeded, _ = quotaStatus[apis[ind].OrganizationID]
+				} else {
 					isExceeded = isQuotaExceededForOrg(apis[ind].OrganizationID)
-					QuotaStatus[apis[ind].OrganizationID] = isExceeded
 				}
 				cacheKey := getCacheKey(&apis[ind], gatewayLabel)
-
 				cacheValue := RedisBlockedValue
 				if !isExceeded {
 					cacheValue = getCacheValue(&apis[ind], label)
 				}
 				logger.LoggerAPIPartition.Debugf("Found cache key : %v and cache value: %v for organisation: %v",
 					cacheKey, cacheValue, apis[ind].OrganizationID)
+				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
+				if cacheKey != "" {
+					cacheObj = append(cacheObj, cacheKey)
+					cacheObj = append(cacheObj, cacheValue)
+				}
 
 				apiState := types.LaAPIEvent{
 					LabelHierarchy:   apis[ind].GatewayLabels[index],
@@ -139,12 +136,6 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 					OrganizationUUID: apis[ind].OrganizationID,
 				}
 				laAPIList = append(laAPIList, &apiState)
-
-				// Push each key and value to the string array (Ex: "key1","value1","key2","value2")
-				if cacheKey != "" {
-					cacheObj = append(cacheObj, cacheKey)
-					cacheObj = append(cacheObj, cacheValue)
-				}
 			} else {
 				logger.LoggerAPIPartition.Errorf("Error while fetching the API label UUID : %v in gateway : %v", apis[ind].UUID, gatewayLabel)
 			}
@@ -229,6 +220,33 @@ func getAPILALabels() map[string]map[string]int {
 	var apiUUID string
 	labels := make(map[string]map[string]int) // label hierarchy -> API UUID -> API ID
 	row, err := database.ExecDBQuery(database.QueryGetAllLabels)
+	if err == nil {
+		for {
+			if !row.Next() {
+				logger.LoggerAPIPartition.Debug("No more partition label records exist for API partitions in database")
+				break
+			} else {
+				row.Scan(&apiUUID, &labelHierarchy, &apiID)
+				logger.LoggerAPIPartition.Debugf("API %v found in database with label : %v : label : %v ", apiUUID, labelHierarchy, apiID)
+				if _, found := labels[labelHierarchy]; !found {
+					labels[labelHierarchy] = make(map[string]int)
+				}
+				labels[labelHierarchy][apiUUID] = apiID
+			}
+		}
+	} else {
+		logger.LoggerAPIPartition.Error("Error when getting api partition label records from database")
+	}
+	return labels
+}
+
+// getAPILALabelsForOrg get partition info from db for an org
+func getAPILALabelsForOrg(orgID string) map[string]map[string]int {
+	var apiID int
+	var labelHierarchy string
+	var apiUUID string
+	labels := make(map[string]map[string]int) // label hierarchy -> API UUID -> API ID
+	row, err := database.ExecDBQuery(database.QueryGetAllLabelsPerOrg, orgID)
 	if err == nil {
 		for {
 			if !row.Next() {
@@ -397,12 +415,6 @@ func DeleteAPIRecord(api *synchronizer.APIEvent, deleteStmt *sql.Stmt) {
 				gatewayLabel = defaultGatewayLabel
 			}
 
-			// we delete the record from the local in-memory map regardless of a db err while deleting record
-			// since the other GA may have succeeded deleting the record from db
-			if _, found := LALabels[gatewayLabel]; found {
-				delete(LALabels[gatewayLabel], api.UUID)
-			}
-
 			_, error := database.ExecPreparedStatement(database.QueryDeleteAPI, deleteStmt, api.UUID, gatewayLabel)
 			if error != nil {
 				logger.LoggerAPIPartition.Errorf("Error while deleting the API UUID : %v in gateway: %v , %v", api.UUID, gatewayLabel, error.Error())
@@ -433,13 +445,8 @@ func DeleteAPIRecords(organizations []msg.Organization) {
 	_, err := database.ExecDBQuery(sqlQuery)
 	if err != nil {
 		logger.LoggerAPIPartition.Error("Error while deleting the APIs from database for organizations", err)
-		// even delete apis from partitioning label has failed,
-		// if another GA is succeeded, LALabel map will be invalid, hence cleaning up the map
-		LALabels = make(map[string]map[string]int)
 	} else {
 		logger.LoggerAPIPartition.Info("APIs deleted from the database for organizations")
-		// since we have deleted apis from partitioning label, LALabel map will be invalid, hence recreating the map
-		LALabels = getAPILALabels()
 		for _, organization := range organizations {
 			err := cache.RemoveCacheKeysBySubstring(organization.Handle, rc, deleteEvent)
 			if err != nil {
@@ -539,8 +546,9 @@ func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int, partit
 }
 
 // UpdateCacheForQuotaExceededStatus Updates redis cache on billing cycle reset or quota exceeded status
-func UpdateCacheForQuotaExceededStatus(apiEvents []synchronizer.APIEvent, cacheValue string) {
+func UpdateCacheForQuotaExceededStatus(apiEvents []synchronizer.APIEvent, cacheValue string, orgUUID string) {
 	var cacheObj []string
+	laLabels := getAPILALabelsForOrg(orgUUID)
 	for _, apiEvent := range apiEvents {
 		for index := range apiEvent.GatewayLabels {
 			gatewayLabel := apiEvent.GatewayLabels[index]
@@ -552,16 +560,7 @@ func UpdateCacheForQuotaExceededStatus(apiEvents []synchronizer.APIEvent, cacheV
 
 			// It is required to convert the gateway label to lowercase as the partition name is required for deploying k8s
 			// services
-			apiID, isExists := LALabels[gatewayLabel][apiEvent.UUID]
-			if !isExists {
-				// this block should not be reached as GAs should have all apis from apim
-				logger.LoggerAPIPartition.Info("Getting label for api : ", apiEvent.UUID, " and Gateway : ", gatewayLabel)
-				isExists, apiID = isAPIExists(apiEvent.UUID, gatewayLabel)
-				if isExists && apiID >= 0 {
-					// this block should not be reached as LALabel should be uptodate
-					logger.LoggerAPIPartition.Infof("api id is found in the database for api uuid : %v", apiEvent.UUID)
-				}
-			}
+			apiID, isExists := laLabels[gatewayLabel][apiEvent.UUID]
 			if isExists {
 				logger.LoggerAPIPartition.Debug("API : ", apiEvent.UUID, " has been already persisted to gateway : ", gatewayLabel)
 				label := getLaLabel(gatewayLabel, apiID, partitionSize)
@@ -585,7 +584,7 @@ func UpdateCacheForQuotaExceededStatus(apiEvents []synchronizer.APIEvent, cacheV
 					logger.LoggerAPIPartition.Errorf("Error while fetching the API label UUID : %v ", apiEvent.UUID)
 				}
 			} else {
-				logger.LoggerAPIPartition.Warnf("Couldn't find API for UUID: %s, gatewayLabel: %s", apiEvent.UUID, gatewayLabel)
+				logger.LoggerAPIPartition.Errorf("Couldn't find API for UUID: %s, gatewayLabel: %s , orgUUID: %s in database", apiEvent.UUID, gatewayLabel, orgUUID)
 			}
 		}
 	}

@@ -29,7 +29,6 @@ import (
 
 // Multiple listeners needs to insert/update organisation's quota exceeded status
 func upsertQuotaExceededStatus(orgID string, status bool) error {
-	apipartition.QuotaStatus[orgID] = status
 	_, err := database.ExecDBQuery(database.QueryUpsertQuotaStatus, orgID, status)
 	if err != nil {
 		logger.LoggerMsg.Errorf("Error while upserting quota exceeded status into DB for org: %s, status: %v. Error: %v", orgID, status, err)
@@ -103,6 +102,6 @@ func updateCacheForAPIIds(orgUUID string, redisValue string, conf *config.Config
 		logger.LoggerMsg.Error("Failed to get API events for step quota event. ", err)
 	} else {
 		logger.LoggerMsg.Debugf("Updating redis cache for quota exceeded status for %v api events.", len(apiEvents))
-		apipartition.UpdateCacheForQuotaExceededStatus(apiEvents, redisValue)
+		apipartition.UpdateCacheForQuotaExceededStatus(apiEvents, redisValue, orgUUID)
 	}
 }
