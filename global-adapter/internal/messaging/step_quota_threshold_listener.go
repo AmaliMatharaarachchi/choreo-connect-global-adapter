@@ -38,7 +38,7 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 		logger.LoggerMsg.Info("Message received for AzureStepQuotaThresholdChannel for: " + string(d))
 
 		if !apipartition.IsStepQuotaLimitingEnabled {
-			logger.LoggerMsg.Infof("Step quota limiting feature is disabled. Hence not processing event")
+			logger.LoggerMsg.Debug("Step quota limiting feature is disabled. Hence not processing event")
 			continue
 		}
 
@@ -50,11 +50,10 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 		}
 
 		if thresholdEvent.StepUsage < StepThreshold {
-			logger.LoggerMsg.Infof("Step quota threshold not exceeded. Hence ignoring event")
+			logger.LoggerMsg.Debugf("Step quota threshold has not exceeded, step usage: %v, org ID: %s. Hence ignoring the event.",
+				thresholdEvent.StepUsage, thresholdEvent.OrgID)
 			continue
 		}
-
-		logger.LoggerMsg.Debugf("Step quota exceeded event is received for org ID: %s", thresholdEvent.OrgID)
 
 		err = upsertQuotaExceededStatus(thresholdEvent.OrgID, true)
 		if err != nil {
