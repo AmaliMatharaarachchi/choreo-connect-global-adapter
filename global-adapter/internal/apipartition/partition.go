@@ -99,9 +99,11 @@ func PopulateAPIData(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupF
 				gatewayLabel = defaultGatewayLabel
 			}
 			var apiID int
+			found := false
 			if apiEventsWithStartupFlag.IsStartup {
-				apiID, _ = laLabels[gatewayLabel][apis[ind].UUID]
-			} else {
+				apiID, found = laLabels[gatewayLabel][apis[ind].UUID]
+			}
+			if !found {
 				apiID = insertRecord(&apis[ind], gatewayLabel, stmt)
 			}
 
