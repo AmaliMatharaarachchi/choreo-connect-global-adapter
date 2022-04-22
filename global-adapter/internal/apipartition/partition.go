@@ -331,25 +331,22 @@ func ProcessEventsInDatabase() {
 	}
 }
 
-// for update the DB for JMS event
-// TODO : if event is for undeploy or remove task , then API should delete from the DB
+// updateFromEvents for update the DB for JMS event
 func updateFromEvents(apiEventsWithStartupFlag synchronizer.APIEventsWithStartupFlag, laLabels map[string]map[string]int, insertStmt *sql.Stmt, deleteStmt *sql.Stmt) {
-	apis := apiEventsWithStartupFlag.APIEvents
-	// When multiple APIs (> 1) are present, it corresponding to the startup scenario. Hence the IsRemoveEvent flag is not
-	// considered.
-	if len(apis) > 1 {
+	logger.LoggerAPIPartition.Debug("Started Processing the API Event")
+	apiEvents := apiEventsWithStartupFlag.APIEvents
+	apiEventCount := len(apiEvents)
+	if apiEventCount == 0 {
+		logger.LoggerAPIPartition.Debug("Finished processing as the event count is 0")
+	} else if apiEventCount == 1 && apiEvents[0].IsRemoveEvent {
+		DeleteAPIRecord(&apiEvents[0], laLabels, deleteStmt)
+		logger.LoggerAPIPartition.Debug("Finished processing the API Delete Event")
+	} else {
+		// When multiple APIs (> 1) are present, it corresponding to the startup scenario. Hence the IsRemoveEvent flag is not
+		// considered.
 		PopulateAPIData(apiEventsWithStartupFlag, laLabels, insertStmt)
-		return
+		logger.LoggerAPIPartition.Debugf("Finished processing API Events, event count : %v", apiEventCount)
 	}
-	if len(apis) == 0 {
-		return
-	}
-	isRemoveEvent := apis[0].IsRemoveEvent
-	if isRemoveEvent {
-		DeleteAPIRecord(&apis[0], laLabels, deleteStmt)
-		return
-	}
-	PopulateAPIData(apiEventsWithStartupFlag, laLabels, insertStmt)
 }
 
 // DeleteAPIRecord Funtion accept API uuid as the argument
