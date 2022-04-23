@@ -2,6 +2,8 @@ module github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter
 
 go 1.16
 
+replace golang.org/x/crypto => golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+
 require (
 	github.com/denisenkom/go-mssqldb v0.12.0
 	github.com/envoyproxy/go-control-plane v0.10.0
