@@ -42,7 +42,7 @@ jobs:
     - name: Setup Go environment
       uses: actions/setup-go@v2.1.3
       with:
-          go-version: '1.16.x'      
+          go-version: '1.18.x'
     - name: Setup Docker env
       run: |
           export DOCKER_COMPOSE_VERSION=1.23.2
