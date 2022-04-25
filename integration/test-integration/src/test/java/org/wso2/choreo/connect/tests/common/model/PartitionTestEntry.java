@@ -20,11 +20,20 @@ package org.wso2.choreo.connect.tests.common.model;
 
 public class PartitionTestEntry {
     private String apiName;
+    private String orgName;
     private String apiVersion;
     private String apiContext;
     private String apiID;
     private String partition;
     private String resourcePath = "/pet/findByStatus";
+
+    public String getOrgName() {
+        return orgName;
+    }
+
+    public void setOrgName(String orgName) {
+        this.orgName = orgName;
+    }
 
     public String getApiName() {
         return apiName;

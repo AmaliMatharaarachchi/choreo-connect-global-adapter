@@ -37,7 +37,6 @@ import org.wso2.choreo.connect.tests.util.TestConstant;
 import org.wso2.choreo.connect.tests.util.Utils;
 
 import javax.ws.rs.core.Response;
-import javax.xml.xpath.XPathExpressionException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -174,11 +173,11 @@ public class PublisherUtils {
         log.info("API Deployed and Published. Name:" + apiName + " VHost:" + vhost);
     }
 
-    public static APIRequest createSampleAPIRequest(String apiName, String apiContext, String apiVersion,
-                                                    String provider) throws CCTestException {
+    public static APIRequest createSampleAPIRequest(String apiName, String orgName, String apiContext,
+                                                    String apiVersion, String provider) throws CCTestException {
         APIRequest apiRequest;
         try {
-            apiRequest = new APIRequest(apiName, apiContext,
+            apiRequest = new APIRequest(apiName, String.format("%s/%s", orgName, apiContext),
                     new URL(Utils.getDockerMockServiceURLHttp(TestConstant.MOCK_BACKEND_BASEPATH)));
         } catch (MalformedURLException | APIManagerIntegrationTestException e) {
             throw new CCTestException("Error while creating API Request", e);
