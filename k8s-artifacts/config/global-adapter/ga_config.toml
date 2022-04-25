@@ -36,10 +36,7 @@
   validationQuery = 'select 1'
   [database.pooloptions]
   maxActive = 50
-  maxWait = 60000
-  testOnBorrow = true
-  validationInterval = 30000
-  defaultAutoCommit = true
+  maxIdle = 3
 
 [redisServer]
   host = 'redis-host-url'
