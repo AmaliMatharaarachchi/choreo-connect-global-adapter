@@ -31,7 +31,8 @@ const (
 	componentName = "ga" /*should not use longer names as subscription name has a limited
 			            length of 50 and case-insensitive. Sample unique
 	                            subscription name would be ga_41b19c44-f9e0-4b9a-90e3-7599dc1c0545_sub*/
-	subscriptionIdleTimeDuration = time.Duration(72 * time.Hour)
+	// subscriptionIdleTimeDuration should be provided in the format of ISO 8601 format.
+	subscriptionIdleTimeDuration = "P0Y0M3DT0H0M0S"
 )
 
 // InitiateAndProcessEvents to pass event consumption
