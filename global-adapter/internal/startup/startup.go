@@ -17,9 +17,13 @@
 package startup
 
 import (
+	"github.com/gorilla/mux"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/handler"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/health"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
+	"net/http"
 )
 
 // TODO : this should fetch from config file
@@ -53,6 +57,28 @@ func Initialize() {
 		health.DBConnection.SetStatus(false)
 		logger.LoggerServer.Fatal("Error while initiating the database")
 	}
+}
+
+// InitializeAPIServer for initialize GA API Server
+func InitializeAPIServer(conf *config.Config) *mux.Router {
+	router := mux.NewRouter()
+	router.HandleFunc("/internal/data/v1/apis/deployed-revisions", handler.BasicAuth(handler.HTTPatchHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/apis/undeployed-revision", handler.BasicAuth(handler.HTTPPostHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/runtime-metadata", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/runtime-artifacts", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/retrieve-api-artifacts", handler.BasicAuth(handler.HTTPPostHandler)).Methods(http.MethodPost)
+	router.HandleFunc("/internal/data/v1/keymanagers", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/revokedjwt", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/keyTemplates", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/block", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/subscriptions", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/applications", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/application-key-mappings", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/application-policies", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc("/internal/data/v1/subscription-policies", handler.BasicAuth(handler.HTTPGetHandler)).Methods(http.MethodGet)
+	http.Handle("/", router)
+
+	return router
 }
 
 func triggerDeploymentAgent() {

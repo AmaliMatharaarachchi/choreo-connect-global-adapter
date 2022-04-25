@@ -19,6 +19,7 @@
 package main
 
 import (
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"os"
 
 	_ "github.com/denisenkom/go-mssqldb"
@@ -32,13 +33,24 @@ func main() {
 	startGlobalAdapter(os.Args)
 }
 
-func initServer() error {
-	conf := config.ReadConfigs()
+func initServer(conf *config.Config) error {
 	startup.Initialize()
 	server.Run(conf)
 	return nil
 }
 
+func initGAAPIServer(conf *config.Config) error {
+	router := startup.InitializeAPIServer(conf)
+	server.RunAPIServer(conf, router)
+	return nil
+}
+
 func startGlobalAdapter(args []string) {
-	initServer()
+	conf := config.ReadConfigs()
+	if conf.FeatureType.PrivateDataPlane == "true" {
+		logger.LoggerServer.Info("Starting GA for private data plane ...")
+		initGAAPIServer(conf)
+	} else {
+		initServer(conf)
+	}
 }

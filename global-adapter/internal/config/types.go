@@ -33,6 +33,8 @@ type Config struct {
 	ControlPlane controlPlane
 	RedisServer  redisServer
 	XdsServer    xdsServer
+	GAAPIServer  gaAPIServer
+	FeatureType  featureType
 }
 
 // ControlPlane struct contains configurations related to the API Manager
@@ -128,4 +130,16 @@ type xdsServer struct {
 
 type httpClient struct {
 	RequestTimeOut time.Duration
+}
+
+type gaAPIServer struct {
+	Host     string `toml:"host"`
+	Port     string `toml:"port"`
+	Username string `toml:"username"`
+	Password string `toml:"password"`
+}
+
+type featureType struct {
+	PrivateDataPlane string `toml:"privateDataPlane"`
+	OrganizationID   string `toml:"organizationID"`
 }

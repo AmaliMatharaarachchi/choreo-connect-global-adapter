@@ -73,6 +73,8 @@ func ReadConfigs() *Config {
 		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.DataBase)).Elem(), "Database", true)
 		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.ControlPlane)).Elem(), "ControlPlane", true)
 		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.RedisServer)).Elem(), "RedisServer", true)
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.RedisServer)).Elem(), "GAAPIServer", true)
+		config.ResolveConfigEnvValues(reflect.ValueOf(&(globalAdapterConfig.RedisServer)).Elem(), "FeatureType", true)
 	})
 	return globalAdapterConfig
 }

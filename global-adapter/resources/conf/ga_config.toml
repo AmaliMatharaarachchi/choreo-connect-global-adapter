@@ -1,4 +1,7 @@
 # The configuration file for mgw
+[featureType]
+  privateDataPlane = "true"
+  organizationID = "bda17a6c-f50d-49b9-b48a-83913b00b459"
 
 [keystore]
   certPath = "$env{MGW_HOME}/security/keystore/global-adapter.pem"
@@ -9,7 +12,7 @@
 	
 # Control plane's connection details
 [controlPlane]
-  serviceUrl = "https://apim:9443/"
+  serviceUrl = "https://apim:9443"
   username="admin"
   password="$env{cp_admin_pwd}"
   environmentLabels = ["Default", "Prod"]
@@ -54,3 +57,9 @@
   databaseIndex = 2
   connectionPoolSize = 3
   maxRetryCount = 10
+
+[gaAPIServer]
+  host = '0.0.0.0'
+  port = '9845'
+  username = 'admin'
+  password = 'admin'
