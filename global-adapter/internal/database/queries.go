@@ -18,13 +18,14 @@ package database
 
 // Declarations all database query
 const (
-	QueryTableExists  string = "SELECT name FROM sys.tables WHERE name=@p1"
-	QueryInsertAPI    string = "INSERT INTO ga_local_adapter_partition(api_uuid, label_hierarchy, api_id, org_id) VALUES(@p1, @p2, @p3, @p4)"
-	QueryIsAPIExists  string = "SELECT api_id FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
-	QueryGetAllLabels string = "SELECT api_uuid, label_hierarchy, api_id FROM ga_local_adapter_partition"
-	QueryDeleteAPI    string = "DELETE FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
-	QueryGetNextIncID string = "SELECT TOP 1 api_id from ga_local_adapter_partition WHERE label_hierarchy = @p1 ORDER BY api_id DESC"
-	QueryGetEmptiedID string = `SELECT TOP 1 temp.rowId from (
+	QueryTableExists        string = "SELECT name FROM sys.tables WHERE name = @p1"
+	QueryInsertAPI          string = "INSERT INTO ga_local_adapter_partition(api_uuid, label_hierarchy, api_id, org_id) VALUES(@p1, @p2, @p3, @p4)"
+	QueryIsAPIExists        string = "SELECT api_id FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
+	QueryGetAllLabels       string = "SELECT api_uuid, label_hierarchy, api_id FROM ga_local_adapter_partition"
+	QueryGetAllLabelsPerOrg string = "SELECT api_uuid, label_hierarchy, api_id FROM ga_local_adapter_partition WHERE org_id = @p1"
+	QueryDeleteAPI          string = "DELETE FROM ga_local_adapter_partition WHERE api_uuid = @p1 and label_hierarchy = @p2"
+	QueryGetNextIncID       string = "SELECT TOP 1 api_id from ga_local_adapter_partition WHERE label_hierarchy = @p1 ORDER BY api_id DESC"
+	QueryGetEmptiedID       string = `SELECT TOP 1 temp.rowId from (
 										SELECT 
 										ga_pt.api_id ,
 										ROW_NUMBER() OVER(ORDER BY ga_pt.api_id ASC) as rowId
@@ -32,13 +33,13 @@ const (
 										where ga_pt.label_hierarchy = @p1
 									) temp where temp.rowId <> temp.api_id`
 	QueryGetPartitionSize  string = "SELECT parition_size FROM la_partition_size"
-	QueryGetAPIsByOrg      string = "SELECT api_uuid FROM ga_local_adapter_partition WHERE org_id=@p1"
-	QueryIsQuotaExceeded   string = "SELECT is_exceeded FROM ga_org_quota_status WHERE org_id=@p1"
-	QueryUpsertQuotaStatus string = `IF NOT EXISTS (SELECT org_id FROM ga_org_quota_status WHERE org_id= @p1)
+	QueryIsQuotaExceeded   string = "SELECT is_exceeded FROM ga_org_quota_status WHERE org_id = @p1"
+	QueryQuotaStatus       string = "SELECT org_id, is_exceeded FROM ga_org_quota_status"
+	QueryUpsertQuotaStatus string = `IF NOT EXISTS (SELECT org_id FROM ga_org_quota_status WHERE org_id = @p1)
     									INSERT INTO ga_org_quota_status(org_id, is_exceeded) VALUES(@p1, @p2)
     								ELSE
     									UPDATE ga_org_quota_status
-    									SET is_exceeded=@p2
-    									WHERE org_id=@p1`
+    									SET is_exceeded = @p2
+    									WHERE org_id = @p1`
 	QueryDeleteAPIsForOrganization string = "DELETE FROM ga_local_adapter_partition WHERE org_id IN _ORGANIZATIONS_PLACEHOLDER_"
 )

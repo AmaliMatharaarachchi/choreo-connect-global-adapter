@@ -27,46 +27,18 @@ import (
 	sync "github.com/wso2/product-microgateway/adapter/pkg/synchronizer"
 )
 
-// Get all the API IDs for an organisation
-func getAPIIdsForOrg(orgID string) ([]string, error) {
-	var apiIds []string
-	row, err := database.ExecDBQuery(database.QueryGetAPIsByOrg, orgID)
-	if err == nil {
-		for row.Next() {
-			var apiID string
-			row.Scan(&apiID)
-			apiIds = append(apiIds, apiID)
-		}
-
-		logger.LoggerMsg.Debugf("Found %v APIs for org: %v", len(apiIds), orgID)
-	} else {
-		logger.LoggerMsg.Errorf("Error when fetching APIs for orgId : %s. Error: %v", orgID, err)
-		return nil, err
-	}
-	return apiIds, nil
-}
-
 // Multiple listeners needs to insert/update organisation's quota exceeded status
 func upsertQuotaExceededStatus(orgID string, status bool) error {
-	database.WakeUpConnection()
-	defer database.CloseDbConnection()
-
-	stmt, err := database.DB.Prepare(database.QueryUpsertQuotaStatus)
+	_, err := database.ExecDBQuery(database.QueryUpsertQuotaStatus, orgID, status)
 	if err != nil {
-		logger.LoggerMsg.Errorf("Error while preparing quota exceeded query for org: %s. Error: %v", orgID, err)
+		logger.LoggerMsg.Errorf("Error while upserting quota exceeded status into DB for org: %s, status: %v. Error: %v", orgID, status, err)
 		return err
-	}
-
-	_, error := stmt.Exec(orgID, status)
-	if error != nil {
-		logger.LoggerMsg.Errorf("Error while upserting quota exceeded status into DB for org: %s. Error: %v", orgID, err)
-		return error
 	}
 	logger.LoggerMsg.Infof("Successfully upserted quota exceeded status into DB for org: %s, status: %v", orgID, status)
 	return nil
 }
 
-func getAPIEvents(apiID string, conf *config.Config) ([]synchronizer.APIEvent, error) {
+func getAPIEvents(orgUUID string, conf *config.Config) ([]synchronizer.APIEvent, error) {
 	// Populate data from configuration file.
 	serviceURL := conf.ControlPlane.ServiceURL
 	username := conf.ControlPlane.Username
@@ -81,7 +53,7 @@ func getAPIEvents(apiID string, conf *config.Config) ([]synchronizer.APIEvent, e
 	c := make(chan sync.SyncAPIResponse)
 
 	// Fetch APIs from control plane and write to the channel c.
-	adapter.GetAPIs(c, &apiID, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
+	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
 		synchronizer.RuntimeMetaDataEndpoint, false, nil, requestTimeout)
 
 	// Get deployment.json from the channel c.
@@ -90,59 +62,46 @@ func getAPIEvents(apiID string, conf *config.Config) ([]synchronizer.APIEvent, e
 
 	var apiEvents []synchronizer.APIEvent
 	if err != nil {
-		logger.LoggerServer.Fatalf("Error occurred while reading API artifacts: %v ", err)
+		logger.LoggerServer.Errorf("Error occurred while reading API artifacts: %v ", err)
 		return apiEvents, err
 	}
 
 	for _, deployment := range deploymentDescriptor.Data.Deployments {
-		// Create a new APIEvent.
-		apiEvent := synchronizer.APIEvent{}
+		if deployment.OrganizationID == orgUUID {
+			// Create a new APIEvent.
+			apiEvent := synchronizer.APIEvent{}
 
-		// File name is in the format `UUID-revisionID`.
-		// UUID and revision id contain 24 characters each.
-		apiEvent.UUID = deployment.APIFile[:24]
-		// Add the revision ID to the api event.
-		apiEvent.RevisionID = deployment.APIFile[25:49]
-		// Organization ID is required for the API struct sent over XDS to the local adapter
-		apiEvent.OrganizationID = deployment.OrganizationID
-		// Read the environments.
-		environments := deployment.Environments
-		for _, env := range environments {
-			// Add the environments as GatewayLabels to the api event.
-			apiEvent.GatewayLabels = append(apiEvent.GatewayLabels, env.Name)
+			// File name is in the format `UUID-revisionID`.
+			// UUID and revision id contain 24 characters each.
+			apiEvent.UUID = deployment.APIFile[:24]
+			// Add the revision ID to the api event.
+			apiEvent.RevisionID = deployment.APIFile[25:49]
+			// Organization ID is required for the API struct sent over XDS to the local adapter
+			apiEvent.OrganizationID = deployment.OrganizationID
+			// Read the environments.
+			environments := deployment.Environments
+			for _, env := range environments {
+				// Add the environments as GatewayLabels to the api event.
+				apiEvent.GatewayLabels = append(apiEvent.GatewayLabels, env.Name)
+			}
+
+			// Add context and version of incoming API events to the apiEvent.
+			apiEvent.Context = deployment.APIContext
+			apiEvent.Version = deployment.Version
+
+			apiEvents = append(apiEvents, apiEvent)
+			logger.LoggerMsg.Debugf("Successfully retrieved API Event: %v", apiEvent)
 		}
-
-		// Add context and version of incoming API events to the apiEvent.
-		apiEvent.Context = deployment.APIContext
-		apiEvent.Version = deployment.Version
-
-		apiEvents = append(apiEvents, apiEvent)
-		logger.LoggerMsg.Debugf("Successfully retrieved API Event: %v", apiEvent)
 	}
 	return apiEvents, nil
 }
 
-func updateCacheForAPIIds(apiIds []string, redisValue string, conf *config.Config) {
-	var apiEvents []synchronizer.APIEvent
-
-	// Retrieve API events from APIM per API Id. If failed to retrieve an API, continue with other APIs
-	for _, apiID := range apiIds {
-		eventsForAPIID, err := getAPIEvents(apiID, conf)
-		if err != nil || eventsForAPIID == nil {
-			logger.LoggerMsg.Errorf("Failed to get API event for apiID: %s. Error: %v", apiID, err)
-			continue
-		}
-		for _, event := range eventsForAPIID {
-			apiEvents = append(apiEvents, event)
-		}
-		logger.LoggerMsg.Debugf("Got API Events: %v for apiID: %s", apiEvents, apiID)
-	}
-
-	database.WakeUpConnection()
-	defer database.CloseDbConnection()
-
-	for _, apiEvent := range apiEvents {
-		logger.LoggerMsg.Debugf("Found API events. Hence updating redis cache for quota exceeded status")
-		apipartition.UpdateCacheForQuotaExceededStatus(apiEvent, redisValue)
+func updateCacheForAPIIds(orgUUID string, redisValue string, conf *config.Config) {
+	apiEvents, err := getAPIEvents(orgUUID, conf)
+	if err != nil || len(apiEvents) == 0 {
+		logger.LoggerMsg.Error("Failed to get API events for step quota event. ", err)
+	} else {
+		logger.LoggerMsg.Debugf("Updating redis cache for quota exceeded status for %v api events.", len(apiEvents))
+		apipartition.UpdateCacheForQuotaExceededStatus(apiEvents, redisValue, orgUUID)
 	}
 }

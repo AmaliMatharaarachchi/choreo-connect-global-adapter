@@ -20,6 +20,7 @@ package messaging
 
 import (
 	"encoding/json"
+
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -36,8 +37,8 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 	for d := range msg.AzureStepQuotaThresholdChannel {
 		logger.LoggerMsg.Info("Message received for AzureStepQuotaThresholdChannel for: " + string(d))
 
-		if !apipartition.IsStepQuotaLimitingEnabled() {
-			logger.LoggerMsg.Infof("Step quota limiting feature is disabled. Hence not processing event")
+		if !apipartition.IsStepQuotaLimitingEnabled {
+			logger.LoggerMsg.Debug("Step quota limiting feature is disabled. Hence not processing event")
 			continue
 		}
 
@@ -49,11 +50,10 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 		}
 
 		if thresholdEvent.StepUsage < StepThreshold {
-			logger.LoggerMsg.Debugf("Step quota threshold not exceeded. Hence ignoring event")
+			logger.LoggerMsg.Debugf("Step quota threshold has not exceeded, step usage: %v, org ID: %s. Hence ignoring the event.",
+				thresholdEvent.StepUsage, thresholdEvent.OrgID)
 			continue
 		}
-
-		logger.LoggerMsg.Debugf("Step quota exceeded event is received for org ID: %s", thresholdEvent.OrgID)
 
 		err = upsertQuotaExceededStatus(thresholdEvent.OrgID, true)
 		if err != nil {
@@ -61,15 +61,7 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 			continue
 		}
 
-		// API IDs for org
-		apiIds, err := getAPIIdsForOrg(thresholdEvent.OrgID)
-		if err != nil {
-			logger.LoggerMsg.Errorf("Failed to get API IDs for org: %s. Error: %v", thresholdEvent.OrgID, err)
-			continue
-		}
-
-		logger.LoggerMsg.Debugf("Found API IDs: %v for org: %s", apiIds, thresholdEvent.OrgID)
-		updateCacheForAPIIds(apiIds, RedisBlockedValue, conf)
+		updateCacheForAPIIds(thresholdEvent.OrgID, RedisBlockedValue, conf)
 		logger.LoggerMsg.Info("Completed handling Azure step quota threshold event for: " + string(d))
 	}
 }
