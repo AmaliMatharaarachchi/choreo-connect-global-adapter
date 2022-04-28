@@ -81,6 +81,7 @@ services:
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
       - localLabel=default-p1
+      - AZURE_CONNECTION_STRING=${azure_connection_string}
     ports:
       - "9843:9843"
     mem_limit: 256m
@@ -103,6 +104,7 @@ services:
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
       - localLabel=default-p2
+      - AZURE_CONNECTION_STRING=${azure_connection_string}
     ports:
       - "9844:9843"
     mem_limit: 256m
@@ -120,6 +122,8 @@ services:
       - ./conf/log_config.toml:/home/wso2/conf/log_config.toml
       - ./additional/ga-ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt
     mem_limit: 1200m
+    environment:
+      - AZURE_CONNECTION_STRING=${azure_connection_string}
   sql-host:
     image: wso2am/choreo-connect-global-adapter-mssql:1.0.0-SNAPSHOT
     networks:
@@ -157,7 +161,7 @@ services:
       - ENFORCER_REGION=UNKNOWN
       - XDS_MAX_MSG_SIZE=4194304
       - XDS_MAX_RETRIES=3
-      - JAVA_OPTS=-Xms256m -Xmx256m ${JAVA_OPTS} -Dhttpclient.hostnameVerifier=AllowAll
+      - JAVA_OPTS=-Xms256m -Xmx256m ${JAVA_OPTS} -Dhttpclient.hostnameVerifier=AllowAll -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5010
       - apim_admin_pwd=admin
       - enforcer_admin_pwd=admin
       - tm_admin_pwd=admin
@@ -168,6 +172,7 @@ services:
       - apim_and_cc
     ports:
       - "8081:8081"
+      - "5010:5010"
     mem_limit: 512m
   enforcer2:
     image: wso2/choreo-connect-enforcer:1.0.0-alpha-SNAPSHOT
@@ -191,7 +196,7 @@ services:
       - ENFORCER_REGION=UNKNOWN
       - XDS_MAX_MSG_SIZE=4194304
       - XDS_MAX_RETRIES=3
-      - JAVA_OPTS=-Xms256m -Xmx256m ${JAVA_OPTS} -Dhttpclient.hostnameVerifier=AllowAll
+      - JAVA_OPTS=-Xms256m -Xmx256m ${JAVA_OPTS} -Dhttpclient.hostnameVerifier=AllowAll -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5011
       - apim_admin_pwd=admin
       - enforcer_admin_pwd=admin
       - tm_admin_pwd=admin
@@ -202,3 +207,4 @@ services:
       - apim_and_cc
     ports:
       - "8082:8081"
+      - "5011:5011"

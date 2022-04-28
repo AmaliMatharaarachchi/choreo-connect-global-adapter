@@ -52,6 +52,7 @@ services:
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
       - localLabel=default-p1
+      - AZURE_CONNECTION_STRING=${azure_connection_string}
     ports:
       - "9843:9843"
   global-adapter:
@@ -67,6 +68,8 @@ services:
       - ./conf/ga_config.toml:/home/wso2/conf/ga_config.toml
       - ./conf/log_config.toml:/home/wso2/conf/log_config.toml
       - ./additional/ga-ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt
+    environment:
+      - AZURE_CONNECTION_STRING=${azure_connection_string}
   sql-host:
     image: wso2am/choreo-connect-global-adapter-mssql:1.0.0-SNAPSHOT
     networks:
@@ -103,7 +106,7 @@ services:
       - ENFORCER_REGION=UNKNOWN
       - XDS_MAX_MSG_SIZE=4194304
       - XDS_MAX_RETRIES=3
-      - JAVA_OPTS=${JAVA_OPTS} -Dhttpclient.hostnameVerifier=AllowAll
+      - JAVA_OPTS=${JAVA_OPTS} -Dhttpclient.hostnameVerifier=AllowAll -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5010
       - apim_admin_pwd=admin
       - enforcer_admin_pwd=admin
       - tm_admin_pwd=admin
@@ -114,3 +117,4 @@ services:
       - apim_and_cc
     ports:
       - "8081:8081"
+      - "5010:5010"

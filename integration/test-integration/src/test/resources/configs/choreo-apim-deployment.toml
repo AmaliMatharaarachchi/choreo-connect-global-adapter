@@ -46,6 +46,9 @@ private_key = "$env{MONGODB_PRIVATE_KEY}"
 thread_count = 5
 retry_count = 3
 
+[apim.event_hub.publish.properties]
+event_publishing_endpoint = "$env{AZURE_CONNECTION_STRING}"
+
 #[keystore.primary]
 #file_name =  "wso2carbon.jks"
 #type =  "JKS"
