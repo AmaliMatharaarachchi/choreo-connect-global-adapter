@@ -1,6 +1,6 @@
 # The configuration file for mgw
-[featureType]
-  privateDataPlane = "true"
+[privateDataPlane]
+  enabled = "true"
   organizationID = "bda17a6c-f50d-49b9-b48a-83913b00b459"
 
 [keystore]
@@ -24,7 +24,12 @@
   # HTTP client configuration.
   [controlPlane.httpClient]
     # Request Timeout in Seconds (This is for REST API calls made from global adapter to APIManager)
-    requestTimeOut = 30      
+    requestTimeOut = 30
+  [controlPlane.requestWorkerPool]
+    # Number of workers
+    poolSize = 4
+    # Number of tasks can be submitted to the worker pool without being blocked.
+    queueSizePerPool = 1000
 
 [server]
   host = '0.0.0.0'

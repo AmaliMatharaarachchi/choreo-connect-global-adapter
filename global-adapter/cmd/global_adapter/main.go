@@ -47,7 +47,7 @@ func initGAAPIServer(conf *config.Config) error {
 
 func startGlobalAdapter(args []string) {
 	conf := config.ReadConfigs()
-	if conf.FeatureType.PrivateDataPlane == "true" {
+	if conf.PrivateDataPlane.Enabled == "true" {
 		logger.LoggerServer.Info("Starting GA for private data plane ...")
 		initGAAPIServer(conf)
 	} else {

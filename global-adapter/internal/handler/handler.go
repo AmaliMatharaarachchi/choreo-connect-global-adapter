@@ -23,15 +23,14 @@ package handler
 import (
 	"crypto/sha256"
 	"crypto/subtle"
-	"crypto/tls"
+	"errors"
 	"fmt"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
-	"github.com/wso2/product-microgateway/adapter/pkg/tlsutils"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
+	"net/url"
 )
 
 // HTTPGetHandler function handles get requests
@@ -51,59 +50,99 @@ func HTTPatchHandler(w http.ResponseWriter, r *http.Request) {
 
 func buildRequest(w http.ResponseWriter, r *http.Request, httpMethod string, body io.Reader) {
 	conf := config.ReadConfigs()
-	skipSSL := conf.ControlPlane.SkipSSLVerification
-	requestTimeOut := conf.ControlPlane.HTTPClient.RequestTimeOut
-	truststoreLocation := conf.Truststore.Location
-
-	logger.LoggerSync.Debugf("Skip SSL Verification: %v", skipSSL)
-	tr := &http.Transport{}
-	if !skipSSL {
-		caCertPool := tlsutils.GetTrustedCertPool(truststoreLocation)
-		tr = &http.Transport{
-			TLSClientConfig: &tls.Config{RootCAs: caCertPool},
-		}
-	} else {
-		tr = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
+	var requestURL = conf.ControlPlane.ServiceURL + r.RequestURI
+	if isOrganizationIDExists(r) {
+		requestURL = replaceURLParameter(requestURL, "organizationId", conf.PrivateDataPlane.OrganizationID)
+	} else if conf.PrivateDataPlane.OrganizationID != "" {
+		requestURL += "&organizationId=" + conf.PrivateDataPlane.OrganizationID
 	}
 
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   requestTimeOut * time.Second,
-	}
+	req, err := http.NewRequest(httpMethod, requestURL, body)
 
-	var url = conf.ControlPlane.ServiceURL + r.RequestURI
-	if conf.FeatureType.OrganizationID != "" {
-		url += "&organizationId=" + conf.FeatureType.OrganizationID
+	if err != nil {
+		w.WriteHeader(500)
+		logger.LoggerServer.Error("Error occurred while constructing http request to control plane ", err)
+		return
 	}
-
-	req, err := http.NewRequest(httpMethod, url, body)
 	req.SetBasicAuth(conf.ControlPlane.Username, conf.ControlPlane.Password)
 
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := client.Do(req)
+	c := make(chan SyncAPIResponse)
 
-	if err != nil {
-		w.WriteHeader(500)
-		logger.LoggerServer.Error("Error occurred while connecting to API Manager ", err)
-		return
+	workerReq := workerRequest{
+		Req:                *req,
+		SyncAPIRespChannel: c,
 	}
 
-	defer resp.Body.Close()
+	if workerPool == nil {
+		logger.LoggerSync.Fatal("WorkerPool is not initiated due to an internal error.")
+	}
+	// If adding task to the pool cannot be done, the whole thread hangs here.
+	workerPool.Enqueue(workerReq)
 
-	if resp.StatusCode != 200 {
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		bodyString := string(bodyBytes)
-		w.WriteHeader(resp.StatusCode)
+	data := <-c
+
+	if data.ResponseCode == http.StatusOK {
+		bodyString := string(data.Resp)
+		fmt.Fprintf(w, "%s", bodyString)
+	} else {
+		bodyString := string(data.Resp)
+		w.WriteHeader(data.ResponseCode)
 		fmt.Fprintf(w, "%s", bodyString)
 	}
+}
 
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	bodyString := string(bodyBytes)
-	fmt.Fprintf(w, "%s", bodyString)
+// SendRequestToControlPlane is the function triggered to send the request to the control plane.
+// It returns true if a response is received from the api manager.
+func SendRequestToControlPlane(req *http.Request, c chan SyncAPIResponse, client *http.Client) bool {
+	// Make the request
+	logger.LoggerSync.Debug("Sending the control plane request")
+	resp, err := client.Do(req)
+
+	response := SyncAPIResponse{}
+
+	// In the event of a connection error, the error would not be nil, then return the error
+	// If the error is not null, proceed
+	if err != nil {
+		logger.LoggerSync.Errorf("Error occurred while retrieving APIs from API manager: %v", err)
+		response.Err = err
+		response.Resp = nil
+		c <- response
+		return false
+	}
+
+	// get the response in the form of a byte slice
+	respBytes, err := ioutil.ReadAll(resp.Body)
+
+	// If the reading response gives an error
+	if err != nil {
+		logger.LoggerSync.Errorf("Error occurred while reading the response: %v", err)
+		response.Err = err
+		response.ResponseCode = resp.StatusCode
+		response.Resp = nil
+		c <- response
+		return false
+	}
+
+	// For successful response, return the byte slice and nil as error
+	if resp.StatusCode == http.StatusOK {
+		response.Err = nil
+		response.ResponseCode = resp.StatusCode
+		response.Resp = respBytes
+		c <- response
+		return true
+	}
+
+	// If the response is not successful, create a new error with the response and log it and return
+	// Ex: for 401 scenarios, 403 scenarios.
+	logger.LoggerSync.Errorf("Failure response: %v", string(respBytes))
+	response.Err = errors.New(string(respBytes))
+	response.Resp = respBytes
+	response.ResponseCode = resp.StatusCode
+	c <- response
+	return true
 }
 
 // BasicAuth function authenticates the request.
@@ -129,4 +168,21 @@ func BasicAuth(next http.HandlerFunc) http.HandlerFunc {
 		w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset="UTF-8"`)
 		http.Error(w, "Unauthorized Access", http.StatusUnauthorized)
 	})
+}
+
+func isOrganizationIDExists(r *http.Request) bool {
+	r.ParseForm()
+	keys, ok := r.Form["organizationId"]
+	if !ok || len(keys[0]) < 1 {
+		return false
+	}
+	return true
+}
+
+func replaceURLParameter(requestURL string, oldValue string, newValue string) string {
+	newURL, _ := url.Parse(requestURL)
+	values, _ := url.ParseQuery(newURL.RawQuery)
+	values.Set(oldValue, newValue)
+	newURL.RawQuery = values.Encode()
+	return newURL.String()
 }

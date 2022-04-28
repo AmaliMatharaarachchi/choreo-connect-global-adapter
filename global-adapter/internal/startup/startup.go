@@ -61,6 +61,12 @@ func Initialize() {
 
 // InitializeAPIServer for initialize GA API Server
 func InitializeAPIServer(conf *config.Config) *mux.Router {
+
+	handler.InitializeWorkerPool(conf.ControlPlane.RequestWorkerPool.PoolSize, conf.ControlPlane.RequestWorkerPool.QueueSizePerPool,
+		conf.ControlPlane.RetryInterval, conf.Truststore.Location, conf.ControlPlane.SkipSSLVerification,
+		conf.ControlPlane.HTTPClient.RequestTimeOut, conf.ControlPlane.RetryInterval, conf.ControlPlane.ServiceURL,
+		conf.ControlPlane.Username, conf.ControlPlane.Password)
+
 	router := mux.NewRouter()
 	router.HandleFunc("/internal/data/v1/apis/deployed-revisions", handler.BasicAuth(handler.HTTPatchHandler)).Methods(http.MethodGet)
 	router.HandleFunc("/internal/data/v1/apis/undeployed-revision", handler.BasicAuth(handler.HTTPPostHandler)).Methods(http.MethodGet)
