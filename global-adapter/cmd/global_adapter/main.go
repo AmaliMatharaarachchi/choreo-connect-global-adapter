@@ -40,14 +40,14 @@ func initServer(conf *config.Config) error {
 }
 
 func initGAAPIServer(conf *config.Config) error {
-	router := startup.InitializeAPIServer(conf)
-	server.RunAPIServer(conf, router)
+	srv := server.New(conf)
+	srv.RunAPIServer(conf)
 	return nil
 }
 
 func startGlobalAdapter(args []string) {
 	conf := config.ReadConfigs()
-	if conf.PrivateDataPlane.Enabled == "true" {
+	if conf.PrivateDataPlane.Enabled {
 		logger.LoggerServer.Info("Starting GA for private data plane ...")
 		initGAAPIServer(conf)
 	} else {

@@ -28,14 +28,13 @@ type Config struct {
 	// Keystore contains the keyFile and Cert File of the global adapter.
 	Keystore keystore
 	// Trusted Certificates.
-	Truststore        truststore
-	DataBase          database
-	ControlPlane      controlPlane
-	RedisServer       redisServer
-	XdsServer         xdsServer
-	GAAPIServer       gaAPIServer
-	PrivateDataPlane  privateDataPlane
-	RequestWorkerPool requestWorkerPool
+	Truststore       truststore
+	DataBase         database
+	ControlPlane     controlPlane
+	RedisServer      redisServer
+	XdsServer        xdsServer
+	GAAPIServer      gaAPIServer
+	PrivateDataPlane privateDataPlane
 }
 
 // ControlPlane struct contains configurations related to the API Manager
@@ -47,8 +46,8 @@ type controlPlane struct {
 	RetryInterval              time.Duration              `toml:"retryInterval"`
 	SkipSSLVerification        bool                       `toml:"skipSSLVerification"`
 	BrokerConnectionParameters brokerConnectionParameters `toml:"brokerConnectionParameters"`
+	MaxConnectionsPerHost      int                        `toml:"maxConnectionsPerHost"`
 	HTTPClient                 httpClient
-	RequestWorkerPool          requestWorkerPool
 }
 
 type brokerConnectionParameters struct {
@@ -140,10 +139,6 @@ type gaAPIServer struct {
 }
 
 type privateDataPlane struct {
-	Enabled        string `toml:"enabled"`
+	Enabled        bool   `toml:"enabled"`
 	OrganizationID string `toml:"organizationID"`
-}
-type requestWorkerPool struct {
-	PoolSize         int
-	QueueSizePerPool int
 }

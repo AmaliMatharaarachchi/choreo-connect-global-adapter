@@ -69,10 +69,7 @@ var defaultConfig = &Config{
 		HTTPClient: httpClient{
 			RequestTimeOut: 30, // in seconds
 		},
-		RequestWorkerPool: requestWorkerPool{
-			PoolSize:         4,
-			QueueSizePerPool: 1000,
-		},
+		MaxConnectionsPerHost: 10,
 	},
 	RedisServer: redisServer{
 		Host:               "choreo-dev-redis-cache.redis.cache.windows.net",
@@ -96,11 +93,7 @@ var defaultConfig = &Config{
 		Port: "18000",
 	},
 	PrivateDataPlane: privateDataPlane{
-		Enabled:        "false",
+		Enabled:        false,
 		OrganizationID: "bda17a6c-f50d-49b9-b48a-83913b00b459",
-	},
-	RequestWorkerPool: requestWorkerPool{
-		PoolSize:         4,
-		QueueSizePerPool: 1000,
 	},
 }
