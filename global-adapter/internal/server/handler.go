@@ -33,6 +33,9 @@ import (
 	"strings"
 )
 
+const organizationID = "organizationId"
+const queryParamValueALL = "ALL"
+
 // HTTPGetHandler function handles get requests
 func (s *Server) HTTPGetHandler(w http.ResponseWriter, r *http.Request) {
 	buildRequestWithOrganizationID(s.client, w, r, http.MethodGet, nil)
@@ -58,12 +61,22 @@ func buildRequestWithOrganizationID(client *http.Client, w http.ResponseWriter, 
 	var requestURL = conf.ControlPlane.ServiceURL + r.RequestURI
 	if conf.PrivateDataPlane.Enabled {
 		if isOrganizationIDExists(r) {
-			requestURL = replaceURLParameter(requestURL, "organizationId", conf.PrivateDataPlane.OrganizationID)
+			requestURL = replaceURLParameter(requestURL, organizationID, conf.PrivateDataPlane.OrganizationID)
 		} else if conf.PrivateDataPlane.OrganizationID != "" {
 			if strings.Contains(requestURL, "?") {
-				requestURL += "&organizationId=" + conf.PrivateDataPlane.OrganizationID
+				requestURL += "&" + organizationID + "=" + conf.PrivateDataPlane.OrganizationID
 			} else {
-				requestURL += "?organizationId=" + conf.PrivateDataPlane.OrganizationID
+				requestURL += "?" + organizationID + "=" + conf.PrivateDataPlane.OrganizationID
+			}
+		}
+	} else {
+		if isOrganizationIDExists(r) {
+			requestURL = replaceURLParameter(requestURL, organizationID, queryParamValueALL)
+		} else {
+			if strings.Contains(requestURL, "?") {
+				requestURL += "&" + organizationID + "=" + queryParamValueALL
+			} else {
+				requestURL += "?" + organizationID + "=" + queryParamValueALL
 			}
 		}
 	}
@@ -73,9 +86,13 @@ func buildRequestWithOrganizationID(client *http.Client, w http.ResponseWriter, 
 func buildRequestWithoutOrganizationID(client *http.Client, w http.ResponseWriter, r *http.Request, httpMethod string, body io.Reader) {
 	conf := config.ReadConfigs()
 	var requestURL = conf.ControlPlane.ServiceURL + r.RequestURI
-	if conf.PrivateDataPlane.Enabled {
-		if isOrganizationIDExists(r) {
-			requestURL = replaceURLParameter(requestURL, "organizationId", "ALL")
+	if isOrganizationIDExists(r) {
+		requestURL = replaceURLParameter(requestURL, organizationID, queryParamValueALL)
+	} else {
+		if strings.Contains(requestURL, "?") {
+			requestURL += "&" + organizationID + "=" + queryParamValueALL
+		} else {
+			requestURL += "?" + organizationID + "=" + queryParamValueALL
 		}
 	}
 	sendHTTPRequest(client, conf, requestURL, w, httpMethod, body)
@@ -144,7 +161,7 @@ func BasicAuth(next http.HandlerFunc) http.HandlerFunc {
 
 func isOrganizationIDExists(r *http.Request) bool {
 	r.ParseForm()
-	_, ok := r.Form["organizationId"]
+	_, ok := r.Form["organizationID"]
 	if !ok {
 		return false
 	}
