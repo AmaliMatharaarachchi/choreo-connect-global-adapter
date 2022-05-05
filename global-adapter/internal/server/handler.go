@@ -30,6 +30,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // HTTPGetHandler function handles get requests
@@ -59,7 +60,11 @@ func buildRequestWithOrganizationID(client *http.Client, w http.ResponseWriter, 
 		if isOrganizationIDExists(r) {
 			requestURL = replaceURLParameter(requestURL, "organizationId", conf.PrivateDataPlane.OrganizationID)
 		} else if conf.PrivateDataPlane.OrganizationID != "" {
-			requestURL += "&organizationId=" + conf.PrivateDataPlane.OrganizationID
+			if strings.Contains(requestURL, "?") {
+				requestURL += "&organizationId=" + conf.PrivateDataPlane.OrganizationID
+			} else {
+				requestURL += "?organizationId=" + conf.PrivateDataPlane.OrganizationID
+			}
 		}
 	}
 	sendHTTPRequest(client, conf, requestURL, w, httpMethod, body)
@@ -70,7 +75,7 @@ func buildRequestWithoutOrganizationID(client *http.Client, w http.ResponseWrite
 	var requestURL = conf.ControlPlane.ServiceURL + r.RequestURI
 	if conf.PrivateDataPlane.Enabled {
 		if isOrganizationIDExists(r) {
-			requestURL = deleteURLParameter(requestURL, "organizationId")
+			requestURL = replaceURLParameter(requestURL, "organizationId", "ALL")
 		}
 	}
 	sendHTTPRequest(client, conf, requestURL, w, httpMethod, body)
@@ -151,15 +156,6 @@ func replaceURLParameter(requestURL string, queryParamKey string, QueryParamValu
 	newURL, _ := url.Parse(requestURL)
 	values, _ := url.ParseQuery(newURL.RawQuery)
 	values.Set(queryParamKey, QueryParamValue)
-	newURL.RawQuery = values.Encode()
-	return newURL.String()
-}
-
-func deleteURLParameter(requestURL string, queryParamKey string) string {
-	logger.LoggerServer.Debugf("Deleting %s query parameter from the request: ", queryParamKey)
-	newURL, _ := url.Parse(requestURL)
-	values, _ := url.ParseQuery(newURL.RawQuery)
-	values.Del(queryParamKey)
 	newURL.RawQuery = values.Encode()
 	return newURL.String()
 }

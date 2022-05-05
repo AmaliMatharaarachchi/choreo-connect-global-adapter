@@ -82,6 +82,8 @@ func (s *Server) RunAPIServer(conf *config.Config) {
 	router.HandleFunc(internalAPIContextV1+"application-key-mappings", BasicAuth(s.HTTPGetHandler)).Methods(http.MethodGet)
 	router.HandleFunc(internalAPIContextV1+"application-policies", BasicAuth(s.NoneOrgIDHTTPGetHandler)).Methods(http.MethodGet)
 	router.HandleFunc(internalAPIContextV1+"subscription-policies", BasicAuth(s.NoneOrgIDHTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc(internalAPIContextV1+"api-policies", BasicAuth(s.NoneOrgIDHTTPGetHandler)).Methods(http.MethodGet)
+	router.HandleFunc(internalAPIContextV1+"global-policies", BasicAuth(s.NoneOrgIDHTTPGetHandler)).Methods(http.MethodGet)
 
 	caCertPool := tlsutils.GetTrustedCertPool(conf.Truststore.Location)
 	cert, _ := tlsutils.GetServerCertificate(conf.Keystore.PublicKeyLocation, conf.Keystore.PrivateKeyLocation)

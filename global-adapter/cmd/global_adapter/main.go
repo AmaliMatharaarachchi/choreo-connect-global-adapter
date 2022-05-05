@@ -33,16 +33,15 @@ func main() {
 	startGlobalAdapter(os.Args)
 }
 
-func initServer(conf *config.Config) error {
+func initServer(conf *config.Config) {
 	startup.Initialize()
 	server.Run(conf)
-	return nil
 }
 
-func initGAAPIServer(conf *config.Config) error {
+func initGAAPIServer(conf *config.Config) {
+	//TODO: (NipunaPrashan) add access logs to GA API proxy,
 	srv := server.New(conf)
 	srv.RunAPIServer(conf)
-	return nil
 }
 
 func startGlobalAdapter(args []string) {
