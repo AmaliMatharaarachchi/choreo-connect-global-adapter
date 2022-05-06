@@ -8,6 +8,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.12.0
 	github.com/envoyproxy/go-control-plane v0.10.0
 	github.com/go-redis/redis v6.15.9+incompatible
+	github.com/gorilla/mux v1.8.0
 	github.com/pelletier/go-toml v1.8.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0

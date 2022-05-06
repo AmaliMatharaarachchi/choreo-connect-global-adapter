@@ -55,7 +55,7 @@ var defaultConfig = &Config{
 		},
 	},
 	ControlPlane: controlPlane{
-		ServiceURL:          "https://apim:9443/",
+		ServiceURL:          "https://apim:9443",
 		Username:            "admin",
 		Password:            "$env{cp_admin_pwd}",
 		EnvironmentLabels:   []string{"Default"},
@@ -69,6 +69,7 @@ var defaultConfig = &Config{
 		HTTPClient: httpClient{
 			RequestTimeOut: 30, // in seconds
 		},
+		MaxConnectionsPerHost: 10,
 	},
 	RedisServer: redisServer{
 		Host:               "choreo-dev-redis-cache.redis.cache.windows.net",
@@ -81,8 +82,18 @@ var defaultConfig = &Config{
 			MaxRetryAttempts: 10,
 		},
 	},
+	GAAPIServer: gaAPIServer{
+		Host:     "0.0.0.0",
+		Port:     "9845",
+		Username: "admin",
+		Password: "admin",
+	},
 	XdsServer: xdsServer{
 		Host: "0.0.0.0",
 		Port: "18000",
+	},
+	PrivateDataPlane: privateDataPlane{
+		Enabled:        false,
+		OrganizationID: "bda17a6c-f50d-49b9-b48a-83913b00b459",
 	},
 }

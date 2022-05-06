@@ -18,9 +18,9 @@
 package config
 
 import (
+	"os"
 	"testing"
 	"time"
-	"os"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -28,10 +28,11 @@ import (
 func TestReadConfigs(t *testing.T) {
 	// Read configuration file.
 	os.Setenv("cp_admin_pwd", "admin")
-	conf:= ReadConfigs()
+	conf := ReadConfigs()
 	controlPlane := conf.ControlPlane
+	gaAPIServer := conf.GAAPIServer
 
-	assert.Equal(t, controlPlane.ServiceURL, "https://apim:9443/", "Service should be the different")
+	assert.Equal(t, controlPlane.ServiceURL, "https://apim:9443", "Service should be the different")
 	assert.Equal(t, controlPlane.Username, "admin", "Usernames should be the same")
 	assert.Equal(t, controlPlane.Password, "admin", "Passwords should be the same")
 	assert.Equal(t, controlPlane.EnvironmentLabels, []string([]string{"Default", "Prod"}),
@@ -41,4 +42,9 @@ func TestReadConfigs(t *testing.T) {
 	assert.Equal(t, controlPlane.BrokerConnectionParameters.EventListeningEndpoints,
 		[]string{"amqp://admin:admin@apim:5672?retries='10'&connectdelay='30'"},
 		"EventListeningEndpoints should be the same")
+
+	assert.Equal(t, gaAPIServer.Host, "0.0.0.0", "Host should be the different")
+	assert.Equal(t, gaAPIServer.Port, "9845", "Port should be the same")
+	assert.Equal(t, gaAPIServer.Username, "admin", "Usernames should be the same")
+	assert.Equal(t, gaAPIServer.Password, "admin", "Passwords should be the same")
 }
