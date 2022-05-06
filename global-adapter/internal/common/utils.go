@@ -17,6 +17,8 @@
 // Package common contains the constants, utility methods shared across two or many packages.
 package common
 
+import "github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
+
 const (
 	// OrganizationID query parameter key.
 	organizationID string = "organizationId"
@@ -32,6 +34,11 @@ func PopulateQueryParamForOrganizationID(queryParamMap map[string]string) map[st
 	if queryParamMap == nil {
 		queryParamMap = make(map[string]string)
 	}
-	queryParamMap[organizationID] = commonOrganizationIDValue
+	conf := config.ReadConfigs()
+	if conf.PrivateDataPlane.Enabled {
+		queryParamMap[organizationID] = conf.PrivateDataPlane.OrganizationID
+	} else {
+		queryParamMap[organizationID] = commonOrganizationIDValue
+	}
 	return queryParamMap
 }
