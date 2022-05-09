@@ -143,8 +143,8 @@ github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
-github.com/wso2/product-microgateway/adapter v0.0.0-20220425151116-a2e0ef7cbca9 h1:t0eJhbANwZRmCSor1yGof9iOsAIhEIjyu6eQuqL9nV8=
-github.com/wso2/product-microgateway/adapter v0.0.0-20220425151116-a2e0ef7cbca9/go.mod h1:0Y9dL1Ng34bPHJNrAdu79rNCI20Q1n8JzDHYL73PALE=
+github.com/wso2/product-microgateway/adapter v0.0.0-20220506090658-21e04ff86341 h1:Nc6tbhGRogj6knfgAJqrw5T8V1zT4lQFTD1cj5Sup8I=
+github.com/wso2/product-microgateway/adapter v0.0.0-20220506090658-21e04ff86341/go.mod h1:0Y9dL1Ng34bPHJNrAdu79rNCI20Q1n8JzDHYL73PALE=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/proto/otlp v0.7.0/go.mod h1:PqfVotwruBrMGOCsRd/89rSnXhoiJIqeYNgFYFoEGnI=
