@@ -117,7 +117,6 @@ func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, context.CancelFu
 func execDBQueryWithcontext(query string, args ...interface{}) (*sql.Rows, context.CancelFunc, error) {
 	timeout := time.Duration(config.ReadConfigs().DataBase.OptionalMetadata.QueryTimeout)
 	cont, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
-	//defer cancel()
 	rows, err := DB.QueryContext(cont, query, args...)
 	return rows, cancel, err
 }
