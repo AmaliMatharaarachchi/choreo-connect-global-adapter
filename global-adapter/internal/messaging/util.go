@@ -30,7 +30,8 @@ import (
 
 // Multiple listeners needs to insert/update organisation's quota exceeded status
 func upsertQuotaExceededStatus(orgID string, status bool) error {
-	_, err := database.ExecDBQuery(database.QueryUpsertQuotaStatus, orgID, status)
+	_, cancel, err := database.ExecDBQuery(database.QueryUpsertQuotaStatus, orgID, status)
+	defer cancel()
 	if err != nil {
 		logger.LoggerMsg.Errorf("Error while upserting quota exceeded status into DB for org: %s, status: %v. Error: %v", orgID, status, err)
 		return err

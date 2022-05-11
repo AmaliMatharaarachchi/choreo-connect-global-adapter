@@ -221,7 +221,8 @@ func getAPILALabels() map[string]map[string]int {
 	var labelHierarchy string
 	var apiUUID string
 	labels := make(map[string]map[string]int) // label hierarchy -> API UUID -> API ID
-	row, err := database.ExecDBQuery(database.QueryGetAllLabels)
+	row, cancel, err := database.ExecDBQuery(database.QueryGetAllLabels)
+	defer cancel()
 	if err == nil {
 		for {
 			if !row.Next() {
@@ -248,7 +249,8 @@ func getAPILALabelsForOrg(orgID string) map[string]map[string]int {
 	var labelHierarchy string
 	var apiUUID string
 	labels := make(map[string]map[string]int) // label hierarchy -> API UUID -> API ID
-	row, err := database.ExecDBQuery(database.QueryGetAllLabelsPerOrg, orgID)
+	row, cancel, err := database.ExecDBQuery(database.QueryGetAllLabelsPerOrg, orgID)
+	defer cancel()
 	if err == nil {
 		for {
 			if !row.Next() {
@@ -274,7 +276,8 @@ func getQuotaStatus() map[string]bool {
 	var orgID string
 	var isExceeded bool
 	quotaStatus := make(map[string]bool)
-	row, err := database.ExecDBQuery(database.QueryQuotaStatus)
+	row, cancel, err := database.ExecDBQuery(database.QueryQuotaStatus)
+	defer cancel()
 	if err == nil {
 		for {
 			if !row.Next() {
@@ -295,7 +298,8 @@ func getQuotaStatus() map[string]bool {
 // Return a boolean for API existance , int for incremental ID if the API already exists
 func isAPIExists(uuid string, labelHierarchy string) (bool, int) {
 	var apiID int
-	row, err := database.ExecDBQuery(database.QueryIsAPIExists, uuid, labelHierarchy)
+	row, cancel, err := database.ExecDBQuery(database.QueryIsAPIExists, uuid, labelHierarchy)
+	defer cancel()
 	if err == nil {
 		if !row.Next() {
 			logger.LoggerAPIPartition.Debug("Record does not exist for labelHierarchy : ", labelHierarchy, " and uuid : ", uuid)
@@ -330,7 +334,8 @@ func getAvailableID(hierarchyID string) (int, bool) {
 // getEmptiedID observing emptied incremental ID
 func getEmptiedID(hierarchyID string) int {
 	var emptiedID int
-	stmt, error := database.ExecDBQuery(database.QueryGetEmptiedID, hierarchyID)
+	stmt, cancel, error := database.ExecDBQuery(database.QueryGetEmptiedID, hierarchyID)
+	defer cancel()
 	if error == nil {
 		stmt.Next()
 		stmt.Scan(&emptiedID)
@@ -346,7 +351,8 @@ func getEmptiedID(hierarchyID string) int {
 func getNextIncrementalID(hierarchyID string) int {
 	var highestID int
 	var nextIncrementalID int
-	stmt, error := database.ExecDBQuery(database.QueryGetNextIncID, hierarchyID)
+	stmt, cancel, error := database.ExecDBQuery(database.QueryGetNextIncID, hierarchyID)
+	defer cancel()
 	if error == nil {
 		stmt.Next()
 		stmt.Scan(&highestID)
@@ -444,7 +450,8 @@ func DeleteAPIRecords(organizations []msg.Organization) {
 
 	inClause := prepareInClauseForOrganizationDeletion(organizations)
 	sqlQuery := strings.Replace(database.QueryDeleteAPIsForOrganization, "_ORGANIZATIONS_PLACEHOLDER_", inClause, 1)
-	_, err := database.ExecDBQuery(sqlQuery)
+	_, cancel, err := database.ExecDBQuery(sqlQuery)
+	defer cancel()
 	if err != nil {
 		logger.LoggerAPIPartition.Error("Error while deleting the APIs from database for organizations", err)
 	} else {
@@ -605,7 +612,8 @@ func isQuotaExceededForOrg(orgID string) bool {
 	if IsStepQuotaLimitingEnabled {
 		logger.LoggerMsg.Debugf("'%s' enabled. Hence checking quota exceeded for org: %s",
 			featureStepQuotaLimiting, orgID)
-		row, err := database.ExecDBQuery(database.QueryIsQuotaExceeded, orgID)
+		row, cancel, err := database.ExecDBQuery(database.QueryIsQuotaExceeded, orgID)
+		defer cancel()
 		if err == nil {
 			if !row.Next() {
 				logger.LoggerMsg.Debugf("Record does not exist for orgId : %s", orgID)

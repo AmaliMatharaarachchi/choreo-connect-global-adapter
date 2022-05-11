@@ -91,14 +91,15 @@ func IsAliveConnection() (isAlive bool) {
 }
 
 // ExecDBQuery Execute db queries after checking/waking up the db connection
-func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
-	row, err := execDBQueryWithcontext(query, args...)
+func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, context.CancelFunc, error) {
+	row, cancel, err := execDBQueryWithcontext(query, args...)
 	if err != nil && (strings.Contains(err.Error(), dbIsClosed) || strings.Contains(err.Error(), dbIsTimeout) ||
 		strings.Contains(err.Error(), dbIsFailedRPC) || !IsAliveConnection()) {
 		logger.LoggerServer.Infof("Error while executing DB query hence retrying ... : %v", err.Error())
 		for {
 			if WakeUpConnection() {
-				row, err = execDBQueryWithcontext(query, args...)
+				cancel()
+				row, cancel, err = execDBQueryWithcontext(query, args...)
 				if err != nil && (strings.Contains(err.Error(), dbIsClosed) || strings.Contains(err.Error(), dbIsFailedRPC) ||
 					strings.Contains(err.Error(), dbIsTimeout) || !IsAliveConnection()) {
 					// seems like the db connection has dropped. hence retry executing
@@ -110,14 +111,15 @@ func ExecDBQuery(query string, args ...interface{}) (*sql.Rows, error) {
 			}
 		}
 	}
-	return row, err
+	return row, cancel, err
 }
 
-func execDBQueryWithcontext(query string, args ...interface{}) (*sql.Rows, error) {
+func execDBQueryWithcontext(query string, args ...interface{}) (*sql.Rows, context.CancelFunc, error) {
 	timeout := time.Duration(config.ReadConfigs().DataBase.OptionalMetadata.QueryTimeout)
 	cont, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
-	defer cancel()
-	return DB.QueryContext(cont, query, args...)
+	//defer cancel()
+	rows, err := DB.QueryContext(cont, query, args...)
+	return rows, cancel, err
 }
 
 // CreatePreparedStatement create prepared statement after checking/waking up the db connection
@@ -193,7 +195,8 @@ func execPreparedStatementWithContext(stmt *sql.Stmt, args ...interface{}) (sql.
 
 // IsTableExists return true if find the searched table
 func IsTableExists(tableName string) bool {
-	res, _ := ExecDBQuery(QueryTableExists, tableName)
+	res, cancel, _ := ExecDBQuery(QueryTableExists, tableName)
+	defer cancel()
 	if !res.Next() {
 		logger.LoggerServer.Debug("Table not exists : ", tableName)
 	} else {
