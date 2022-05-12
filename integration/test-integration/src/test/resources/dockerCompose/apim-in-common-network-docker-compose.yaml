@@ -20,5 +20,5 @@ services:
       - MONGODB_CLUSTER_NAME=${mongodb_cluster_name}
       - MONGODB_PUBLIC_KEY=${mongodb_public_key}
       - MONGODB_PRIVATE_KEY=${mongodb_private_key}
-      - AZURE_CONNECTION_STRING=${azure_connection_string}
+      - ASB_CONNECTION_STRING=${AZURE_CONNECTION_STRING}
   

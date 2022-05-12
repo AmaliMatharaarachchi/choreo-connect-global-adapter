@@ -16,7 +16,7 @@
   skipSSLVerification=true
   # Message broker connection URL of the control plane
   [controlPlane.brokerConnectionParameters]
-    eventListeningEndpoints = ["$env{AZURE_CONNECTION_STRING}"]
+    eventListeningEndpoints = ["$env{ASB_CONNECTION_STRING}"]
 
 [server]
   host = '0.0.0.0'

@@ -81,7 +81,7 @@ services:
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
       - localLabel=default-p1
-      - AZURE_CONNECTION_STRING=${azure_connection_string}
+      - ASB_CONNECTION_STRING=${AZURE_CONNECTION_STRING}
     ports:
       - "9843:9843"
     mem_limit: 256m
@@ -104,7 +104,7 @@ services:
       - cp_admin_pwd=admin
       - adapter_admin_pwd=admin
       - localLabel=default-p2
-      - AZURE_CONNECTION_STRING=${azure_connection_string}
+      - ASB_CONNECTION_STRING=${AZURE_CONNECTION_STRING}
     ports:
       - "9844:9843"
     mem_limit: 256m
@@ -123,7 +123,7 @@ services:
       - ./additional/ga-ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt
     mem_limit: 1200m
     environment:
-      - AZURE_CONNECTION_STRING=${azure_connection_string}
+      - ASB_CONNECTION_STRING=${AZURE_CONNECTION_STRING}
   sql-host:
     image: wso2am/choreo-connect-global-adapter-mssql:1.0.0-SNAPSHOT
     networks:

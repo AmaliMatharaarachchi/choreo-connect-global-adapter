@@ -44,4 +44,4 @@
 [controlPlane]
   skipSSLVerification = true
   [controlPlane.brokerConnectionParameters]
-    eventListeningEndpoints = ["$env{AZURE_CONNECTION_STRING}"]
+    eventListeningEndpoints = ["$env{ASB_CONNECTION_STRING}"]
