@@ -67,13 +67,7 @@
                         <configuration>
                             <target>
                                 <unzip src="../distribution/target/choreo-connect-ga-${project.version}.zip" dest="${basedir}/../test-integration/target" />
-                                <replaceregexp file="target/test-classes/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-router\:.*" replace="${router.image}" byline="true" />
-                                <replaceregexp file="target/test-classes/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-adapter\:.*" replace="${adapter.image}" byline="true" />
-                                <replaceregexp file="target/test-classes/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-enforcer\:.*" replace="${enforcer.image}" byline="true" />
                                 <replaceregexp file="target/test-classes/dockerCompose/cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-global-adapter\:.*" replace="wso2/choreo-connect-global-adapter:${project.version}" byline="true" />
-                                <replaceregexp file="target/test-classes/dockerCompose/multiple-cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-router\:.*" replace="${router.image}" byline="true" />
-                                <replaceregexp file="target/test-classes/dockerCompose/multiple-cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-adapter\:.*" replace="${adapter.image}" byline="true" />
-                                <replaceregexp file="target/test-classes/dockerCompose/multiple-cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-enforcer\:.*" replace="${enforcer.image}" byline="true" />
                                 <replaceregexp file="target/test-classes/dockerCompose/multiple-cc-in-common-network-docker-compose.yaml" match="wso2\/choreo-connect\-global-adapter\:.*" replace="wso2/choreo-connect-global-adapter:${project.version}" byline="true" />
                             </target>
                         </configuration>

@@ -68,7 +68,7 @@ else
   exit 1
 fi
 
-docker build . -t wso2/choreo-product-apim:4.0 --no-cache
+docker build . -t ${CHOREO_APIM_IMAGE}:latest --no-cache
 
 if [ $? -eq 0 ]; then
     echo "Docker build for choreo-product-apim is successful"

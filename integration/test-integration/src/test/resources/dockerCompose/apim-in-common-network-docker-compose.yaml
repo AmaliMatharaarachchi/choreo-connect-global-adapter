@@ -4,7 +4,7 @@ networks:
     name: apim_and_cc
 services:
   apim:
-    image: wso2/choreo-product-apim:4.0
+    image: ${CHOREO_APIM_IMAGE}:latest
     ports:
       - "9763:9763"
       - "9443:9443"
