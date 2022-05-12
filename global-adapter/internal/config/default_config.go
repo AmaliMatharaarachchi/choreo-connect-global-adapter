@@ -51,7 +51,7 @@ var defaultConfig = &Config{
 		},
 		OptionalMetadata: databaseOptionalMetadata{
 			MaxRetryAttempts: 10,
-			QueryTimeout:     5,
+			QueryTimeout:     10,
 		},
 	},
 	ControlPlane: controlPlane{

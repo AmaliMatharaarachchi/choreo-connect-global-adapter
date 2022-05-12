@@ -226,6 +226,9 @@ func getAPILALabels() map[string]map[string]int {
 	if err == nil {
 		for {
 			if !row.Next() {
+				if row.Err() != nil {
+					logger.LoggerAPIPartition.Error("Error while scanning database rows. ", row.Err())
+				}
 				logger.LoggerAPIPartition.Debug("No more partition label records exist for API partitions in database")
 				break
 			} else {
@@ -244,7 +247,7 @@ func getAPILALabels() map[string]map[string]int {
 }
 
 // getAPILALabelsForOrg get partition info from db for an org
-func getAPILALabelsForOrg(orgID string) map[string]map[string]int {
+func getAPILALabelsForOrg(orgID string) (map[string]map[string]int, error) {
 	var apiID int
 	var labelHierarchy string
 	var apiUUID string
@@ -254,6 +257,10 @@ func getAPILALabelsForOrg(orgID string) map[string]map[string]int {
 	if err == nil {
 		for {
 			if !row.Next() {
+				err = row.Err()
+				if err != nil {
+					logger.LoggerAPIPartition.Error("Error while scanning database rows. ", err)
+				}
 				logger.LoggerAPIPartition.Debug("No more partition label records exist for API partitions in database")
 				break
 			} else {
@@ -268,7 +275,7 @@ func getAPILALabelsForOrg(orgID string) map[string]map[string]int {
 	} else {
 		logger.LoggerAPIPartition.Error("Error when getting api partition label records from database")
 	}
-	return labels
+	return labels, err
 }
 
 // getQuotaStatus get partition info from db
@@ -557,7 +564,23 @@ func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int, partit
 // UpdateCacheForQuotaExceededStatus Updates redis cache on billing cycle reset or quota exceeded status
 func UpdateCacheForQuotaExceededStatus(apiEvents []synchronizer.APIEvent, cacheValue string, orgUUID string) {
 	var cacheObj []string
-	laLabels := getAPILALabelsForOrg(orgUUID)
+	retryAttempt := 0
+	var laLabels map[string]map[string]int
+	var err error
+	for {
+		retryAttempt++
+		laLabels, err = getAPILALabelsForOrg(orgUUID)
+		if err == nil {
+			break
+		}
+		if retryAttempt > 2 {
+			logger.LoggerAPIPartition.Errorf("Error while fetching partition details of the orgUUID %v for the step quota. %v",
+				orgUUID, err.Error())
+			return
+		}
+		logger.LoggerAPIPartition.Errorf("Error while fetching partition details of the orgUUID: %v for the step quota. attempt: %v. %v",
+			orgUUID, retryAttempt, err.Error())
+	}
 	for _, apiEvent := range apiEvents {
 		for index := range apiEvent.GatewayLabels {
 			gatewayLabel := apiEvent.GatewayLabels[index]
