@@ -15,10 +15,9 @@ services:
     networks:
       - apim_and_cc
     environment:
-      - MONGODB_CONNECTION_STRING=${mongodb_connection_string}
-      - MONGODB_GROUP_ID=${mongodb_group_id}
-      - MONGODB_CLUSTER_NAME=${mongodb_cluster_name}
-      - MONGODB_PUBLIC_KEY=${mongodb_public_key}
-      - MONGODB_PRIVATE_KEY=${mongodb_private_key}
+      - MONGODB_CONNECTION_STRING=${MONGODB_CONNECTION_STRING}
+      - MONGODB_GROUP_ID=${MONGODB_GROUP_ID}
+      - MONGODB_CLUSTER_NAME=${MONGODB_CLUSTER_NAME}
+      - MONGODB_PUBLIC_KEY=${MONGODB_PUBLIC_KEY}
+      - MONGODB_PRIVATE_KEY=${MONGODB_PRIVATE_KEY}
       - ASB_CONNECTION_STRING=${AZURE_CONNECTION_STRING}
-  
