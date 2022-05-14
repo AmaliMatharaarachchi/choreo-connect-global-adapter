@@ -68,8 +68,8 @@ func New(conf *config.Config) *Server {
 // RunAPIServer function initializes the GA API server.
 func (s *Server) RunAPIServer(conf *config.Config) {
 	router := mux.NewRouter()
-	router.HandleFunc(internalAPIContextV1+"apis/deployed-revisions", BasicAuth(s.HTTPatchHandler)).Methods(http.MethodGet)
-	router.HandleFunc(internalAPIContextV1+"apis/undeployed-revision", BasicAuth(s.HTTPPostHandler)).Methods(http.MethodGet)
+	router.HandleFunc(internalAPIContextV1+"apis/deployed-revisions", BasicAuth(s.HTTPatchHandler)).Methods(http.MethodPatch)
+	router.HandleFunc(internalAPIContextV1+"apis/undeployed-revision", BasicAuth(s.HTTPPostHandler)).Methods(http.MethodPost)
 	router.HandleFunc(internalAPIContextV1+"runtime-metadata", BasicAuth(s.HTTPGetHandler)).Methods(http.MethodGet)
 	router.HandleFunc(internalAPIContextV1+"runtime-artifacts", BasicAuth(s.HTTPGetHandler)).Methods(http.MethodGet)
 	router.HandleFunc(internalAPIContextV1+"retrieve-api-artifacts", BasicAuth(s.HTTPPostHandler)).Methods(http.MethodPost)
