@@ -56,8 +56,8 @@
   connectionPoolSize = 3
   maxRetryCount = 10
 
-[gaAPIServer]
+[gAAPIServer]
   host = '0.0.0.0'
   port = '9845'
   username = 'admin'
-  password = 'admin'
+  password = '$env{ga_admin_pwd}'

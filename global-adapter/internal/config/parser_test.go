@@ -44,7 +44,7 @@ func TestReadConfigs(t *testing.T) {
 		"EventListeningEndpoints should be the same")
 
 	assert.Equal(t, gaAPIServer.Host, "0.0.0.0", "Host should be the different")
-	assert.Equal(t, gaAPIServer.Port, "9845", "Port should be the same")
+	assert.Equal(t, gaAPIServer.Port, "9745", "Port should be the same")
 	assert.Equal(t, gaAPIServer.Username, "admin", "Usernames should be the same")
 	assert.Equal(t, gaAPIServer.Password, "admin", "Passwords should be the same")
 }
