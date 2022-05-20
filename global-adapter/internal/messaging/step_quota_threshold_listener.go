@@ -49,9 +49,9 @@ func handleAzureStepQuotaThresholdEvents(conf *config.Config) {
 			continue
 		}
 
-		if thresholdEvent.StepUsage < StepThreshold {
-			logger.LoggerMsg.Debugf("Step quota threshold has not exceeded, step usage: %v, org ID: %s. Hence ignoring the event.",
-				thresholdEvent.StepUsage, thresholdEvent.OrgID)
+		if thresholdEvent.Threshold < StepThreshold {
+			logger.LoggerMsg.Debugf("Step quota threshold has not exceeded, step usage: %v with threshold: %v for org ID: %s. Hence ignoring the event.",
+				thresholdEvent.StepUsage, thresholdEvent.Threshold, thresholdEvent.OrgID)
 			continue
 		}
 

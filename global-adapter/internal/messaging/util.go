@@ -19,6 +19,7 @@ package messaging
 
 import (
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/apipartition"
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/common"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/database"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
@@ -29,7 +30,8 @@ import (
 
 // Multiple listeners needs to insert/update organisation's quota exceeded status
 func upsertQuotaExceededStatus(orgID string, status bool) error {
-	_, err := database.ExecDBQuery(database.QueryUpsertQuotaStatus, orgID, status)
+	_, cancel, err := database.ExecDBQuery(database.QueryUpsertQuotaStatus, orgID, status)
+	defer cancel()
 	if err != nil {
 		logger.LoggerMsg.Errorf("Error while upserting quota exceeded status into DB for org: %s, status: %v. Error: %v", orgID, status, err)
 		return err
@@ -49,16 +51,19 @@ func getAPIEvents(orgUUID string, conf *config.Config) ([]synchronizer.APIEvent,
 	truststoreLocation := conf.Truststore.Location
 	requestTimeout := conf.ControlPlane.HTTPClient.RequestTimeOut
 
+	var queryParamMap map[string]string
+	queryParamMap = common.PopulateQueryParamForOrganizationID(queryParamMap)
+
 	// Create a channel for the byte slice (response from the APIs from control plane).
 	c := make(chan sync.SyncAPIResponse)
 
 	// Fetch APIs from control plane and write to the channel c.
 	adapter.GetAPIs(c, nil, serviceURL, username, password, environmentLabels, skipSSL, truststoreLocation,
-		synchronizer.RuntimeMetaDataEndpoint, false, nil, requestTimeout)
+		synchronizer.RuntimeMetaDataEndpoint, false, nil, requestTimeout, queryParamMap)
 
 	// Get deployment.json from the channel c.
 	deploymentDescriptor, err := synchronizer.GetArtifactDetailsFromChannel(c, serviceURL,
-		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout)
+		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout, queryParamMap)
 
 	var apiEvents []synchronizer.APIEvent
 	if err != nil {

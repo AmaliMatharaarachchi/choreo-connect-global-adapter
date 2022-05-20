@@ -12,7 +12,7 @@ require (
 	github.com/pelletier/go-toml v1.8.1
 	github.com/sirupsen/logrus v1.7.0
 	github.com/stretchr/testify v1.7.0
-	github.com/wso2/product-microgateway/adapter v0.0.0-20220425151116-a2e0ef7cbca9
+	github.com/wso2/product-microgateway/adapter v0.0.0-20220506090658-21e04ff86341
 	google.golang.org/grpc v1.36.0
 )
 

@@ -28,6 +28,7 @@ import (
 
 	"github.com/wso2/product-microgateway/adapter/pkg/adapter"
 
+	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/common"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/config"
 	"github.com/wso2-enterprise/choreo-connect-global-adapter/global-adapter/internal/logger"
 	"github.com/wso2/product-microgateway/adapter/pkg/health"
@@ -46,8 +47,8 @@ func init() {
 
 // GetArtifactDetailsFromChannel retrieve the artifact details from the channel c.
 func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL string, userName string,
-	password string, skipSSL bool, truststoreLocation string,
-	retryInterval time.Duration, requestTimeout time.Duration) (*sync.DeploymentDescriptor, error) {
+	password string, skipSSL bool, truststoreLocation string, retryInterval time.Duration,
+	requestTimeout time.Duration, queryParamMap map[string]string) (*sync.DeploymentDescriptor, error) {
 
 	for i := 0; i < 1; i++ {
 		// Read the API details from the channel.
@@ -80,7 +81,7 @@ func GetArtifactDetailsFromChannel(c chan sync.SyncAPIResponse, serviceURL strin
 			i--
 			logger.LoggerSync.Errorf("Error occurred while fetching data from control plane: %v", data.Err)
 			sync.RetryFetchingAPIs(c, serviceURL, userName, password, skipSSL, truststoreLocation, retryInterval,
-				data, RuntimeMetaDataEndpoint, false, requestTimeout)
+				data, RuntimeMetaDataEndpoint, false, requestTimeout, queryParamMap)
 		}
 	}
 	return &sync.DeploymentDescriptor{}, nil
@@ -143,17 +144,20 @@ func GetArtifactsAndAddToChannel(uuid *string, gatewayLabels []string, config *c
 	truststoreLocation := config.Truststore.Location
 	requestTimeout := config.ControlPlane.HTTPClient.RequestTimeOut
 
+	var queryParamMap map[string]string
+	queryParamMap = common.PopulateQueryParamForOrganizationID(queryParamMap)
+
 	// Create a channel for the byte slice (response from the /runtime-metadata endpoint)
 	c := make(chan sync.SyncAPIResponse)
 
 	logger.LoggerMsg.Debugf("Fetching API details from control plane for gateways : %v, api uuid: %v", gatewayLabels, uuid)
 	// Fetch API details from control plane and write API details to the channel c.
 	adapter.GetAPIs(c, uuid, serviceURL, username, password, gatewayLabels, skipSSL, truststoreLocation,
-		RuntimeMetaDataEndpoint, false, nil, requestTimeout)
+		RuntimeMetaDataEndpoint, false, nil, requestTimeout, queryParamMap)
 
 	// Get deployment.json file from channel c.
 	deploymentDescriptor, err := GetArtifactDetailsFromChannel(c, serviceURL,
-		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout)
+		username, password, skipSSL, truststoreLocation, retryInterval, requestTimeout, queryParamMap)
 
 	if err != nil {
 		logger.LoggerMsg.Errorf("Error occurred while reading artifacts for gateways : %v, api uuid: %v , %v", gatewayLabels, uuid, err.Error())

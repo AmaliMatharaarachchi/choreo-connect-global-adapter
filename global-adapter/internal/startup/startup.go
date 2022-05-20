@@ -57,7 +57,8 @@ func Initialize() {
 
 func triggerDeploymentAgent() {
 	var previousPartitionSize int
-	result, error := database.ExecDBQuery(database.QueryGetPartitionSize)
+	result, cancel, error := database.ExecDBQuery(database.QueryGetPartitionSize)
+	defer cancel()
 	if error != nil {
 		logger.LoggerServer.Error("[DB Error] Error when fetching partition size")
 	} else {
