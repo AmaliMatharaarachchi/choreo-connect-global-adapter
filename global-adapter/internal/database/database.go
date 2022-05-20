@@ -157,7 +157,7 @@ func createPreparedStatementWithContext(statement string) (*sql.Stmt, error) {
 func ExecPreparedStatement(stmtString string, stmt *sql.Stmt, args ...interface{}) (sql.Result, error) {
 	result, err := execPreparedStatementWithContext(stmt, args...)
 	if err != nil && isConnectionError(err) {
-		logger.LoggerServer.Infof("Error while executing prepared statement hence retrying ... : %v", err.Error())
+		logger.LoggerServer.Error("Error while executing prepared statement hence retrying. ", err)
 		retryAttempt := 1
 		for {
 			retryAttempt++
