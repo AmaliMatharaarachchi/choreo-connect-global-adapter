@@ -84,7 +84,7 @@ var defaultConfig = &Config{
 	},
 	GAAPIServer: gaAPIServer{
 		Host:     "0.0.0.0",
-		Port:     "9845",
+		Port:     "9745",
 		Username: "admin",
 		Password: "admin",
 	},
