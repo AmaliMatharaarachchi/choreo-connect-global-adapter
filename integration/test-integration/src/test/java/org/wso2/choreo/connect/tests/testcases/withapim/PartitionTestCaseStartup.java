@@ -73,11 +73,12 @@ public class PartitionTestCaseStartup extends ApimBaseTest {
         for (PartitionTestEntry testEntry : existingAPITestEntryList) {        
             // Checks against both the router partitions available.
             // If the partition matches, it should return 200 OK, otherwise 404.
-            String currentPartitionContext = PartitionTestUtils.getRedisEntry(jedis, testEntry.getApiContext(),
-                    testEntry.getApiVersion());
+            String currentPartitionContext = PartitionTestUtils.getRedisEntry(jedis, testEntry.getOrgName(),
+                    testEntry.getApiContext(), testEntry.getApiVersion());
             testEntry.setPartition(currentPartitionContext.split("/")[0]);
-            if (String.format("%s/%s/%s", PartitionTestUtils.PARTITION_2, testEntry.getApiContext(),
-                    testEntry.getApiVersion()).equals(currentPartitionContext)) {
+
+            if (String.format("%s/%s/%s/%s", PartitionTestUtils.PARTITION_2, testEntry.getOrgName(),
+                    testEntry.getApiContext(), testEntry.getApiVersion()).equals(currentPartitionContext)) {
                 partition2AssignedCount++;
             }
         }
@@ -93,25 +94,24 @@ public class PartitionTestCaseStartup extends ApimBaseTest {
     }
 
     private void initializeTestEntryMap() {
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API1", "1.0.0", "testOrg1/api1",
-                "");
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API2", "1.0.0", "testOrg1/api2",
-                "");
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API3", "1.0.0", "testOrg1/api3",
-                "");
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API4", "1.0.0", "testOrg1/api4",
-                "");
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API5", "1.0.0", "testOrg1/api5",
-                "");
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API6", "1.0.0", "testOrg1/api6",
-                "");
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API7", "1.0.0", "testOrg1/api7",
-                "");
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API8", "1.0.0", "testOrg1/api8",
-                "");
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API9", "1.0.0", "testOrg1/api9",
-                "");
-
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API1", "testOrg1", "1.0.0",
+                "api1", "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API2", "testOrg1", "1.0.0",
+                "api2", "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API3", "testOrg1", "1.0.0",
+                "api3", "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API4", "testOrg1", "1.0.0",
+                "api4", "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API5", "testOrg1", "1.0.0",
+                "api5", "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API6", "testOrg1", "1.0.0",
+                "api6", "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API7", "testOrg1", "1.0.0",
+                "api7", "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API8", "testOrg1", "1.0.0",
+                "api8", "");
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API9", "testOrg1", "1.0.0",
+                "api9", "");
     }
 
     @AfterClass

@@ -100,8 +100,8 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
     public void testCreateEvents() throws Exception {
 
         for (PartitionTestEntry entry : newAPITestEntryList) {
-            APIRequest apiRequest = PublisherUtils.createSampleAPIRequest(
-                    entry.getApiName(), entry.getApiContext(), entry.getApiVersion(), user.getUserName());
+            APIRequest apiRequest = PublisherUtils.createSampleAPIRequest(entry.getApiName(), entry.getOrgName(),
+                    entry.getApiContext(), entry.getApiVersion(), user.getUserName());
             String apiId = PublisherUtils.createAndPublishAPI(apiRequest, publisherRestClient);
             entry.setApiID(apiId);
             StoreUtils.subscribeToAPI(apiId, applicationId, TestConstant.SUBSCRIPTION_TIER.UNLIMITED, storeRestClient);
@@ -164,8 +164,8 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
 
         for (PartitionTestEntry testEntry : newAPITestEntryList) {
             String endpoint = PartitionTestUtils.PARTITION_ENDPOINT_MAP.get(testEntry.getPartition());
-            String invocationUrl = endpoint + testEntry.getApiContext() + "/" + testEntry.getApiVersion()
-                    + testEntry.getResourcePath();
+            String invocationUrl = endpoint + testEntry.getOrgName() + "/" + testEntry.getApiContext() + "/" +
+                    testEntry.getApiVersion() + testEntry.getResourcePath();
             HttpResponse response = HttpsClientRequest.doGet(invocationUrl, headers);
             Assert.assertNotNull(response, "Error occurred while invoking the url " + invocationUrl + " HttpResponse ");
             Assert.assertEquals(response.getResponseCode(), HttpStatus.SC_FORBIDDEN,
@@ -183,25 +183,25 @@ public class PartitionTestCaseWithEvents extends ApimBaseTest {
     }
 
     private void initializeTestEntryMap() {
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API1", "1.0.0", "testOrg1/api1",
-                PartitionTestUtils.PARTITION_1);
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API2", "1.0.0", "testOrg1/api2",
-                PartitionTestUtils.PARTITION_1);
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API3", "1.0.0", "testOrg1/api3",
-                PartitionTestUtils.PARTITION_1);
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API4", "1.0.0", "testOrg1/api4",
-                PartitionTestUtils.PARTITION_1);
-        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API5", "1.0.0", "testOrg1/api5",
-                PartitionTestUtils.PARTITION_1);
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API1", "testOrg1", "1.0.0",
+                "api1", PartitionTestUtils.PARTITION_1);
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API2", "testOrg1", "1.0.0",
+                "api2", PartitionTestUtils.PARTITION_1);
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API3", "testOrg1", "1.0.0",
+                "api3", PartitionTestUtils.PARTITION_1);
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API4", "testOrg1", "1.0.0",
+                "api4", PartitionTestUtils.PARTITION_1);
+        PartitionTestUtils.addTestEntryToList(existingAPITestEntryList, "API5", "testOrg1", "1.0.0",
+                "api5", PartitionTestUtils.PARTITION_1);
 
-        PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent1", "1.0.0", "testOrg1/apiEvent1",
-                PartitionTestUtils.PARTITION_1);
-        PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent2", "1.0.0", "testOrg1/apiEvent2",
-                PartitionTestUtils.PARTITION_1);
-        PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent3", "1.0.0", "testOrg1/apiEvent3",
-                PartitionTestUtils.PARTITION_1);
-        PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent4", "1.0.0", "testOrg1/apiEvent4",
-                PartitionTestUtils.PARTITION_2);
+        PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent1", "testOrg1", "1.0.0",
+                "apiEvent1", PartitionTestUtils.PARTITION_1);
+        PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent2", "testOrg1", "1.0.0",
+                "apiEvent2", PartitionTestUtils.PARTITION_1);
+        PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent3", "testOrg1", "1.0.0",
+                "apiEvent3", PartitionTestUtils.PARTITION_1);
+        PartitionTestUtils.addTestEntryToList(newAPITestEntryList, "APIEvent4", "testOrg1", "1.0.0",
+                "apiEvent4", PartitionTestUtils.PARTITION_2);
     }
 
     private PartitionTestEntry undeployTestEntry(PartitionTestEntry testEntry) throws Exception {

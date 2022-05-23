@@ -38,7 +38,7 @@ if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
     mkdir -p gen/choreo-apim
     cd gen/choreo-apim
   #  TODO: (VirajSalaka) check if it is executed from a workflow, then it is not required to clone
-    git clone https://github.com/wso2-enterprise/choreo-product-apim
+    git clone git@github.com:wso2-enterprise/choreo-product-apim.git
     if [ $? -eq 0 ]; then
       echo "Clone operation for choreo-product-apim is successful"
     else
@@ -68,7 +68,7 @@ else
   exit 1
 fi
 
-docker build . -t wso2/choreo-product-apim:4.0 --no-cache
+docker build . -t ${CHOREO_APIM_IMAGE}:latest --no-cache
 
 if [ $? -eq 0 ]; then
     echo "Docker build for choreo-product-apim is successful"
@@ -105,11 +105,9 @@ if [[ -z "${IS_WORKFLOW_ENV}" ]]; then
     cd gen
     mkdir choreo-connect
     cd choreo-connect
-    git clone https://github.com/wso2/product-microgateway
+    git clone git@github.com:wso2/product-microgateway.git --branch choreo --single-branch
     cd product-microgateway
-    git fetch
-    git checkout choreo
-    git pull origin choreo
+
     if [ $? -eq 0 ]; then
       echo "Clone operation for choreo-connect is successful"
     else
