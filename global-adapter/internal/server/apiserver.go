@@ -85,14 +85,16 @@ func (s *Server) RunAPIServer(conf *config.Config) {
 	router.HandleFunc(internalAPIContextV1+"api-policies", BasicAuth(s.NoneOrgIDHTTPGetHandler)).Methods(http.MethodGet)
 	router.HandleFunc(internalAPIContextV1+"global-policies", BasicAuth(s.NoneOrgIDHTTPGetHandler)).Methods(http.MethodGet)
 
-	caCertPool := tlsutils.GetTrustedCertPool(conf.Truststore.Location)
-	cert, _ := tlsutils.GetServerCertificate(conf.Keystore.PublicKeyLocation, conf.Keystore.PrivateKeyLocation)
+	/* Uncomment following block to enable Mutual SSL.
+	  caCertPool := tlsutils.GetTrustedCertPool(conf.Truststore.Location)
+	  cert, _ := tlsutils.GetServerCertificate(conf.Keystore.PublicKeyLocation, conf.Keystore.PrivateKeyLocation)
 
-	transport := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		ClientCAs:    caCertPool,
-	}
+	  transport := &tls.Config{
+	  	  Certificates: []tls.Certificate{cert},
+		  ClientAuth:   tls.RequireAndVerifyClientCert,
+		  ClientCAs:    caCertPool,
+	  }
+	*/
 
 	logger.LoggerServer.Info("Starting GA API Server...")
 	srv := &http.Server{
@@ -100,7 +102,6 @@ func (s *Server) RunAPIServer(conf *config.Config) {
 		Addr:         conf.GAAPIServer.Host + ":" + conf.GAAPIServer.Port,
 		WriteTimeout: 60 * time.Second,
 		ReadTimeout:  60 * time.Second,
-		TLSConfig:    transport,
 	}
-	logger.LoggerServer.Fatal(srv.ListenAndServe())
+	logger.LoggerServer.Fatal(srv.ListenAndServeTLS(conf.Keystore.PublicKeyLocation, conf.Keystore.PrivateKeyLocation))
 }

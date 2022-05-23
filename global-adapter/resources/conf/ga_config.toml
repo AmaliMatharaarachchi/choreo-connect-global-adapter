@@ -58,6 +58,6 @@
 
 [gAAPIServer]
   host = '0.0.0.0'
-  port = '9845'
+  port = '9745'
   username = 'admin'
   password = '$env{ga_admin_pwd}'
