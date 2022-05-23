@@ -19,9 +19,7 @@ package org.wso2.choreo.connect.tests.testcases.withapim;
 
 import com.github.dockerjava.zerodep.shaded.org.apache.hc.core5.http.HttpStatus;
 import com.google.common.net.HttpHeaders;
-import org.awaitility.Awaitility;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.wso2.am.integration.test.utils.bean.APIRequest;
@@ -39,11 +37,11 @@ import org.wso2.choreo.connect.tests.util.Utils;
 import java.net.MalformedURLException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 public class BasicEventsTestCase extends ApimBaseTest {
     private static final String API_NAME = "BasicEventsApi";
-    private static final String API_CONTEXT = "testOrg1/basicEvents";
+    private static final String ORG_NAME = "testOrg1";
+    private static final String API_CONTEXT = "basicEvents";
     private static final String API_VERSION = "1.0.0";
     private static final String APP_NAME = "BasicEventsApp";
 
@@ -61,7 +59,8 @@ public class BasicEventsTestCase extends ApimBaseTest {
     public void testCreateEvents() throws CCTestException, MalformedURLException {
         //Create, deploy and publish API - only to specifically test events.
         // For other testcases the json is used to create APIs, Apps, Subscriptions
-        APIRequest apiRequest = PublisherUtils.createSampleAPIRequest(API_NAME, API_CONTEXT, API_VERSION, user.getUserName());
+        APIRequest apiRequest = PublisherUtils.createSampleAPIRequest(API_NAME, ORG_NAME, API_CONTEXT, API_VERSION,
+                user.getUserName());
         apiId = PublisherUtils.createAndPublishAPI(apiRequest, publisherRestClient);
 
         //Create App. Subscribe.
@@ -78,7 +77,7 @@ public class BasicEventsTestCase extends ApimBaseTest {
         //Invoke API
         headers = new HashMap<>();
         headers.put(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-        endpoint = Utils.getServiceURLHttps(API_CONTEXT + "/1.0.0/pet/findByStatus");
+        endpoint = Utils.getServiceURLHttps(String.format("%s/%s/1.0.0/pet/findByStatus", ORG_NAME, API_CONTEXT));
         HttpResponse response = HttpsClientRequest.retryGetRequestUntilDeployed(endpoint, headers);
         Assert.assertNotNull(response, "Error occurred while invoking the endpoint " + endpoint + " HttpResponse ");
         Assert.assertEquals(response.getResponseCode(), HttpStatus.SC_SUCCESS,

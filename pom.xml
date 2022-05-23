@@ -93,7 +93,7 @@
         <testcontainers.version>1.15.0</testcontainers.version>
         <gson.version>2.8.6</gson.version>
         <testng.version>6.11</testng.version>
-        <log4j.version>2.13.3</log4j.version>
+        <log4j.version>2.16.0</log4j.version>
         <slf4j.version>1.7.21</slf4j.version>
         <io.netty.version>4.1.63.Final</io.netty.version>
         <commons.version>3.9</commons.version>
@@ -105,7 +105,7 @@
         <awaitility.version>3.1.2</awaitility.version>
         <analytics.publisher.client.version>1.0.0</analytics.publisher.client.version>
         <jedis.version>3.6.3</jedis.version>
-        <choreo.connect.version>1.0.0-alpha-SNAPSHOT</choreo.connect.version>
+        <choreo.connect.version>1.1.0-m1-SNAPSHOT</choreo.connect.version>
         <maven.surefire.plugin.version>2.22.2</maven.surefire.plugin.version>
         <grpc.netty.shaded.version>1.32.1</grpc.netty.shaded.version>
     </properties>

@@ -24,6 +24,9 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Optional;
 import org.testng.annotations.Parameters;
 import org.wso2.am.integration.clients.publisher.api.ApiException;
+import org.wso2.am.integration.clients.publisher.api.v1.dto.APIInfoDTO;
+import org.wso2.am.integration.clients.store.api.v1.dto.ApplicationInfoDTO;
+import org.wso2.am.integration.test.utils.APIManagerIntegrationTestException;
 import org.wso2.choreo.connect.tests.apim.ApimBaseTest;
 import org.wso2.choreo.connect.tests.apim.ApimResourceProcessor;
 import org.wso2.choreo.connect.tests.apim.utils.PublisherUtils;
@@ -33,7 +36,7 @@ import org.wso2.choreo.connect.tests.context.ChoreoConnectImpl;
 import org.wso2.choreo.connect.tests.util.TestConstant;
 import org.wso2.choreo.connect.tests.util.Utils;
 
-import java.util.Map;
+import java.util.Objects;
 
 /**
  * APIs, Apps, Subs created here will be used to test whether
@@ -57,28 +60,29 @@ public class ApimPreparer extends ApimBaseTest {
         apimResourceProcessor.createApisAppsSubs(user.getUserName(), publisherRestClient, storeRestClient,
                 isGASpecific);
 
-        if(ChoreoConnectImpl.checkCCInstanceHealth()) {
+        if (ChoreoConnectImpl.checkCCInstanceHealth()) {
             //wait till all resources deleted and are redeployed
-            Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME*8, "Interrupted while waiting for DELETE and" +
+            Utils.delay(TestConstant.DEPLOYMENT_WAIT_TIME * 8, "Interrupted while waiting for DELETE and" +
                     " CREATE events to be deployed");
         }
     }
 
     @AfterSuite
-    public void deleteAPIsApps() {
-        for (Map.Entry<String, String> entry :
-                ApimResourceProcessor.applicationNameToId.entrySet()) {
+    public void deleteAPIsApps() throws org.wso2.am.integration.clients.store.api.ApiException,
+            APIManagerIntegrationTestException, ApiException {
+        for (ApplicationInfoDTO applicationInfoDTO : Objects.requireNonNull(storeRestClient.getAllApps().getList())) {
             try {
-                StoreUtils.removeAllSubscriptionsForAnApp(entry.getValue(), storeRestClient);
+                StoreUtils.removeAllSubscriptionsForAnApp(applicationInfoDTO.getApplicationId(), storeRestClient);
             } catch (CCTestException e) {
-                log.error("Error while unsubscribing APIs under application: " + entry.getKey(), e);
+                log.error("Error while unsubscribing APIs under application: " + applicationInfoDTO.getName(), e);
             }
         }
-        for (Map.Entry<String, String> entry : ApimResourceProcessor.apiNameToId.entrySet()) {
+
+        for (APIInfoDTO apiInfoDTO : Objects.requireNonNull(publisherRestClient.getAllAPIs().getList())) {
             try {
-                publisherRestClient.deleteAPI(entry.getValue());
+                publisherRestClient.deleteAPI(apiInfoDTO.getId());
             } catch (ApiException e) {
-                log.error("Error while deleting API: " + entry.getKey(), e);
+                log.error("Error while deleting API: " + apiInfoDTO.getName(), e);
             }
         }
     }

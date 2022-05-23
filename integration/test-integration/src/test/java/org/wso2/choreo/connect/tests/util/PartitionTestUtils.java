@@ -60,29 +60,30 @@ public class PartitionTestUtils {
         return null;
     }
 
-    private static void checkRedisEntry(Jedis jedis, String apiContext, String apiVersion,
-                                 String expectedValue) {
-        String value = getRedisEntry(jedis, apiContext, apiVersion);
+    private static void checkRedisEntry(Jedis jedis, String orgName, String apiContext, String apiVersion,
+                                        String expectedValue) {
+        String value = getRedisEntry(jedis, orgName, apiContext, apiVersion);
         Assert.assertEquals(value, expectedValue, " Mismatch found while reading redis entry for " +
                 String.format("#global-adapter#default#/%s/%s", apiContext, apiVersion));
     }
 
-    public static String getRedisEntry(Jedis jedis, String apiContext, String apiVersion) {
-        String value = jedis.get(String.format("#global-adapter#default#/%s/%s", apiContext, apiVersion));
+    public static String getRedisEntry(Jedis jedis, String orgName, String apiContext, String apiVersion) {
+        String value = jedis.get(String.format("#global-adapter#default#%s#/%s/%s", orgName, apiContext, apiVersion));
         return value;
     }
 
-    public static void checkTestEntry(Jedis jedis, PartitionTestEntry testEntry, Map<String,String> headers,
-                                boolean verifyInOtherRouter) throws Exception {
-        String expectedPartition = String.format("%s/%s/%s", testEntry.getPartition(), testEntry.getApiContext(),
-                testEntry.getApiVersion());
-        checkRedisEntry(jedis, testEntry.getApiContext(), testEntry.getApiVersion(), expectedPartition);
+    public static void checkTestEntry(Jedis jedis, PartitionTestEntry testEntry, Map<String, String> headers,
+                                      boolean verifyInOtherRouter) throws Exception {
+        String expectedPartition = String.format("%s/%s/%s/%s", testEntry.getPartition(), testEntry.getOrgName(),
+                testEntry.getApiContext(), testEntry.getApiVersion());
+        checkRedisEntry(jedis, testEntry.getOrgName(), testEntry.getApiContext(), testEntry.getApiVersion(),
+                expectedPartition);
         for (Map.Entry<String, String> mapEntry : PARTITION_ENDPOINT_MAP.entrySet()) {
-            String url = mapEntry.getValue() + testEntry.getApiContext() + "/"
+            String url = mapEntry.getValue() + testEntry.getOrgName() + "/" + testEntry.getApiContext() + "/"
                     + testEntry.getApiVersion() + testEntry.getResourcePath();
             if (testEntry.getPartition().equals(mapEntry.getKey())) {
                 assert200Response(url, headers);
-            } else if (verifyInOtherRouter){
+            } else if (verifyInOtherRouter) {
                 assert404Response(url, headers);
             }
         }
@@ -91,21 +92,22 @@ public class PartitionTestUtils {
     public static void assert200Response(String url, Map<String, String> headers) throws CCTestException {
         HttpResponse response = HttpsClientRequest.retryGetRequestUntilDeployed(url, headers);
         Assert.assertNotNull(response, "Error occurred while invoking the endpoint " + url + " HttpResponse ");
-        Assert.assertEquals(HttpStatus.SC_SUCCESS, response.getResponseCode(),
+        Assert.assertEquals(response.getResponseCode(), HttpStatus.SC_SUCCESS,
                 "Status code mismatched. Endpoint:" + url + " HttpResponse ");
     }
 
     public static void assert404Response(String url, Map<String, String> headers) throws CCTestException {
         HttpResponse response = HttpsClientRequest.doGet(url, headers);
         Assert.assertNotNull(response, "Error occurred while invoking: " + url + " HttpResponse ");
-        Assert.assertEquals(HttpStatus.SC_NOT_FOUND, response.getResponseCode(),
+        Assert.assertEquals(response.getResponseCode(), HttpStatus.SC_NOT_FOUND,
                 "Status code mismatched. Endpoint:" + url + " HttpResponse ");
     }
 
-    public static void addTestEntryToList(List<PartitionTestEntry> testEntryList, String apiName, String apiVersion,
-                                    String apiContext, String partition) {
+    public static void addTestEntryToList(List<PartitionTestEntry> testEntryList, String apiName, String orgName,
+                                          String apiVersion, String apiContext, String partition) {
         PartitionTestEntry testEntry = new PartitionTestEntry();
         testEntry.setApiName(apiName);
+        testEntry.setOrgName(orgName);
         testEntry.setApiVersion(apiVersion);
         testEntry.setPartition(partition);
         testEntry.setApiContext(apiContext);
