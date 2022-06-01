@@ -562,7 +562,7 @@ func triggerNewDeploymentIfRequired(incrementalID int, partitionSize int, partit
 }
 
 // UpdateCacheForQuotaExceededStatus Updates redis cache on billing cycle reset or quota exceeded status
-func UpdateCacheForQuotaExceededStatus(apiEvents []synchronizer.APIEvent, cacheValue string, orgUUID string) {
+func UpdateCacheForQuotaExceededStatus(apiEvents []synchronizer.APIEvent, blockedValue string, orgUUID string) {
 	var cacheObj []string
 	retryAttempt := 0
 	var laLabels map[string]map[string]int
@@ -600,6 +600,7 @@ func UpdateCacheForQuotaExceededStatus(apiEvents []synchronizer.APIEvent, cacheV
 				if label != "" {
 					// No need to check if org is blocked. If yes,func will be called with "blocked" for cacheValue
 					cacheKey := getCacheKey(&apiEvent, strings.ToLower(gatewayLabel))
+					cacheValue := blockedValue
 
 					if cacheValue == "" {
 						cacheValue = getCacheValue(&apiEvent, label)
